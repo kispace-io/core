@@ -11,7 +11,7 @@ import {
     workspaceService
 } from "../core/filesys";
 import { when } from "lit/directives/when.js";
-import { subscribe, topic } from "../core/events";
+import { subscribe } from "../core/events";
 import { createRef, ref } from "lit/directives/ref.js";
 import { HIDE_DOT_RESOURCE } from "../core/constants";
 
@@ -42,6 +42,9 @@ export class KFileBrowser extends KPart {
                 this.requestUpdate();
             }
         });
+
+        this.subscribe(TOPIC_WORKSPACE_CHANGED, (workspaceDir: Directory) => this.onWorkspaceChanged(workspaceDir));
+        this.subscribe(TOPIC_WORKSPACE_CONNECTED, (workspaceDir: Directory) => this.onWorkspaceConnected(workspaceDir));
     }
 
     protected firstUpdated(changedProperties: Map<string, any>) {
@@ -88,14 +91,12 @@ export class KFileBrowser extends KPart {
         `;
     }
 
-    @topic(TOPIC_WORKSPACE_CHANGED)
     async onWorkspaceChanged(workspaceDir: Directory) {
         activeSelectionSignal.set(undefined)
         await this.loadWorkspace(workspaceDir)
         await this.syncTreeSelection()
     }
 
-    @topic(TOPIC_WORKSPACE_CONNECTED)
     async onWorkspaceConnected(workspaceDir: Directory) {
         await this.loadWorkspace(workspaceDir)
     }

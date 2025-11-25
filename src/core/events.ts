@@ -1,24 +1,68 @@
-import * as PubSubModule from 'pubsub-js'
-const PubSub = (PubSubModule as any).default || PubSubModule
-import {rootContext} from "./di";
+export type SubscriptionToken = string;
+type Callback = (data: any) => any;
 
-export const subscribe = (topic: string, callback: (data: any) => any) => {
-    PubSub.subscribe(topic, (_topic: any, data: any) => callback(data));
-}
+class EventBus {
+    private subscriptions: Map<string, Map<SubscriptionToken, Callback>> = new Map();
+    private tokenCounter = 0;
 
-export const publish = (topic: string, data: any) => {
-    PubSub.publish(topic, data);
-}
+    subscribe(topic: string, callback: Callback): SubscriptionToken {
+        if (!this.subscriptions.has(topic)) {
+            this.subscriptions.set(topic, new Map());
+        }
+        const token = `token_${++this.tokenCounter}_${Date.now()}`;
+        this.subscriptions.get(topic)!.set(token, callback);
+        return token;
+    }
 
-export const EVENT_ACTIVE_PART_CHANGED = "events/activePartChanged"
+    unsubscribe(token: SubscriptionToken): void {
+        for (const [topic, callbacks] of this.subscriptions.entries()) {
+            if (callbacks.has(token)) {
+                callbacks.delete(token);
+                if (callbacks.size === 0) {
+                    this.subscriptions.delete(topic);
+                }
+                return;
+            }
+        }
+    }
 
-export const topic = (topic: string) => {
-    return function (_target: any, _propertyKey: string, descriptor: any) {
-        const originalMethod = descriptor.value;
-        originalMethod.topic = topic;
-        return descriptor
+    publish(topic: string, data: any): boolean {
+        const callbacks = this.subscriptions.get(topic);
+        if (!callbacks || callbacks.size === 0) {
+            return false;
+        }
+
+        queueMicrotask(() => {
+            callbacks.forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`Error in event callback for topic "${topic}":`, error);
+                }
+            });
+        });
+        return true;
+    }
+
+    clearAllSubscriptions(): void {
+        this.subscriptions.clear();
+    }
+
+    clearSubscriptions(topic: string): void {
+        this.subscriptions.delete(topic);
     }
 }
 
-rootContext.put("subscribe", subscribe)
-rootContext.put("publish", publish)
+const eventBus = new EventBus();
+
+export const subscribe = (topic: string, callback: Callback): SubscriptionToken => {
+    return eventBus.subscribe(topic, callback);
+}
+
+export const unsubscribe = (token: SubscriptionToken): void => {
+    eventBus.unsubscribe(token);
+}
+
+export const publish = (topic: string, data: any): boolean => {
+    return eventBus.publish(topic, data);
+}

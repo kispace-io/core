@@ -1,5 +1,5 @@
 import {LitElement, PropertyValues} from "lit";
-import {subscribe as event_subscribe} from "../core/events";
+import {subscribe as event_subscribe, unsubscribe as event_unsubscribe, type SubscriptionToken} from "../core/events";
 import {toastError, toastInfo} from "../core/toast";
 import {commandRegistry, ExecuteParams} from "../core/commandregistry";
 import {Signal, SignalWatcher} from "@lit-labs/signals";
@@ -13,31 +13,24 @@ Object.defineProperty(LitElement.prototype, "model", {
 
 export abstract class KWidget extends SignalWatcher(LitElement) {
     private signalCleanups = new Set<() => void>();
+    private eventSubscriptions = new Set<SubscriptionToken>();
 
     connectedCallback() {
-        const proto = Object.getPrototypeOf(this)
-
-        Object.getOwnPropertyNames(proto).forEach((prop) => {
-            const propValue = proto[prop];
-            if (propValue instanceof Function) {
-                const func = propValue
-                if (func.name.startsWith("on") && "topic" in func) {
-                    this.subscribe(func.topic, func);
-                }
-            }
-        })
         super.connectedCallback();
         this.doBeforeUI()
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
+        this.eventSubscriptions.forEach(token => event_unsubscribe(token));
+        this.eventSubscriptions.clear();
         this.signalCleanups.forEach(cleanup => cleanup());
         this.signalCleanups.clear();
     }
 
-    protected subscribe(topic: string, callback: Function) {
-        event_subscribe(topic, callback.bind(this));
+    protected subscribe(topic: string, callback: Function): void {
+        const token = event_subscribe(topic, callback.bind(this));
+        this.eventSubscriptions.add(token);
     }
 
     protected showInfo(msg: string) {

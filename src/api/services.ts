@@ -36,7 +36,7 @@ export {
 } from '../core/toast';
 export { taskService } from '../core/taskservice';
 export { PyEnv } from '../core/pyservice';
-export { publish, subscribe } from '../core/events';
+export { publish, subscribe, unsubscribe } from '../core/events';
 export { configureFramework, getFrameworkConfig } from '../core/config';
 export { treeNodeComparator } from '../core/tree-utils';
 export type { TreeContribution, TreeNode } from '../core/tree-utils';

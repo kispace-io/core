@@ -12,7 +12,6 @@ import {
 } from "../core";
 import { aiService } from "../service/ai-service";
 import { toastError, toastInfo } from "../../../core/toast";
-import { topic } from "../../../core/events";
 import { taskService } from "../../../core/taskservice";
 import {
     commandRegistry as globalCommandRegistry,
@@ -67,12 +66,16 @@ export class KAView extends KPart {
 
     private abortController?: AbortController;
 
-    @topic(TOPIC_AICONFIG_CHANGED)
     public onAIConfigChanged() {
-        this.doBeforeUI();
+        this.providerManager.initialize().then(() => {
+            this.loadSettings().then(() => {
+                this.requestUpdate();
+            });
+        });
     }
 
     protected async doBeforeUI() {
+        this.subscribe(TOPIC_AICONFIG_CHANGED, () => this.onAIConfigChanged());
         this.sessionManager.setSaveCallback(() => this.sessionManager.persistSessions());
         await this.sessionManager.loadSessions();
         if (this.sessionManager.getSessionCount() === 0) {
