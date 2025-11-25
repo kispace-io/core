@@ -35,9 +35,10 @@ class EmbeddingService {
         logger.info(`Initializing embedding service with model: ${this.modelName}`);
         
         try {
-            this.pipePromise = pipeline('feature-extraction', this.modelName, {
+            // Type assertion needed due to complex union types in @xenova/transformers
+            this.pipePromise = (pipeline('feature-extraction' as any, this.modelName, {
                 quantized: false,
-            });
+            }) as any) as Promise<FeatureExtractionPipeline>;
             await this.pipePromise;
             logger.info('Embedding service initialized successfully');
         } catch (error: any) {

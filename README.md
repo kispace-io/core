@@ -424,32 +424,38 @@ npm publish
 
 This repository uses npm's trusted publishing (OIDC) for automated releases. No `NPM_TOKEN` secret is required.
 
-To enable trusted publishing:
+**Prerequisites:**
+- The package must exist in the npm registry (publish manually first if needed)
+- The GitHub repository must be **public** (required for provenance)
+- You must have publish access to the `@kispace-io` organization on npm
 
-1. Go to your npm organization settings: https://www.npmjs.com/org/kispace-io/settings
+**Setup Steps:**
+
+1. Go to npm organization settings: https://www.npmjs.com/org/kispace-io/settings
 2. Navigate to "Automation" → "Trusted Publishing"
-3. Click "Add GitHub Actions"
-4. Configure:
-   - **Repository**: `kispace-io/appspace`
-   - **Workflow file**: `.github/workflows/publish.yml`
-   - **Environment**: (optional, leave empty for default)
+3. Click "Add GitHub Actions" or "Configure"
+4. Configure the trusted publisher with **exact** values:
+   - **Repository Owner**: `kispace-io` (must match GitHub organization)
+   - **Repository Name**: `appspace` (must match exactly)
+   - **Workflow Filename**: `.github/workflows/publish.yml` (must include the `.yml` extension)
+   - **Environment**: (leave empty for default, or specify if using GitHub environments)
 5. Save the configuration
 
-**Important Notes:**
-- The package must exist in the npm registry before trusted publishing can be used
-- If the package doesn't exist yet, publish it manually first: `npm publish --access public`
-- Ensure you're logged in to npm and have publish access to the `@kispace-io` organization
-- The trusted publishing configuration must match the repository and workflow file exactly
-- The repository must be in the `kispace-io` GitHub organization (not a personal account)
+**Critical Requirements:**
+- Repository must be **public** (private repos don't support provenance)
+- All values must match **exactly** (case-sensitive, including `.yml` extension)
+- The repository must be in the `kispace-io` GitHub organization
+- The workflow file must exist at `.github/workflows/publish.yml`
 
 **Troubleshooting 404 Errors:**
 
-If you see a "404 Not Found" error when publishing:
-1. Verify trusted publishing is configured: https://www.npmjs.com/org/kispace-io/settings
-2. Check that the repository name matches exactly: `kispace-io/appspace`
-3. Verify the workflow file path: `.github/workflows/publish.yml`
-4. Ensure you have publish access to the `@kispace-io` organization on npm
-5. Try publishing manually first to verify access: `npm publish --access public`
+If you see a "404 Not Found" or "401 Unauthorized" error:
+1. **Verify trusted publishing is configured**: https://www.npmjs.com/org/kispace-io/settings → Automation → Trusted Publishing
+2. **Check exact match**: Repository must be exactly `kispace-io/appspace` (not `erdalkaraca/appspace`)
+3. **Verify workflow path**: Must be exactly `.github/workflows/publish.yml` (with `.yml` extension)
+4. **Check repository visibility**: Must be **public** (not private)
+5. **Verify permissions**: Ensure `id-token: write` is in workflow permissions (already configured)
+6. **Test manually**: Try `npm publish --access public` locally to verify npm access
 
-Once configured, the GitHub Actions workflow will automatically authenticate using OIDC when publishing.
+Once configured correctly, the GitHub Actions workflow will automatically authenticate using OIDC when publishing.
 
