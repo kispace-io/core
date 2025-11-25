@@ -1,43 +1,15 @@
-import { Toastify } from "../externals/third-party";
 import {uiContext} from "./di";
 
 export const toastInfo = (msg: string) => {
-    console.info("[TOAST] INFO: ", msg)
-    Toastify({
-        text: msg,
-        duration: 3000,
-        close: true,
-        gravity: "bottom",
-        stopOnFocus: true,
-    }).showToast();
+    console.info("[TOAST] INFO:", msg);
 }
 
 export const toastError = (msg: string) => {
-    console.error("[TOAST] ERROR: ", msg)
-    Toastify({
-        text: msg,
-        duration: 3000,
-        close: true,
-        gravity: "bottom",
-        stopOnFocus: true,
-        style: {
-            background: "coral"
-        }
-    }).showToast();
+    console.error("[TOAST] ERROR:", msg);
 }
 
 export const toastWarning = (msg: string) => {
-    console.warn("[TOAST] WARNING: ", msg)
-    Toastify({
-        text: msg,
-        duration: 3000,
-        close: true,
-        gravity: "bottom",
-        stopOnFocus: true,
-        style: {
-            background: "orange"
-        }
-    }).showToast();
+    console.warn("[TOAST] WARNING:", msg);
 }
 
 uiContext.put("toastInfo", toastInfo)

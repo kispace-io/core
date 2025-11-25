@@ -1,4 +1,3 @@
-import "toastify-js/src/toastify.css";
 import {KWidget} from "../widgets/k-widget";
 import {appSettings} from "../core/settingsservice";
 

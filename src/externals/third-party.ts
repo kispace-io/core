@@ -14,15 +14,3 @@ const PubSub = (PubSubModule as any).default || PubSubModule;
 export default PubSub;
 export { PubSub };
 
-// Re-export toastify-js
-// Note: toastify-js is a UMD module that expects window context
-// The UMD wrapper sets root.Toastify, so we need to check window first
-// then fall back to module exports
-import * as ToastifyModule from "toastify-js";
-const Toastify = 
-  (typeof window !== 'undefined' && (window as any).Toastify) ||
-  (ToastifyModule as any).default || 
-  (ToastifyModule as any).Toastify || 
-  ToastifyModule;
-export { Toastify };
-
