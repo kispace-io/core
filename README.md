@@ -364,14 +364,50 @@ This package is automatically published to npm when a tagged release is created 
 
 ### Release Process
 
-1. Update the version in `package.json` (following semantic versioning)
-2. Commit and push the changes
-3. Create a git tag matching the version: `git tag v1.2.3`
-4. Push the tag: `git push origin v1.2.3`
-5. The GitHub Actions workflow will automatically:
-   - Build the package
-   - Verify the version matches the tag
-   - Publish to npm
+#### Using the Release Script (Recommended)
+
+The easiest way to create a release is using the provided script:
+
+```bash
+# Patch release (1.2.3 -> 1.2.4)
+./scripts/trigger-release.sh patch
+
+# Minor release (1.2.3 -> 1.3.0)
+./scripts/trigger-release.sh minor
+
+# Major release (1.2.3 -> 2.0.0)
+./scripts/trigger-release.sh major
+
+# Dry run to preview what would happen
+./scripts/trigger-release.sh --dry-run patch
+```
+
+The script will:
+1. Calculate the next version based on the latest tag
+2. Show changes since the last release
+3. Optionally generate an AI summary (if `OPENAI_API_KEY` is set in `.env`)
+4. Create an annotated tag with release notes
+5. Push the tag to trigger the CI workflow
+
+#### Manual Release
+
+You can also create a tag manually:
+
+```bash
+# Create and push a tag
+git tag -a v1.2.3 -m "Release: v1.2.3" -m "Release notes here"
+git push origin v1.2.3
+```
+
+#### What Happens Next
+
+The GitHub Actions workflow will automatically:
+- Extract the version from the tag (e.g., `v1.2.3` → `1.2.3`)
+- Update `package.json` with the tag version (CI only, not committed)
+- Build the package
+- Publish to npm
+
+**Note**: The version in `package.json` should remain at `0.0.0` in the repository. The CI workflow will update it automatically from the tag during the publish process.
 
 ### Manual Publishing
 
@@ -383,4 +419,21 @@ npm publish
 ```
 
 **Note**: You must be logged in to npm and have publish access to the `@kispace-io` organization.
+
+### Trusted Publishing Setup
+
+This repository uses npm's trusted publishing (OIDC) for automated releases. No `NPM_TOKEN` secret is required.
+
+To enable trusted publishing:
+
+1. Go to your npm package settings: https://www.npmjs.com/settings/kispace-io/packages
+2. Navigate to "Automation" → "Trusted Publishing"
+3. Click "Add GitHub Actions"
+4. Configure:
+   - **Repository**: `kispace-io/appspace`
+   - **Workflow file**: `.github/workflows/publish.yml`
+   - **Environment**: (optional, leave empty for default)
+5. Save the configuration
+
+Once configured, the GitHub Actions workflow will automatically authenticate using OIDC when publishing.
 

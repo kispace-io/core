@@ -1,6 +1,6 @@
 {
   "name": "@kispace-io/appspace",
-  "version": "1.1.1",
+  "version": "0.0.0",
   "description": "A highly modular and extensible web application framework for building IDE-like applications with a plugin architecture, AI integration, and comprehensive workspace management.",
   "type": "module",
   "license": "EPL-2.0",
