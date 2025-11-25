@@ -22,6 +22,7 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
           scope: '@kispace-io'
+          always-auth: true
       
       - name: Install dependencies
         run: npm ci
@@ -46,6 +47,18 @@ jobs:
         run: npm run type-check
         continue-on-error: true
       
+      - name: Verify npm authentication
+        run: |
+          echo "Verifying npm authentication..."
+          npm whoami || (echo "Error: Not authenticated to npm" && exit 1)
+          echo "✓ Authenticated successfully"
+      
+      - name: Verify package exists
+        run: |
+          echo "Checking if package exists in registry..."
+          npm view @kispace-io/appspace versions --json || echo "Package not found (will attempt to publish)"
+      
       - name: Publish to npm
-        run: npm publish
+        run: npm publish --access public
+        continue-on-error: false
 
