@@ -1,5 +1,6 @@
 name: Publish to npm
 
+# Trigger when a new tag matching the pattern is created and pushed
 on:
   push:
     tags:
@@ -9,7 +10,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     
     steps:
@@ -35,7 +36,30 @@ jobs:
           TAG=${GITHUB_REF#refs/tags/}
           VERSION=${TAG#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION from tag: $TAG"
+      
+      - name: Get tag message
+        id: tag_message
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "")
+          if [ -z "$TAG_MESSAGE" ]; then
+            TAG_MESSAGE="Release $TAG"
+          fi
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          BODY="${{ steps.tag_message.outputs.message }}"
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes "$BODY"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Update package.json version (CI only, not committed)
         run: |
