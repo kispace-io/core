@@ -1,0 +1,66 @@
+name: Create Release
+
+# Trigger when a new tag matching the pattern is created and pushed
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}
+      
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION from tag: $TAG"
+      
+      - name: Get tag message
+        id: tag_message
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "")
+          if [ -z "$TAG_MESSAGE" ]; then
+            TAG_MESSAGE="Release $TAG"
+          fi
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Authenticate GitHub CLI
+        run: |
+          echo "${{ github.token }}" | gh auth login --with-token
+      
+      - name: Create GitHub Release
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          BODY="${{ steps.tag_message.outputs.message }}"
+          REPO="${{ github.repository }}"
+          
+          # Check if release already exists
+          if gh release view "$TAG" --repo "$REPO" &>/dev/null; then
+            echo "Release $TAG already exists, skipping creation"
+            exit 0
+          fi
+          
+          # Create release using GitHub CLI
+          echo "$BODY" | gh release create "$TAG" \
+            --repo "$REPO" \
+            --title "Release $TAG" \
+            --notes-file -
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
