@@ -14,21 +14,21 @@ import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
+const workerMap: Record<string, string> = {
+    'json': new URL('monaco-editor/esm/vs/language/json/json.worker.js', import.meta.url).href,
+    'css': new URL('monaco-editor/esm/vs/language/css/css.worker.js', import.meta.url).href,
+    'scss': new URL('monaco-editor/esm/vs/language/css/css.worker.js', import.meta.url).href,
+    'less': new URL('monaco-editor/esm/vs/language/css/css.worker.js', import.meta.url).href,
+    'html': new URL('monaco-editor/esm/vs/language/html/html.worker.js', import.meta.url).href,
+    'handlebars': new URL('monaco-editor/esm/vs/language/html/html.worker.js', import.meta.url).href,
+    'razor': new URL('monaco-editor/esm/vs/language/html/html.worker.js', import.meta.url).href,
+    'typescript': new URL('monaco-editor/esm/vs/language/typescript/ts.worker.js', import.meta.url).href,
+    'javascript': new URL('monaco-editor/esm/vs/language/typescript/ts.worker.js', import.meta.url).href,
+};
+
 self.MonacoEnvironment = {
-    getWorker(_: any, label: string) {
-        if (label === 'json') {
-            return new jsonWorker();
-        }
-        if (label === 'css' || label === 'scss' || label === 'less') {
-            return new cssWorker();
-        }
-        if (label === 'html' || label === 'handlebars' || label === 'razor') {
-            return new htmlWorker();
-        }
-        if (label === 'typescript' || label === 'javascript') {
-            return new tsWorker();
-        }
-        return new editorWorker();
+    getWorkerUrl(_: any, label: string) {
+        return workerMap[label] || new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url).href
     }
 };
 
