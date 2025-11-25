@@ -358,3 +358,29 @@ EPL-2.0
 
 https://github.com/kispace-io/appspace
 
+## Publishing
+
+This package is automatically published to npm when a tagged release is created on GitHub.
+
+### Release Process
+
+1. Update the version in `package.json` (following semantic versioning)
+2. Commit and push the changes
+3. Create a git tag matching the version: `git tag v1.2.3`
+4. Push the tag: `git push origin v1.2.3`
+5. The GitHub Actions workflow will automatically:
+   - Build the package
+   - Verify the version matches the tag
+   - Publish to npm
+
+### Manual Publishing
+
+If you need to publish manually:
+
+```bash
+npm run build
+npm publish
+```
+
+**Note**: You must be logged in to npm and have publish access to the `@kispace-io` organization.
+
