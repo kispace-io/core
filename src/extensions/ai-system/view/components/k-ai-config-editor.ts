@@ -12,7 +12,7 @@ import { contributionRegistry } from '../../../../core/contributionregistry';
 import { ProviderFactory } from '../../providers/provider-factory';
 import type { AIConfig, ChatProvider } from '../../core/types';
 import type { ChatProviderContribution } from '../../core/interfaces';
-import { t } from '../../ai-system-extension';
+import { t } from '../../translation';
 
 @customElement('k-ai-config-editor')
 export class KAIConfigEditor extends KPart {

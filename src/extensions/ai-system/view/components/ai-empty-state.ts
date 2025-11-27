@@ -1,6 +1,6 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { t } from '../../ai-system-extension';
+import { t } from '../../translation';
 
 @customElement('ai-empty-state')
 export class AIEmptyState extends LitElement {

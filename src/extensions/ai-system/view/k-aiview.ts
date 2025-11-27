@@ -24,7 +24,7 @@ import { StreamManager } from "./stream-manager";
 import { ProviderManager } from "./provider-manager";
 import { AgentGroupManager } from "./agent-group-manager";
 import { confirmDialog } from "../../../dialogs";
-import { t } from "../ai-system-extension";
+import { t } from "../translation";
 
 @customElement('k-aiview')
 export class KAView extends KPart {

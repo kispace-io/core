@@ -1,6 +1,6 @@
 import { css, html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { t } from '../../ai-system-extension';
+import { t } from '../../translation';
 
 @customElement('ai-loading-indicator')
 export class AILoadingIndicator extends LitElement {

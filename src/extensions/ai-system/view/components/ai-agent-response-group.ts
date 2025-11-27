@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { ChatMessage } from '../../core/types';
-import { t } from '../../ai-system-extension';
+import { t } from '../../translation';
 import './ai-agent-response-card';
 
 interface AgentResponseInfo {

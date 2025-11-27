@@ -2,7 +2,7 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import type { ChatMessage } from '../../core/types';
-import { t } from '../../ai-system-extension';
+import { t } from '../../translation';
 import './ai-chat-message';
 
 interface AgentResponseInfo {

@@ -6,7 +6,7 @@ import { subscribe } from "../../../core/events";
 import { confirmDialog } from "../../../dialogs";
 import { TOPIC_AI_STREAM_COMPLETE } from "../core/constants";
 import type { ProviderTokenUsage } from "../core/types";
-import { t } from "../ai-system-extension";
+import { t } from "../translation";
 
 @customElement('k-token-usage')
 export class KTokenUsage extends KElement {

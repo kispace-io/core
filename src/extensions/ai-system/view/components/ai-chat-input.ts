@@ -1,7 +1,7 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
-import { t } from '../../ai-system-extension';
+import { t } from '../../translation';
 
 @customElement('ai-chat-input')
 export class AIChatInput extends LitElement {
