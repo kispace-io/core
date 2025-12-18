@@ -3,7 +3,7 @@ import {vsixLoader, LoadedVSIX} from "./vsixloader";
 import {openVSXClient, OpenVSXExtension} from "./openvsx-client";
 import {createVSCodeAPI} from "./vscode-api-adapter";
 import {commandRegistry, Command, Handler} from "../commandregistry";
-import {getNodePolyfill} from "./nodejs-polyfills";
+import {getNodePolyfill, getBufferPolyfill} from "./nodejs-polyfills";
 
 const logger = createLogger('VSIXExtensionLoader');
 
@@ -166,7 +166,7 @@ export class VSIXExtensionLoader {
             
             if (moduleName === 'Buffer' || moduleName === 'buffer') {
                 logger.info(`[Module Require] Returning Buffer polyfill`);
-                return this.getBufferPolyfill();
+                return getBufferPolyfill();
             }
             
             const file = this.resolveModulePath(loadedVSIX, moduleName);
@@ -180,7 +180,7 @@ export class VSIXExtensionLoader {
         };
 
         try {
-            const BufferPolyfill = this.getBufferPolyfill();
+            const BufferPolyfill = getBufferPolyfill();
             
             logger.info(`Creating activate function for ${loadedVSIX.extensionId}, code length: ${code.length} chars`);
             logger.info(`First 500 chars of extension code: ${code.substring(0, 500)}${code.length > 500 ? '...' : ''}`);
@@ -317,7 +317,7 @@ export class VSIXExtensionLoader {
             }
             
             if (moduleName === 'Buffer' || moduleName === 'buffer') {
-                return this.getBufferPolyfill();
+                return getBufferPolyfill();
             }
             
             const file = vsixLoader.getFile(loadedVSIX, moduleName);
@@ -329,62 +329,13 @@ export class VSIXExtensionLoader {
 
         try {
             const factory = new Function('exports', 'require', 'module', '__filename', '__dirname', 'vscode', 'context', 'Buffer', code);
-            const BufferPolyfill = this.getBufferPolyfill();
+            const BufferPolyfill = getBufferPolyfill();
             factory(moduleExports, moduleRequire, {exports: moduleExports}, '', '', vscode, context, BufferPolyfill);
             return moduleExports;
         } catch (error) {
             logger.warn(`Failed to evaluate module: ${error}`);
             return {};
         }
-    }
-
-    private getBufferPolyfill(): any {
-        if (typeof globalThis.Buffer !== 'undefined') {
-            return globalThis.Buffer;
-        }
-        
-        class BufferPolyfill extends Uint8Array {
-            static from(data: any, encoding?: string): BufferPolyfill {
-                if (typeof data === 'string') {
-                    const encoder = new TextEncoder();
-                    return new BufferPolyfill(encoder.encode(data));
-                }
-                if (data instanceof ArrayBuffer) {
-                    return new BufferPolyfill(data);
-                }
-                if (Array.isArray(data)) {
-                    return new BufferPolyfill(new Uint8Array(data));
-                }
-                return new BufferPolyfill(new Uint8Array(0));
-            }
-            
-            static alloc(size: number, fill?: number | string): BufferPolyfill {
-                const buffer = new BufferPolyfill(new Uint8Array(size));
-                if (fill !== undefined) {
-                    if (typeof fill === 'number') {
-                        buffer.fill(fill);
-                    } else {
-                        const encoder = new TextEncoder();
-                        const encoded = encoder.encode(fill);
-                        for (let i = 0; i < size && i < encoded.length; i++) {
-                            buffer[i] = encoded[i];
-                        }
-                    }
-                }
-                return buffer;
-            }
-            
-            toString(encoding: string = 'utf8'): string {
-                const decoder = new TextDecoder(encoding === 'utf8' ? 'utf-8' : encoding);
-                return decoder.decode(this);
-            }
-            
-            slice(start?: number, end?: number): BufferPolyfill {
-                return new BufferPolyfill(super.slice(start, end));
-            }
-        }
-        
-        return BufferPolyfill;
     }
 }
 

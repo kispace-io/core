@@ -238,3 +238,110 @@ export function getNodePolyfill(moduleName: string): any {
     return nodePolyfills[moduleName] || null;
 }
 
+export function getBufferPolyfill(): any {
+    if (typeof globalThis.Buffer !== 'undefined') {
+        return globalThis.Buffer;
+    }
+    
+    // Create a Buffer-like class without extending Uint8Array to avoid type conflicts
+    class BufferPolyfill {
+        public data: Uint8Array;
+        
+        constructor(data: ArrayBuffer | Uint8Array | number = 0) {
+            if (typeof data === 'number') {
+                this.data = new Uint8Array(data);
+            } else if (data instanceof Uint8Array) {
+                this.data = data;
+            } else {
+                this.data = new Uint8Array(data);
+            }
+        }
+        
+        static from(data: any, encoding?: string): BufferPolyfill {
+            if (typeof data === 'string') {
+                const encoder = new TextEncoder();
+                return new BufferPolyfill(encoder.encode(data));
+            }
+            if (data instanceof ArrayBuffer) {
+                return new BufferPolyfill(data);
+            }
+            if (Array.isArray(data)) {
+                return new BufferPolyfill(new Uint8Array(data));
+            }
+            return new BufferPolyfill(new Uint8Array(0));
+        }
+        
+        static alloc(size: number, fill?: number | string): BufferPolyfill {
+            const buffer = new BufferPolyfill(new Uint8Array(size));
+            if (fill !== undefined) {
+                if (typeof fill === 'number') {
+                    buffer.data.fill(fill);
+                } else {
+                    const encoder = new TextEncoder();
+                    const encoded = encoder.encode(fill);
+                    for (let i = 0; i < size && i < encoded.length; i++) {
+                        buffer.data[i] = encoded[i];
+                    }
+                }
+            }
+            return buffer;
+        }
+        
+        toString(encoding: string = 'utf8'): string {
+            const decoder = new TextDecoder(encoding === 'utf8' ? 'utf-8' : encoding);
+            return decoder.decode(this.data);
+        }
+        
+        slice(start?: number, end?: number): BufferPolyfill {
+            return new BufferPolyfill(this.data.slice(start, end));
+        }
+        
+        get length(): number {
+            return this.data.length;
+        }
+        
+        [index: number]: number;
+        
+        // Make it work like Uint8Array for indexing
+        get(index: number): number {
+            return this.data[index];
+        }
+        
+        set(index: number, value: number): void {
+            this.data[index] = value;
+        }
+    }
+    
+    // Add indexer support via Proxy
+    const handler = {
+        get(target: typeof BufferPolyfill, prop: string | symbol) {
+            if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+                // This won't work for static access, but instances will handle it
+                return undefined;
+            }
+            return (target as any)[prop];
+        },
+        construct(target: typeof BufferPolyfill, args: any[]) {
+            const instance = new target(...args);
+            return new Proxy(instance, {
+                get(inst: BufferPolyfill, prop: string | symbol) {
+                    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+                        return inst.data[parseInt(prop)];
+                    }
+                    return (inst as any)[prop];
+                },
+                set(inst: BufferPolyfill, prop: string | symbol, value: number) {
+                    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+                        inst.data[parseInt(prop)] = value;
+                        return true;
+                    }
+                    (inst as any)[prop] = value;
+                    return true;
+                }
+            });
+        }
+    };
+    
+    return new Proxy(BufferPolyfill as any, handler);
+}
+
