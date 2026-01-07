@@ -88,6 +88,7 @@
   "files": [
     "dist",
     "src",
+    "index.html",
     "tsconfig.json",
     "README.md",
     "LICENSE"
