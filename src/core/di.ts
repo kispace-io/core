@@ -1,4 +1,5 @@
 import {html, render} from "lit";
+import * as constants from "./constants";
 
 export class DependencyContext {
     private variables: any;
@@ -57,3 +58,5 @@ export const uiContext = rootContext.createChild({})
 
 uiContext.put("html", html)
 uiContext.put("render", render)
+
+rootContext.put("constants", constants)

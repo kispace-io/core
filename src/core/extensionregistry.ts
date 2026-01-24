@@ -4,6 +4,7 @@ import {toastError, toastInfo} from "./toast";
 import {taskService} from "./taskservice";
 import {rootContext, uiContext} from "./di";
 import logger from "./logger";
+import {esmShService} from "./esmsh-service";
 
 export const TOPIC_EXTENSIONS_CHANGED = "events/extensionsregistry/extensionsConfigChanged"
 const KEY_EXTENSIONS_CONFIG = "extensions"
@@ -241,7 +242,12 @@ class ExtensionRegistry {
                     if (extension.loader) {
                         return extension.loader()
                     } else if (extension.url) {
-                        return import(/* @vite-ignore */ extension.url)
+                        let finalUrl = extension.url;
+                        if (esmShService.isSourceIdentifier(extension.url)) {
+                            finalUrl = esmShService.normalizeToEsmSh(extension.url);
+                            logger.debug(`Normalized extension URL: ${extension.url} -> ${finalUrl}`);
+                        }
+                        return import(/* @vite-ignore */ finalUrl)
                     }
                 })
 

@@ -13,3 +13,7 @@
 // Bootstrap the framework (initialize services, register components, etc.)
 import './bootstrap';
 
+// Export esm.sh service for use by extensions and apps
+export { esmShService } from './esmsh-service';
+export type { EsmShSource, EsmShOptions } from './esmsh-service';
+

@@ -4,6 +4,7 @@ import {createLogger} from "./logger";
 import {extensionRegistry, Extension} from "./extensionregistry";
 import {appLoaderService, AppDefinition} from "./apploader";
 import {rootContext} from "./di";
+import {esmShService} from "./esmsh-service";
 
 const logger = createLogger('MarketplaceRegistry');
 
@@ -243,15 +244,26 @@ class MarketplaceRegistry {
             return;
         }
 
-        logger.info(`Installing marketplace extension: ${extension.name} from ${extension.url}`);
+        if (!extension.url) {
+            throw new Error(`Extension ${extension.id} does not have a URL`);
+        }
 
-        // Mark as external and register
+        let finalUrl = extension.url;
+        
+        if (esmShService.isSourceIdentifier(extension.url)) {
+            finalUrl = esmShService.normalizeToEsmSh(extension.url);
+            logger.debug(`Converted source identifier to esm.sh URL: ${extension.url} -> ${finalUrl}`);
+        }
+
+        logger.info(`Installing marketplace extension: ${extension.name} from ${finalUrl}`);
+
         const externalExtension: Extension = {
             ...extension,
+            url: finalUrl,
             external: true
         };
         extensionRegistry.registerExtension(externalExtension);
-        await appLoaderService.loadExtensionFromUrl(extension.url!);
+        await appLoaderService.loadExtensionFromUrl(finalUrl);
         
         logger.info(`Successfully installed marketplace extension: ${extension.id}`);
     }
