@@ -37,6 +37,23 @@ jobs:
 
       - name: Build app!space app
         run: npm run build:app
+        continue-on-error: false
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "./dist-app" ]; then
+            echo "ERROR: dist-app directory does not exist!"
+            exit 1
+          fi
+          if [ -z "$(ls -A ./dist-app)" ]; then
+            echo "ERROR: dist-app directory is empty!"
+            exit 1
+          fi
+          echo "Build output contents:"
+          ls -la ./dist-app/
+          echo ""
+          echo "Files in dist-app:"
+          find ./dist-app -type f | head -20
 
       - name: Add CNAME file
         run: echo "app.kispace.de" > ./dist-app/CNAME
@@ -46,6 +63,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist-app
+          publish_branch: gh-pages
+          keep_files: false
 
       - name: Deployment Summary
         run: |
