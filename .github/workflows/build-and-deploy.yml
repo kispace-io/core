@@ -6,7 +6,7 @@ permissions:
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v?[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   deploy:
@@ -33,6 +33,8 @@ jobs:
       - name: Set package.json version from tag
         run: |
           VERSION=${GITHUB_REF_NAME}
+          # Remove 'v' prefix if present
+          VERSION=${VERSION#v}
           npm version --no-commit-hooks --no-git-tag-version "$VERSION"
 
       - name: Build app!space app
