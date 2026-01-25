@@ -17,87 +17,23 @@ contributionRegistry.registerContribution(DIALOG_CONTRIBUTION_TARGET, {
         const selectApp = state?.selectApp as (app: AppDefinition) => void;
 
         return html`
-            <style>
-                .app-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                    padding: 1rem;
-                    min-width: 300px;
-                    max-height: 400px;
-                    overflow-y: auto;
-                }
-                
-                .app-item {
-                    display: flex;
-                    flex-direction: column;
-                    padding: 0.75rem;
-                    border-radius: var(--wa-border-radius-small);
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                    border: 1px solid transparent;
-                }
-                
-                .app-item:hover {
-                    background-color: var(--wa-color-neutral-fill-quiet);
-                    border-color: var(--wa-color-brand-border-loud);
-                }
-                
-                .app-item.active {
-                    background-color: var(--wa-color-brand-fill-quiet);
-                    border-color: var(--wa-color-brand-border-loud);
-                    font-weight: 600;
-                }
-                
-                .app-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    margin-bottom: 0.25rem;
-                }
-                
-                .app-name {
-                    font-weight: 600;
-                    color: var(--wa-color-neutral-foreground-loud);
-                }
-                
-                .app-version {
-                    font-size: 0.75rem;
-                    color: var(--wa-color-neutral-foreground-quiet);
-                    padding: 0.125rem 0.375rem;
-                    background: var(--wa-color-neutral-fill-loud);
-                    border-radius: var(--wa-border-radius-small);
-                }
-                
-                .app-description {
-                    font-size: 0.875rem;
-                    color: var(--wa-color-neutral-foreground-base);
-                    margin: 0;
-                    line-height: 1.4;
-                }
-                
-                .app-id {
-                    font-size: 0.75rem;
-                    color: var(--wa-color-neutral-foreground-quiet);
-                    font-family: monospace;
-                    margin-top: 0.25rem;
-                }
-            </style>
-            
-            <div class="app-list">
-                ${apps.map(app => html`
-                    <div 
-                        class="app-item ${app.id === currentAppId ? 'active' : ''}"
-                        @click=${() => selectApp(app)}>
-                        <div class="app-header">
-                            <span class="app-name">${app.name}</span>
-                            ${app.version ? html`<span class="app-version">v${app.version}</span>` : ''}
-                        </div>
-                        ${app.description ? html`<p class="app-description">${app.description}</p>` : ''}
-                        <div class="app-id">ID: ${app.id}</div>
-                    </div>
-                `)}
-            </div>
+            <wa-scroller orientation="vertical" style="min-width: 300px; max-height: 400px; padding: var(--wa-space-m);">
+                <div style="display: flex; flex-direction: column; gap: var(--wa-space-s);">
+                    ${apps.map(app => html`
+                        <wa-card 
+                            style="cursor: pointer;"
+                            variant=${app.id === currentAppId ? 'brand' : 'neutral'}
+                            @click=${() => selectApp(app)}>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--wa-space-xs);">
+                                <span style="font-weight: 600;">${app.name}</span>
+                                ${app.version ? html`<wa-badge variant="neutral">v${app.version}</wa-badge>` : ''}
+                            </div>
+                            ${app.description ? html`<p style="margin: 0; font-size: 0.875rem; line-height: 1.4;">${app.description}</p>` : ''}
+                            <div style="font-size: 0.75rem; color: var(--wa-color-neutral-foreground-quiet); font-family: monospace; margin-top: var(--wa-space-xs);">ID: ${app.id}</div>
+                        </wa-card>
+                    `)}
+                </div>
+            </wa-scroller>
         `;
     },
     onButton: async () => true,

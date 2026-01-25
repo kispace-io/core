@@ -16,6 +16,7 @@
         // Development entry point (for library development only)
         // Replace this code with your own app entry point when building your own app
         import { appLoaderService } from './src/api/index';
+        import { html } from 'lit';
 
         appLoaderService.registerApp({
             id: 'dev-standard-app',
@@ -33,6 +34,22 @@
             ]
         }, {
             autoStart: true
+        });
+
+        appLoaderService.registerApp({
+            id: 'dev-standard-app-2',
+            name: 'Default App 2',
+            version: '0.0.0',
+            description: 'Default app!space application 2',
+            extensions: [
+                'system.mdeditor',
+                'system.monaco',
+                'system.mediaviewer',
+                'system.settings-tree',
+                'system.memoryusage',
+                'system.ai-system',
+            ],
+            render: () => html`<k-standard-app show-bottom-panel="true"></k-standard-app>`
         });
 
     </script>
