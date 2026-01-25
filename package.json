@@ -9,6 +9,12 @@
     "type": "git",
     "url": "git+https://github.com/kispace-io/appspace.git"
   },
+  "marketplace": {
+    "catalogUrls": [
+      "https://raw.githubusercontent.com/kispace-io/appspace-marketplace/main/catalogs/extensions.json",
+      "https://raw.githubusercontent.com/kispace-io/appspace-marketplace/main/catalogs/apps.json"
+    ]
+  },
   "publishConfig": {
     "access": "public"
   },
