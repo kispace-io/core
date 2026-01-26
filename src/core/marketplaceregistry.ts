@@ -1,5 +1,5 @@
 import {appSettings} from "./settingsservice";
-import {publish, subscribe} from "./events";
+import {publish} from "./events";
 import {createLogger} from "./logger";
 import {extensionRegistry, Extension} from "./extensionregistry";
 import {rootContext} from "./di";
@@ -26,11 +26,6 @@ class MarketplaceRegistry {
             this.refreshCatalogs().catch(err => {
                 logger.error(`Failed to refresh catalogs on init: ${err.message}`);
             });
-        });
-        
-        // Register marketplace extensions when they become available
-        subscribe(TOPIC_MARKETPLACE_CHANGED, () => {
-            this.registerMarketplaceExtensions();
         });
     }
 
@@ -182,18 +177,6 @@ class MarketplaceRegistry {
         logger.info('Catalog refresh completed');
     }
 
-    private registerMarketplaceExtensions(): void {
-        // This method is called when TOPIC_MARKETPLACE_CHANGED is published
-        // Since we register extensions directly in refreshCatalogs, this is a no-op
-        // Kept for compatibility with the event subscription
-    }
-
-    getMarketplaceExtensions(): Extension[] {
-        // Extensions are registered directly into extensionRegistry when catalogs are fetched
-        // This method is kept for compatibility but returns empty since we don't cache anymore
-        return [];
-    }
-
     getMarketplaceExtension(extensionId: string): Extension | undefined {
         // Check if extension is registered in extensionRegistry and is external
         const extension = extensionRegistry.getExtensions().find(e => e.id === extensionId);
@@ -201,12 +184,6 @@ class MarketplaceRegistry {
             return extension;
         }
         return undefined;
-    }
-
-    getCatalogsWithExtensions(): Array<{ catalog: MarketplaceCatalog; url: string }> {
-        // Since we don't cache catalogs anymore, this returns empty
-        // Extensions are registered directly into extensionRegistry
-        return [];
     }
 
     isMarketplaceExtension(extensionId: string): boolean {
