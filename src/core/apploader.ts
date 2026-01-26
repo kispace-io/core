@@ -18,7 +18,6 @@ import {createLogger} from "./logger";
 import {extensionRegistry, Extension} from "./extensionregistry";
 import {contributionRegistry, Contribution} from "./contributionregistry";
 import {appSettings} from "./settingsservice";
-import {esmShService} from "./esmsh-service";
 
 const logger = createLogger('AppLoader');
 
@@ -251,61 +250,6 @@ class AppLoaderService {
         this.systemRequiredExtensions.add(extensionId);
     }
     
-    /**
-     * Load an extension from a URL and register it.
-     * The module at the URL must export a default function that receives uiContext.
-     * The extension will register its contributions when loaded.
-     * 
-     * Supports:
-     * - Direct URLs (http/https)
-     * - esm.sh URLs
-     * - Source identifiers (npm packages, GitHub repos, JSR packages, PR packages)
-     *   Examples: 'react@18', 'gh/user/repo', 'jsr/@std/encoding@1.0.0', 'pr/owner/repo@commit'
-     * 
-     * @param url - URL or source identifier to the extension module
-     * @returns Promise that resolves when the extension is loaded
-     */
-    async loadExtensionFromUrl(url: string): Promise<void> {
-        logger.info(`Loading extension from URL: ${url}...`);
-        
-        try {
-            let finalUrl = url;
-            let extensionName = `Extension from ${url}`;
-
-            if (esmShService.isSourceIdentifier(url)) {
-                const packageName = esmShService.extractPackageName(url);
-                if (packageName) {
-                    extensionName = `Extension: ${packageName}`;
-                }
-                finalUrl = esmShService.normalizeToEsmSh(url);
-                logger.debug(`Converted source identifier to esm.sh URL: ${url} -> ${finalUrl}`);
-            }
-            
-            const extensionId = `url:${finalUrl}`;
-            
-            if (extensionRegistry.isEnabled(extensionId)) {
-                logger.info(`Extension from URL ${finalUrl} is already enabled`);
-                return;
-            }
-            
-            const extension: Extension = {
-                id: extensionId,
-                name: extensionName,
-                description: `Extension loaded from: ${url}`,
-                url: finalUrl
-            };
-            
-            extensionRegistry.registerExtension(extension);
-            logger.info(`Registered extension from URL: ${extensionId}`);
-            
-            extensionRegistry.enable(extensionId, false);
-            
-            logger.info(`Successfully enabled extension from URL: ${finalUrl}`);
-        } catch (error) {
-            logger.error(`Failed to load extension from URL ${url}: ${getErrorMessage(error)}`);
-            throw error;
-        }
-    }
 
     /**
      * Load an application definition from a URL.
@@ -377,7 +321,7 @@ class AppLoaderService {
                 logger.info(`URL parameter 'app' found: ${appUrl}, attempting to load extension or app`);
                 
                 try {
-                    await this.loadExtensionFromUrl(appUrl);
+                    await extensionRegistry.loadExtensionFromUrl(appUrl);
                     logger.info(`Successfully loaded extension from URL: ${appUrl}`);
                 } catch (extensionError) {
                     logger.info(`Failed to load as extension, trying as app definition: ${getErrorMessage(extensionError)}`);

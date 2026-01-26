@@ -154,6 +154,67 @@ class ExtensionRegistry {
         publish(TOPIC_EXTENSIONS_CHANGED, this.extensionsSettings);
     }
 
+    /**
+     * Load an extension from a URL and register it.
+     * The module at the URL must export a default function that receives uiContext.
+     * The extension will register its contributions when loaded.
+     * 
+     * Supports:
+     * - Direct URLs (http/https)
+     * - esm.sh URLs
+     * - Source identifiers (npm packages, GitHub repos, JSR packages, PR packages)
+     *   Examples: 'react@18', 'gh/user/repo', 'jsr/@std/encoding@1.0.0', 'pr/owner/repo@commit'
+     * 
+     * @param url - URL or source identifier to the extension module
+     * @param extensionId - Optional extension ID. If not provided, generates one from the URL.
+     * @returns Promise that resolves to the extension ID when the extension is loaded
+     */
+    async loadExtensionFromUrl(url: string, extensionId?: string): Promise<string> {
+        logger.info(`Loading extension from URL: ${url}...`);
+        
+        try {
+            let finalUrl = url;
+            let extensionName = `Extension from ${url}`;
+
+            if (esmShService.isSourceIdentifier(url)) {
+                const packageName = esmShService.extractPackageName(url);
+                if (packageName) {
+                    extensionName = `Extension: ${packageName}`;
+                }
+                finalUrl = esmShService.normalizeToEsmSh(url);
+                logger.debug(`Converted source identifier to esm.sh URL: ${url} -> ${finalUrl}`);
+            }
+            
+            const id = extensionId || `url:${finalUrl}`;
+            
+            if (this.isEnabled(id)) {
+                logger.info(`Extension from URL ${finalUrl} is already enabled`);
+                return id;
+            }
+            
+            // Check if extension is already registered
+            if (!this.extensions[id]) {
+                const extension: Extension = {
+                    id: id,
+                    name: extensionName,
+                    description: `Extension loaded from: ${url}`,
+                    url: finalUrl
+                };
+                
+                this.registerExtension(extension);
+                logger.info(`Registered extension from URL: ${id}`);
+            }
+            
+            this.enable(id, false);
+            
+            logger.info(`Successfully enabled extension from URL: ${finalUrl}`);
+            return id;
+        } catch (error) {
+            logger.error(`Failed to load extension from URL ${url}: ${error}`);
+            throw error;
+        }
+    }
+
     getExtensions(): Extension[] {
         return Object.values(this.extensions)
     }
