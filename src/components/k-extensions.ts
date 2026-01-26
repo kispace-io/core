@@ -7,6 +7,13 @@ import '../widgets/k-icon';
 import {subscribe} from "../core/events";
 import {appLoaderService} from "../core/apploader";
 import {i18n} from "../core/i18n";
+import {promptDialog} from "../dialogs/prompt-dialog";
+import {toastError, toastInfo} from "../core/toast";
+import {esmShService, EsmShSource} from "../core/esmsh-service";
+import {taskService} from "../core/taskservice";
+import {createLogger} from "../core/logger";
+
+const logger = createLogger('KExtensions');
 
 const t = i18n('extensions');
 
@@ -18,6 +25,12 @@ export class KExtensions extends KPart {
 
     @state()
     private filterText: string = '';
+
+    @state()
+    private showRegisterDialog: boolean = false;
+
+    @state()
+    private registerExtensionData: Partial<Extension> = {};
 
 
 
@@ -107,6 +120,126 @@ export class KExtensions extends KPart {
         this.requestUpdate();
     }
 
+    private async handleRegisterExtension() {
+        try {
+            const url = await promptDialog("Enter extension URL or source identifier:", "", false);
+            if (!url) {
+                return;
+            }
+
+            await taskService.runAsync("Registering extension", async () => {
+                let finalUrl = url;
+                
+                if (esmShService.isGitHubUrl(url)) {
+                    finalUrl = esmShService.convertGitHubUrlToSource(url);
+                }
+                
+                const parsed = esmShService.parseSource(finalUrl);
+                
+                if (parsed?.type === 'github') {
+                    await this.fetchGitHubMetadata(parsed, finalUrl);
+                } else {
+                    this.registerExtensionData = {
+                        url: finalUrl,
+                        id: '',
+                        name: '',
+                        description: ''
+                    };
+                    this.showRegisterDialog = true;
+                    this.requestUpdate();
+                }
+            });
+        } catch (error) {
+            toastError(`Failed to register extension: ${error}`);
+        }
+    }
+
+    private async fetchGitHubMetadata(parsed: EsmShSource, url: string) {
+        try {
+            const packageJson = await esmShService.fetchGitHubPackageJson(parsed);
+            
+            const owner = parsed.owner!;
+            const repo = parsed.repo!;
+            const extensionId = packageJson.name || `ext.${owner}-${repo}`;
+            const extensionName = packageJson.name || `${owner}/${repo}`;
+            const description = packageJson.description || '';
+            const version = packageJson.version || '';
+            const author = packageJson.author || (typeof packageJson.author === 'string' ? packageJson.author : packageJson.author?.name) || '';
+            
+            this.registerExtensionData = {
+                id: extensionId,
+                name: extensionName,
+                description: description,
+                url: url,
+                version: version,
+                author: author,
+                icon: 'puzzle-piece',
+                external: true
+            };
+            
+            this.showRegisterDialog = true;
+            this.requestUpdate();
+        } catch (error) {
+            logger.warn(`Could not fetch package.json, using defaults: ${error}`);
+            this.registerExtensionData = {
+                url: url,
+                id: '',
+                name: '',
+                description: ''
+            };
+            this.showRegisterDialog = true;
+            this.requestUpdate();
+        }
+    }
+
+    private async confirmRegisterExtension() {
+        if (!this.registerExtensionData.url) {
+            toastError("URL is required");
+            return;
+        }
+
+        if (!this.registerExtensionData.id) {
+            toastError("Extension ID is required");
+            return;
+        }
+
+        if (!this.registerExtensionData.name) {
+            toastError("Extension name is required");
+            return;
+        }
+
+        try {
+            await taskService.runAsync("Registering extension", async () => {
+                const extension: Extension = {
+                    id: this.registerExtensionData.id!,
+                    name: this.registerExtensionData.name!,
+                    description: this.registerExtensionData.description,
+                    url: this.registerExtensionData.url!,
+                    version: this.registerExtensionData.version,
+                    author: this.registerExtensionData.author,
+                    icon: this.registerExtensionData.icon || 'puzzle-piece',
+                    external: true
+                };
+
+                extensionRegistry.registerExtension(extension);
+                await extensionRegistry.loadExtensionFromUrl(this.registerExtensionData.url!, extension.id);
+                
+                toastInfo(`Extension ${extension.name} registered successfully`);
+                this.showRegisterDialog = false;
+                this.registerExtensionData = {};
+                this.requestUpdate();
+            });
+        } catch (error) {
+            toastError(`Failed to register extension: ${error}`);
+        }
+    }
+
+    private cancelRegisterExtension() {
+        this.showRegisterDialog = false;
+        this.registerExtensionData = {};
+        this.requestUpdate();
+    }
+
     protected renderToolbar() {
         return html`
             <wa-input
@@ -119,6 +252,14 @@ export class KExtensions extends KPart {
                 style="width: 300px;">
                 <wa-icon slot="start" name="magnifying-glass" label="Filter"></wa-icon>
             </wa-input>
+            <wa-button 
+                variant="primary" 
+                appearance="plain"
+                @click=${() => this.handleRegisterExtension()}
+                title="Register a new extension">
+                <wa-icon name="plus" label="Add"></wa-icon>
+                Register Extension
+            </wa-button>
         `;
     }
 
@@ -127,6 +268,107 @@ export class KExtensions extends KPart {
         const hasAnyExtensions = grouped.enabled.length > 0 || grouped.available.length > 0;
         
         return html`
+            ${when(this.showRegisterDialog, () => html`
+                <wa-dialog 
+                    label="Register Extension"
+                    open
+                    @wa-request-close=${() => this.cancelRegisterExtension()}
+                    style="--wa-dialog-width: 500px;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem;">
+                        <wa-input
+                            label="Extension ID *"
+                            .value=${this.registerExtensionData.id || ''}
+                            @input=${(e: Event) => {
+                                this.registerExtensionData.id = (e.target as HTMLInputElement).value;
+                                this.requestUpdate();
+                            }}
+                            required
+                            hint="Unique identifier for the extension (e.g., 'ext.my-extension')">
+                        </wa-input>
+                        
+                        <wa-input
+                            label="Name *"
+                            .value=${this.registerExtensionData.name || ''}
+                            @input=${(e: Event) => {
+                                this.registerExtensionData.name = (e.target as HTMLInputElement).value;
+                                this.requestUpdate();
+                            }}
+                            required
+                            hint="Display name of the extension">
+                        </wa-input>
+                        
+                        <wa-input
+                            label="Description"
+                            .value=${this.registerExtensionData.description || ''}
+                            @input=${(e: Event) => {
+                                this.registerExtensionData.description = (e.target as HTMLInputElement).value;
+                                this.requestUpdate();
+                            }}
+                            hint="Description of what the extension does">
+                        </wa-input>
+                        
+                        <wa-input
+                            label="URL *"
+                            .value=${this.registerExtensionData.url || ''}
+                            @input=${(e: Event) => {
+                                this.registerExtensionData.url = (e.target as HTMLInputElement).value;
+                                this.requestUpdate();
+                            }}
+                            required
+                            readonly
+                            hint="Extension source URL or identifier">
+                        </wa-input>
+                        
+                        <div style="display: flex; gap: 0.5rem;">
+                            <wa-input
+                                label="Version"
+                                .value=${this.registerExtensionData.version || ''}
+                                @input=${(e: Event) => {
+                                    this.registerExtensionData.version = (e.target as HTMLInputElement).value;
+                                    this.requestUpdate();
+                                }}
+                                style="flex: 1;"
+                                hint="Extension version">
+                            </wa-input>
+                            
+                            <wa-input
+                                label="Author"
+                                .value=${this.registerExtensionData.author || ''}
+                                @input=${(e: Event) => {
+                                    this.registerExtensionData.author = (e.target as HTMLInputElement).value;
+                                    this.requestUpdate();
+                                }}
+                                style="flex: 1;"
+                                hint="Extension author">
+                            </wa-input>
+                        </div>
+                        
+                        <wa-input
+                            label="Icon"
+                            .value=${this.registerExtensionData.icon || 'puzzle-piece'}
+                            @input=${(e: Event) => {
+                                this.registerExtensionData.icon = (e.target as HTMLInputElement).value;
+                                this.requestUpdate();
+                            }}
+                            hint="Icon name (FontAwesome icon)">
+                        </wa-input>
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+                            <wa-button 
+                                variant="default" 
+                                @click=${() => this.cancelRegisterExtension()}>
+                                Cancel
+                            </wa-button>
+                            <wa-button 
+                                variant="primary" 
+                                @click=${() => this.confirmRegisterExtension()}
+                                ?disabled=${!this.registerExtensionData.id || !this.registerExtensionData.name || !this.registerExtensionData.url}>
+                                Register
+                            </wa-button>
+                        </div>
+                    </div>
+                </wa-dialog>
+            `)}
             <wa-split-panel position="30" style="height: 100%">
                 <wa-tree 
                     selection="leaf"

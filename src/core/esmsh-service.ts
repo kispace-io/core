@@ -323,6 +323,79 @@ class EsmShService {
                 return `${parsed.owner}/${parsed.repo}`;
         }
     }
+
+    isGitHubUrl(url: string): boolean {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname === 'github.com' || urlObj.hostname === 'www.github.com';
+        } catch {
+            return url.startsWith('https://github.com/') || url.startsWith('http://github.com/');
+        }
+    }
+
+    convertGitHubUrlToSource(githubUrl: string): string {
+        try {
+            const urlObj = new URL(githubUrl);
+            const pathParts = urlObj.pathname.split('/').filter(p => p);
+            
+            if (pathParts.length < 2) {
+                throw new Error('Invalid GitHub URL format');
+            }
+            
+            const owner = pathParts[0];
+            let repo = pathParts[1].replace(/\.git$/, '');
+            let ref: string | undefined;
+            let filePath: string | undefined;
+            
+            if (pathParts.length > 2) {
+                if (pathParts[2] === 'blob' || pathParts[2] === 'tree') {
+                    ref = pathParts[3] || 'main';
+                    if (pathParts[2] === 'blob' && pathParts.length > 4) {
+                        filePath = pathParts.slice(4).join('/');
+                    }
+                } else if (pathParts[2] === 'commit') {
+                    ref = pathParts[3];
+                } else {
+                    filePath = pathParts.slice(2).join('/');
+                }
+            }
+            
+            let ghUrl = `${EsmShService.GITHUB_PREFIX}${owner}/${repo}`;
+            if (ref) {
+                ghUrl += `@${ref}`;
+            }
+            if (filePath) {
+                ghUrl += `/${filePath}`;
+            }
+            
+            return ghUrl;
+        } catch {
+            const urlMatch = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+            if (urlMatch) {
+                return `${EsmShService.GITHUB_PREFIX}${urlMatch[1]}/${urlMatch[2].replace(/\.git$/, '')}`;
+            }
+            return githubUrl;
+        }
+    }
+
+    async fetchGitHubPackageJson(source: EsmShSource): Promise<any> {
+        if (source.type !== 'github') {
+            throw new Error('Source must be a GitHub source');
+        }
+
+        const owner = source.owner!;
+        const repo = source.repo!;
+        const ref = source.version || 'main';
+        
+        const packageJsonUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/package.json`;
+        
+        const response = await fetch(packageJsonUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch package.json: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
 }
 
 export const esmShService = new EsmShService();
