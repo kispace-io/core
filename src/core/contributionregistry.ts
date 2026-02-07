@@ -15,13 +15,13 @@ export interface Contribution {
     label: string;
     icon?: string;
     slot?: string;
-    disabled?: (() => boolean) | Signal.Computed<boolean>;
 }
 
 export interface CommandContribution extends Contribution {
     command: string;
     params?: Record<string, any>;
     showLabel?: boolean;
+    disabled?: (() => boolean) | Signal.Computed<boolean>;
 }
 
 export interface HTMLContribution extends Contribution {
@@ -55,9 +55,11 @@ class ContributionRegistry {
 
     registerContribution<T extends Contribution>(target: string, contribution: T) {
         const targetSlot = this.getContributions(target)!
-        if (contribution.disabled instanceof Function) {
-            const callback = contribution.disabled as () => boolean
-            contribution.disabled = new Signal.Computed<boolean>(callback)
+        if ("command" in contribution) {
+            const cmd = contribution as unknown as CommandContribution
+            if (cmd.disabled instanceof Function) {
+                cmd.disabled = new Signal.Computed<boolean>(cmd.disabled)
+            }
         }
         targetSlot.push(contribution);
         publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target, contributions: targetSlot } as ContributionChangeEvent)
