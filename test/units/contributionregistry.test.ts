@@ -5,7 +5,7 @@ vi.mock('../../src/core/di', () => ({ rootContext: { put: vi.fn() } }));
 
 import { Signal } from '@lit-labs/signals';
 import { publish } from '../../src/core/events';
-import { contributionRegistry, type Contribution } from '../../src/core/contributionregistry';
+import { contributionRegistry, type Contribution, type CommandContribution } from '../../src/core/contributionregistry';
 
 describe('ContributionRegistry', () => {
   beforeEach(() => {
@@ -29,10 +29,11 @@ describe('ContributionRegistry', () => {
     expect(list[1].label).toBe('Second');
   });
 
-  it('converts disabled function to Signal.Computed', () => {
+  it('converts disabled function to Signal.Computed for CommandContribution', () => {
     const target = 'test-disabled-' + Math.random();
-    const contribution: Contribution = {
+    const contribution: CommandContribution = {
       label: 'With disabled',
+      command: 'test.cmd',
       disabled: () => true,
     };
     contributionRegistry.registerContribution(target, contribution);
@@ -41,11 +42,12 @@ describe('ContributionRegistry', () => {
     expect((contribution.disabled as { get(): boolean }).get()).toBe(true);
   });
 
-  it('leaves existing Signal.Computed disabled unchanged', () => {
+  it('leaves existing Signal.Computed disabled unchanged for CommandContribution', () => {
     const target = 'test-computed-' + Math.random();
     const computed = new Signal.Computed(() => false);
-    const contribution: Contribution = {
+    const contribution: CommandContribution = {
       label: 'Already computed',
+      command: 'test.cmd',
       disabled: computed,
     };
     contributionRegistry.registerContribution(target, contribution);
