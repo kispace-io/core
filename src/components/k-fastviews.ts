@@ -206,10 +206,8 @@ export class KFastViews extends KWidget {
     }
 
     private renderTabContribution(contribution: TabContribution) {
-        const disabled = (contribution.disabled as Signal.Computed<boolean>)?.get()
         return html`
             <wa-dropdown-item 
-                ?disabled=${disabled}
                 @click=${() => this.handleTabClick(contribution)}>
                 <k-icon name="${contribution.icon || ''}" label="${contribution.label}" slot="icon"></k-icon>
                 ${contribution.label}

@@ -5,6 +5,7 @@ import {activeSelectionSignal} from "../../core/appstate";
 import {toastError, toastInfo} from "../../core/toast";
 import JSZip from "jszip";
 import {taskService} from "../../core/taskservice";
+import { CommandContribution } from "@kispace-io/appspace/core/contributionregistry";
 
 registerAll({
     command: {
@@ -121,5 +122,5 @@ registerAll({
             const selectedItem = activeSelectionSignal.get()
             return !selectedItem || !("path" in selectedItem) || !selectedItem.path.toLowerCase().endsWith('.zip')
         }
-    }
+    } as CommandContribution
 })

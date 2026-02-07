@@ -1,5 +1,5 @@
-import { commandRegistry, registerAll } from "../core/commandregistry";
-import { workspaceService } from "../core/filesys";
+import { registerAll } from "../core/commandregistry";
+import { CommandContribution } from "../core/contributionregistry";
 import { TOOLBAR_MAIN_RIGHT } from "../core/constants";
 import { EditorInput, editorRegistry } from "../core/editorregistry";
 import { html } from "lit";
@@ -52,7 +52,7 @@ registerAll({
             const part = activePartSignal.get()
             return !part || !part.isDirty()
         }
-    }
+    } as CommandContribution
 })
 
 registerAll({
