@@ -346,8 +346,6 @@ export class KeyBindingManager {
     }
 }
 
-logger.debug('KeyBindingManager initializing...');
 export const keyBindingManager = new KeyBindingManager();
-logger.debug('KeyBindingManager initialized');
 rootContext.put("keyBindingManager", keyBindingManager);
 

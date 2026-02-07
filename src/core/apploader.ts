@@ -19,6 +19,17 @@ import {extensionRegistry, Extension} from "./extensionregistry";
 import {contributionRegistry, Contribution} from "./contributionregistry";
 import {appSettings} from "./settingsservice";
 
+
+import { packageInfoService } from './packageinfoservice';
+import appspacePackageJson from '../../package.json';
+
+packageInfoService.addPackage({
+    name: appspacePackageJson.name,
+    version: appspacePackageJson.version,
+    dependencies: appspacePackageJson.dependencies,
+    devDependencies: appspacePackageJson.devDependencies
+});
+
 const logger = createLogger('AppLoader');
 
 /**

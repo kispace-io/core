@@ -1,3 +1,5 @@
+import { rootContext } from "./di";
+import { i18nService } from "./i18n";
 import { createLogger } from "./logger";
 
 const logger = createLogger('EsmShService');
@@ -399,3 +401,4 @@ class EsmShService {
 }
 
 export const esmShService = new EsmShService();
+rootContext.put("esmShService", esmShService);

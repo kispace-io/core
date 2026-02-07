@@ -1,31 +1,39 @@
-// Framework Entry Point
-//
-// Main entry point: initializes services, registers components. For API usage, import from './api/index.ts'.
-//
-// Usage:
-//   import './core/index.ts'  // Bootstrap framework
-//   import { appLoaderService, commandRegistry } from './core/api/index.ts'  // Use API
+// 1. Foundation: logging, persistence, settings
+import './logger';
+import './persistenceservice';
+import './settingsservice';
 
-import '../i18n';
+// 2. Registries and task service (contribution first – others depend on it)
+import './contributionregistry';
+import './packageinfoservice';
+import './taskservice';
 
+// 3. i18n and ESM
+import './i18n';
+import './esmsh-service';
+
+// 4. Command and extension registries
+import './commandregistry';
+import './extensionregistry';
+
+// 5. UI and workspace services
 import './keybindings';
+import './dialogservice';
+import './editorregistry';
+import './filesys';
+
+// 6. App loader and marketplace
+import './apploader';
+import './marketplaceregistry';
+
+// 7. Language bundles and dialogs (use contributionRegistry / dialogService)
+import '../i18n';
 import '../dialogs';
-import '../parts/index';
+
+// 8. Parts, components, widgets, extensions, contributions, commands
+import '../parts';
 import '../components';
-import '../widgets/index';
+import '../widgets';
 import '../extensions';
 import '../contributions';
 import '../commands';
-
-import { packageInfoService } from './packageinfoservice';
-import appspacePackageJson from '../../package.json';
-
-packageInfoService.addPackage({
-    name: appspacePackageJson.name,
-    version: appspacePackageJson.version,
-    dependencies: appspacePackageJson.dependencies,
-    devDependencies: appspacePackageJson.devDependencies
-});
-
-export { esmShService } from './esmsh-service';
-export type { EsmShSource, EsmShOptions } from './esmsh-service';

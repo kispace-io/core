@@ -1,4 +1,5 @@
 import { html, TemplateResult } from "lit";
+import { rootContext } from "./di";
 
 export interface PackageInfo {
     name: string;
@@ -52,4 +53,4 @@ class PackageInfoService {
 }
 
 export const packageInfoService = new PackageInfoService();
-
+rootContext.put("packageInfoService", packageInfoService);
