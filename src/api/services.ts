@@ -35,7 +35,7 @@ export {
     toastWarning
 } from '../core/toast';
 export { taskService } from '../core/taskservice';
-export { PyEnv } from '../core/pyservice';
+export { PyEnv } from '../extensions/python-runtime/python-runtime-extension';
 export { publish, subscribe, unsubscribe } from '../core/events';
 export { configureFramework, getFrameworkConfig } from '../core/config';
 export { treeNodeComparator } from '../core/tree-utils';

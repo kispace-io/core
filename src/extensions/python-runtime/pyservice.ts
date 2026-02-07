@@ -1,4 +1,4 @@
-import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, workspaceService} from "./filesys";
+import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, workspaceService} from "../../core/filesys";
 type PipRequirementsModule = typeof import("pip-requirements-js");
 
 let pipRequirementsModulePromise: Promise<PipRequirementsModule> | null = null;
@@ -9,7 +9,7 @@ async function getPipRequirementsModule(): Promise<PipRequirementsModule> {
     }
     return pipRequirementsModulePromise;
 }
-import {publish} from "./events";
+import {publish} from "../../core/events";
 import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker";
 import PyWorker from "./pyworker?worker";
 

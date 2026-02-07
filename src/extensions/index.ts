@@ -21,12 +21,11 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
-    id: "system.pyterminal",
-    name: t('EXT_PYTERMINAL_NAME'),
-    description: t('EXT_PYTERMINAL_DESC'),
-    loader: () => import("./pyterminal/pyterminal-extension"),
+    id: "system.pythonruntime",
+    name: t('EXT_PYTHONRUNTIME_NAME'),
+    description: t('EXT_PYTHONRUNTIME_DESC'),
+    loader: () => import("./python-runtime/python-runtime-extension"),
     icon: "k python",
-    experimental: true,
 })
 
 extensionRegistry.registerExtension({
@@ -53,14 +52,7 @@ extensionRegistry.registerExtension({
     // @ts-ignore
     loader: () => import("./certs/p12-splitter"),
     icon: "certificate",
-})
-
-extensionRegistry.registerExtension({
-    id: "system.pythonpackagemanager",
-    name: t('EXT_PYTHONPACKAGEMANAGER_NAME'),
-    description: t('EXT_PYTHONPACKAGEMANAGER_DESC'),
-    loader: () => import("./python-package-manager/package-manager-extension"),
-    icon: "box",
+    dependencies: ["system.pythonruntime"],
 })
 
 extensionRegistry.registerExtension({
@@ -69,7 +61,7 @@ extensionRegistry.registerExtension({
     description: t('EXT_NOTEBOOK_DESC'),
     loader: () => import("./notebook/notebook-extension"),
     icon: "k jupyter",
-    dependencies: ["system.pythonpackagemanager"],
+    dependencies: ["system.pythonruntime"],
 })
 
 extensionRegistry.registerExtension({
@@ -118,7 +110,7 @@ extensionRegistry.registerExtension({
     description: t('EXT_MONACO_DESC'),
     loader: () => import("./monaco-editor/monaco-editor-extension"),
     icon: "file-pen",
-    dependencies: ["system.pythonpackagemanager"],
+    dependencies: ["system.pythonruntime"],
 })
 
 extensionRegistry.registerExtension({

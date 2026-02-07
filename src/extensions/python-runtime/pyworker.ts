@@ -462,4 +462,3 @@ self.onmessage = async (event: MessageEvent<PyWorkerMessage>) => {
         });
     }
 };
-

@@ -1,7 +1,6 @@
 import { commandRegistry, registerAll } from "../core/commandregistry";
 import { workspaceService } from "../core/filesys";
 import { TOOLBAR_MAIN_RIGHT } from "../core/constants";
-import { PyEnv } from "../core/pyservice";
 import { EditorInput, editorRegistry } from "../core/editorregistry";
 import { html } from "lit";
 import { toastError, toastInfo } from "../core/toast";
@@ -12,34 +11,6 @@ import type { Extension } from "../core/extensionregistry";
 import { marketplaceRegistry } from "../core/marketplaceregistry";
 import "./files";
 import "./version-info";
-
-registerAll({
-    command: {
-        "id": "python",
-        "name": "Run Python Script",
-        "description": "Executes a Python script given its file path",
-        "parameters": [
-            {
-                "name": "script",
-                "description": "the path to a Python script to run",
-                "required": false
-            }
-        ]
-    },
-    handler: {
-        execute: async context => {
-            const script: string = context.params!["script"]
-            if (!script) {
-                return
-            }
-            const pyenv = new PyEnv()
-            const workspace = await workspaceService.getWorkspace()
-            await pyenv.init(workspace!, context)
-            await pyenv.installDependencies()
-            await pyenv.execScript(script)
-        }
-    }
-})
 
 registerAll({
     command: {

@@ -2,7 +2,7 @@ import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
-import { PyEnv } from "../../core/pyservice";
+import { PyEnv } from "./pyservice";
 import { rootContext } from "../../core/di";
 
 export interface PackageManagerOptions {
@@ -305,7 +305,6 @@ class PythonPackageManagerService {
 
 export const pythonPackageManagerService = new PythonPackageManagerService();
 
-export default ({ }: any) => {
+export default (_context: any) => {
     rootContext.put("pythonPackageManagerService", pythonPackageManagerService);
-}
-
+};

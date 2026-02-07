@@ -65,7 +65,7 @@ export interface Extension {
      * 
      * @example
      * ```typescript
-     * dependencies: ["system.pythonpackagemanager", "system.pyterminal"]
+     * dependencies: ["system.pythonruntime"]
      * ```
      */
     dependencies?: string[];
@@ -256,7 +256,7 @@ class ExtensionRegistry {
      * 
      * @example
      * ```typescript
-     * // This will automatically load system.pythonpackagemanager first
+     * // This will automatically load system.pythonruntime first
      * await extensionRegistry.load('system.notebook')
      * ```
      */

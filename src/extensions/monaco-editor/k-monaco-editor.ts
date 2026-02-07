@@ -6,10 +6,10 @@ import {css, html} from "lit";
 import {createRef, ref} from "lit/directives/ref.js";
 import {EditorInput, EditorContentProvider} from "../../core/editorregistry";
 import {styleMap} from "lit/directives/style-map.js";
-import {PyEnv} from "../../core/pyservice";
-import {workspaceService} from "../../core/filesys";
+import { PyEnv } from "../python-runtime/python-runtime-extension";
+import { pythonPackageManagerService } from "../python-runtime/package-manager";
+import { workspaceService } from "../../core/filesys";
 import logger from '../../core/logger';
-import {pythonPackageManagerService} from "../python-package-manager/package-manager-extension";
 
 const workerMap: Record<string, string> = {
     'json': new URL('monaco-editor/esm/vs/language/json/json.worker.js', import.meta.url).href,

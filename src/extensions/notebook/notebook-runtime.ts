@@ -9,9 +9,9 @@ import * as monaco from 'monaco-editor';
 import monacoStyles from "monaco-editor/min/vs/editor/editor.main.css?raw";
 import type { EditorInput } from "../../core/editorregistry";
 import { File, workspaceService } from "../../core/filesys";
-import { PyEnv } from "../../core/pyservice";
+import { PyEnv } from "../python-runtime/python-runtime-extension";
+import { pythonPackageManagerService } from "../python-runtime/package-manager";
 import { KPart } from "../../parts/k-part";
-import { pythonPackageManagerService } from "../python-package-manager/package-manager-extension";
 import type { NotebookCell, NotebookData, NotebookEditorLike } from "./notebook-types";
 
 @customElement('k-notebook-editor')
