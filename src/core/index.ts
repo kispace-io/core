@@ -1,3 +1,16 @@
+// 0. Context seed (lit, constants, toast) – di only provides empty contexts
+import { rootContext, uiContext } from './di';
+import { html, render } from 'lit';
+import * as constants from './constants';
+import { toastInfo, toastError, toastWarning } from './toast';
+
+rootContext.put('constants', constants);
+uiContext.put('html', html);
+uiContext.put('render', render);
+uiContext.put('toastInfo', toastInfo);
+uiContext.put('toastError', toastError);
+uiContext.put('toastWarning', toastWarning);
+
 // 1. Foundation: logging, persistence, settings
 import './logger';
 import './persistenceservice';

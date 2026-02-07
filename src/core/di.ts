@@ -1,6 +1,3 @@
-import {html, render} from "lit";
-import * as constants from "./constants";
-
 export class DependencyContext {
     private variables: any;
     private proxy: any;
@@ -53,10 +50,5 @@ export class DependencyContext {
     }
 }
 
-export const rootContext = new DependencyContext({})
-export const uiContext = rootContext.createChild({})
-
-uiContext.put("html", html)
-uiContext.put("render", render)
-
-rootContext.put("constants", constants)
+export const rootContext = new DependencyContext({});
+export const uiContext = rootContext.createChild({});
