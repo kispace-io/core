@@ -1,470 +1,133 @@
-# @kispace-io/appspace
+# Appspace
 
-A highly modular and extensible web application framework for building IDE-like applications with a plugin architecture, AI integration, and comprehensive workspace management.
+A modular web framework for building IDE-like applications with a plugin architecture, AI integration, and workspace management.
 
-## Monorepo structure
+**Live example:** [https://app.kispace.de](https://app.kispace.de) — deployed app built on Appspace.
 
-This repository is a monorepo (npm workspaces):
-
-- **`packages/core`** (`@kispace-io/core`) – Platform: registries, services, parts, widgets, dialogs, API. No extensions; extensions are separate packages.
-- **`packages/extension-*`** – One package per extension (e.g. `extension-command-palette`, `extension-ai-system`). Each depends on `@kispace-io/core` and optionally other extension packages.
-- **Root** – Workspace root. Run `npm run dev` to start the default app (in `packages/app`), `npm run build:app` to build it, `npm run build` to build the core library, `npm run test` to run core tests.
-
-## Overview
-
-Appspace is a framework that provides a complete foundation for building modern web applications with:
-
-- **Modular Architecture**: Extensible through a plugin system
-- **Application Loader**: Dynamic app loading and lifecycle management
-- **Contribution System**: Declarative UI and feature contributions
-- **Command System**: Context-aware command execution
-- **AI Integration**: Built-in AI system with agent support and tool execution
-- **Workspace Management**: File system access and workspace handling
-- **Extension Marketplace**: Install and manage extensions dynamically
+---
 
 ## Architecture
 
-### High-Level Architecture
+### Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                         │
-│  (Apps built on the framework: geospace, custom apps)      │
+│  Applications (packages/app, or custom apps)                 │
+│  – AppDefinition: id, extensions, contributions, render     │
 └─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
+                              │
+                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    App Loader Service                         │
-│  - App registration and lifecycle                            │
-│  - Extension management                                      │
-│  - Contribution registration                                 │
+│  App Loader (core)                                          │
+│  – App registration & lifecycle  – Extension enable/disable │
+│  – Contribution registration     – Render app root         │
 └─────────────────────────────────────────────────────────────┘
-                            │
-        ┌───────────────────┼───────────────────┐
-        ▼                   ▼                   ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ Extensions   │  │ Contributions│  │  Commands    │
-│  Registry    │  │   Registry   │  │   Registry   │
-└──────────────┘  └──────────────┘  └──────────────┘
-        │                   │                   │
-        └───────────────────┼───────────────────┘
-                            ▼
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌───────────────┐   ┌─────────────────┐   ┌───────────────┐
+│  Extensions   │   │  Contributions   │   │   Commands    │
+│  Registry     │   │  Registry       │   │   Registry    │
+│  (per-app)    │   │  (tabs, toolbars)│   │   (handlers)  │
+└───────────────┘   └─────────────────┘   └───────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Core Services Layer                        │
-│  - Workspace Service    - Editor Registry                    │
-│  - Settings Service     - Task Service                       │
-│  - Event System         - Dependency Injection               │
-│  - Logger              - Python Service                      │
+│  Core services                                               │
+│  Workspace · Settings · Editor registry · Tasks · Events · DI│
 └─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
+                              │
+                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    UI Component Layer                         │
-│  - Parts (k-part, k-container, k-tabs, k-toolbar)           │
-│  - Components (k-filebrowser, k-extensions, etc.)          │
-│  - Widgets (k-widget, k-icon, etc.)                         │
-│  - Standard App Layout (k-standard-app)                     │
+│  UI (core)                                                   │
+│  k-standard-app · k-tabs · k-toolbar · k-filebrowser · …    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Core Concepts
+### Monorepo layout
 
-#### 1. Applications
+| Path | Role |
+|------|------|
+| **`packages/core`** (`@kispace-io/core`) | Platform: registries, services, parts, widgets, dialogs, default UI contributions. No extension logic; extensions are separate packages. |
+| **`packages/extension-*`** | One package per extension (e.g. `extension-ai-system`, `extension-settings-tree`, `extension-monaco-editor`). Each depends on core and registers commands/contributions/editors. |
+| **`packages/app`** | Default app: imports core + extensions, defines `AppDefinition` and `extensions[]`, registers with app loader. Use as template for your own app. |
+| **Root** | Workspace root. Scripts: `dev`, `build`, `build:app`, `test`. |
 
-Applications are self-contained units that define their UI, extensions, and contributions. They implement the `AppDefinition` interface:
+### Main concepts
 
-```typescript
-interface AppDefinition {
-    id: string;
-    name: string;
-    version: string;
-    description?: string;
-    extensions?: string[];           // Required framework extensions
-    contributions?: AppContributions; // UI and feature contributions
-    initialize?: () => void | Promise<void>;
-    render?: () => TemplateResult;   // Custom root component
-    dispose?: () => void | Promise<void>;
-}
-```
+- **Apps** — Implement `AppDefinition`: `id`, `name`, `version`, `extensions[]`, optional `contributions`, `render` (string tag, `{ tag, attributes }`, or Lit template), `initialize` / `dispose`.
+- **Extensions** — Register with `extensionRegistry`; provide a loader that runs when the extension is enabled. Register commands, contributions, editors, services.
+- **Contributions** — Declarative UI: tabs (sidebars, editor area), toolbar buttons, HTML blocks. Targets include `SIDEBAR_MAIN`, `SIDEBAR_AUXILIARY`, `TOOLBAR_MAIN_RIGHT`, `TOOLBAR_BOTTOM_END`, etc.
+- **Commands** — Id + handlers (with optional `canExecute`). Toolbar/menus reference commands; AI and command palette can execute them.
 
-**Key Features:**
-- Apps can be loaded dynamically from URLs
-- Automatic extension lifecycle management
-- Declarative contribution registration
-- Custom initialization and cleanup
+---
 
-#### 2. Extensions
+## How to get started
 
-Extensions are modular plugins that add functionality to the framework. They can:
-- Register commands, contributions, and services
-- Add UI components and tabs
-- Integrate with the AI system
-- Provide new capabilities
+### Prerequisites
 
-**Extension Structure:**
-```typescript
-interface Extension {
-    id: string;
-    name: string;
-    description?: string;
-    loader?: () => any;        // Dynamic import function
-    url?: string;              // URL to load from
-    dependencies?: string[];   // Other extensions required
-    experimental?: boolean;
-    version?: string;
-}
-```
+- Node.js 18+
+- npm or pnpm
 
-**Built-in Extensions:**
-- `ai-system`: AI chat interface, agents, and LLM integration
-- `rag-system`: Document indexing and semantic search
-- `monaco-editor`: Code editor with syntax highlighting
-- `notebook`: Interactive notebook support
-- `pyterminal`: Python terminal integration
-- `git`: Git integration
-- `webdav`: WebDAV file system support
-- And more...
-
-#### 3. Contributions
-
-Contributions are declarative registrations that add UI elements or features to specific targets:
-
-**Contribution Types:**
-- **Tab Contributions**: Add tabs to sidebars or editor areas
-- **Command Contributions**: Add buttons/menu items that execute commands
-- **Toolbar Contributions**: Add items to toolbars
-- **Pane Contributions**: Add resizable panes
-- **HTML Contributions**: Add custom HTML content
-
-**Contribution Targets:**
-- `SIDEBAR_MAIN`: Main left sidebar
-- `SIDEBAR_AUXILIARY`: Right auxiliary sidebar
-- `EDITOR_AREA_MAIN`: Main editor area
-- `PANEL_BOTTOM`: Bottom panel
-- `TOOLBAR_MAIN`: Main toolbar
-- And more...
-
-#### 4. Commands
-
-Commands are context-aware actions that can be executed by users or AI agents:
-
-```typescript
-interface Command {
-    id: string;
-    name: string;
-    description: string;
-    parameters?: Parameter[];
-    output?: Variable[];
-    keyBinding?: string;
-    icon?: string;
-}
-```
-
-**Command Execution:**
-- Commands can have multiple handlers with different priorities
-- Handlers can check context (`canExecute`) before execution
-- Commands are automatically exposed as AI tools
-- Context-aware: different commands available based on active editor, selection, etc.
-
-#### 5. Parts and Components
-
-**Parts** (`KPart`): Base class for tabbed UI components
-- Automatic dirty state management
-- Toolbar integration
-- Command stack support
-- Lifecycle management
-
-**Components** (`KElement`, `KContainer`): Base UI elements
-- Built on Lit web components
-- Reactive state with signals
-- WebAwesome UI components
-
-**Standard App Layout** (`KStandardApp`): Default application layout
-- Three-column layout (sidebar, editor, auxiliary sidebar)
-- Resizable panels
-- Toolbar support
-- Configurable bottom panels
-
-## Core Services
-
-### Workspace Service
-- File system access via File System Access API
-- Workspace persistence
-- File watching and change detection
-- Directory operations
-
-### Settings Service
-- Persistent application settings
-- Settings tree UI
-- Settings change events
-
-### Editor Registry
-- File type to editor mapping
-- Editor lifecycle management
-- Multiple editor instances
-- Editor state management
-
-### Task Service
-- Background task execution
-- Progress monitoring
-- Task cancellation
-- UI integration
-
-### Event System
-- Pub/sub event bus
-- Type-safe events
-- Framework-wide communication
-
-### Dependency Injection
-- Service registration and lookup
-- Context-based injection
-- Root and scoped contexts
-
-### AI Service
-- Multi-provider LLM support (OpenAI, Anthropic, WebLLM, etc.)
-- Agent system with custom prompts
-- Tool execution for commands
-- Streaming responses
-- Workflow engine for complex operations
-
-### RAG System (Extension)
-- Document indexing and storage
-- Vector embeddings (Xenova transformers)
-- Semantic search
-- AI integration for document retrieval
-
-## Extension System
-
-### Extension Lifecycle
-
-1. **Registration**: Extensions are registered with metadata
-2. **Loading**: Extensions are loaded on-demand or at startup
-3. **Dependency Resolution**: Dependencies are automatically loaded
-4. **Execution**: Extension module's default export function is called
-5. **Enablement**: Extensions can be enabled/disabled dynamically
-
-### Creating Extensions
-
-```typescript
-// my-extension.ts
-export default function(uiContext: UIContext) {
-    // Register commands
-    commandRegistry.registerCommand(new Command(
-        'my.command',
-        'My Command',
-        'Does something useful'
-    ));
-    
-    // Register command handler
-    commandRegistry.registerHandler('my.command', {
-        execute: (context) => {
-            // Execute command
-        }
-    });
-    
-    // Register contributions
-    contributionRegistry.registerContribution(SIDEBAR_MAIN, {
-        name: 'my-tab',
-        label: 'My Tab',
-        icon: 'puzzle-piece',
-        component: (id) => html`<my-component id="${id}"></my-component>`
-    });
-}
-```
-
-### Extension Marketplace
-
-- Browse and install extensions from remote catalogs
-- External extension management
-- Extension versioning
-- Dependency resolution
-
-## API Structure
-
-The framework exposes a clean public API:
-
-```typescript
-// Main API entry point (from core package)
-import {
-    appLoaderService,
-    commandRegistry,
-    contributionRegistry,
-    extensionRegistry,
-    workspaceService,
-    editorRegistry,
-    createLogger,
-} from '@kispace-io/core';
-
-// Base classes
-import { KPart, KContainer, KStandardApp } from '@kispace-io/core';
-
-// Extensions (when using extension packages)
-import { /* AI system exports */ } from '@kispace-io/extension-ai-system';
-import { /* RAG system exports */ } from '@kispace-io/extension-rag-system';
-```
-
-## Usage Example
-
-### Creating a Simple App
-
-```typescript
-import { appLoaderService, AppDefinition, SIDEBAR_MAIN } from '@kispace-io/core';
-import { html } from 'lit';
-
-const myApp: AppDefinition = {
-    id: 'my-app',
-    name: 'My Application',
-    version: '1.0.0',
-    extensions: ['system.monaco-editor', 'system.ai-system'],
-    contributions: {
-        ui: [
-            {
-                target: SIDEBAR_MAIN,
-                name: 'my-tab',
-                label: 'My Tab',
-                icon: 'folder',
-                component: (id) => html`<my-component id="${id}"></my-component>`
-            }
-        ]
-    },
-    initialize: async () => {
-        // Custom initialization
-    }
-};
-
-appLoaderService.registerApp(myApp, { autoStart: true });
-```
-
-## Technology Stack
-
-- **Lit**: Web components framework
-- **TypeScript**: Type safety
-- **WebAwesome**: UI component library
-- **Monaco Editor**: Code editing
-- **RxDB**: Client-side database (for extensions like RAG)
-- **Pyodide**: Python runtime in the browser
-- **WebLLM**: Local LLM execution
-- **Xenova Transformers**: ML models in the browser
-
-## Package exports
-
-The **core** package (`@kispace-io/core`) provides:
-
-- `.` – Main API
-- `./api` – Public API services
-- `./widgets` – Widget components
-- `./parts` – Part components
-- `./core/events` – Event system
-- `./externals/*` – Re-exports (lit, webawesome, third-party)
-
-Extensions are published as separate packages (e.g. `@kispace-io/extension-ai-system`) and register with the core extension registry at runtime.
-
-## License
-
-EPL-2.0
-
-## Repository
-
-https://github.com/kispace-io/appspace
-
-## Publishing
-
-The **core** package (`@kispace-io/core`) is published to npm when a tagged release is created on GitHub. The root repo is not published; extension packages can be published separately if needed.
-
-### Release Process
-
-#### Using the Release Script (Recommended)
-
-The easiest way to create a release is using the provided script:
+### Run the default app
 
 ```bash
-# Patch release (1.2.3 -> 1.2.4)
-./scripts/trigger-release.sh patch
-
-# Minor release (1.2.3 -> 1.3.0)
-./scripts/trigger-release.sh minor
-
-# Major release (1.2.3 -> 2.0.0)
-./scripts/trigger-release.sh major
-
-# Dry run to preview what would happen
-./scripts/trigger-release.sh --dry-run patch
+git clone https://github.com/kispace-io/appspace.git
+cd appspace
+npm install
+npm run dev
 ```
 
-The script will:
-1. Calculate the next version based on the latest tag
-2. Show changes since the last release
-3. Optionally generate an AI summary (if `OPENAI_API_KEY` is set in `.env`)
-4. Create an annotated tag with release notes
-5. Push the tag to trigger the CI workflow
+This builds core, then starts the default app (Vite dev server). Open the URL shown in the terminal (e.g. `http://localhost:5173`).
 
-#### Manual Release
-
-You can also create a tag manually:
+### Build for production
 
 ```bash
-# Create and push a tag
-git tag -a v1.2.3 -m "Release: v1.2.3" -m "Release notes here"
-git push origin v1.2.3
+npm run build        # build core only
+npm run build:app    # build the default app (depends on core)
 ```
 
-#### What Happens Next
+### Create your own app
 
-The GitHub Actions workflow will automatically:
-- Extract the version from the tag (e.g., `v1.2.3` → `1.2.3`)
-- Update `package.json` with the tag version (CI only, not committed)
-- Build the package
-- Publish to npm
+1. Use **`packages/app`** as a template: copy it or add a new workspace package.
+2. In your app entry (e.g. `main.ts`):
+   - Call `applyAppHostConfig({ packageInfo, marketplaceCatalogUrls })` if you use marketplace.
+   - Import the extensions you need (`@kispace-io/extension-*`).
+   - Call `appLoaderService.registerApp(appDefinition, { autoStart: true })`.
+3. **App definition** — Minimal example (no Lit in app):
 
-**Note**: The version in `package.json` should remain at `0.0.0` in the repository. The CI workflow will update it automatically from the tag during the publish process.
+```ts
+import { appLoaderService, type RenderDescriptor } from '@kispace-io/core';
 
-### Manual Publishing
-
-If you need to publish manually:
-
-```bash
-npm run build
-npm publish
+appLoaderService.registerApp({
+  id: 'my-app',
+  name: 'My App',
+  version: '1.0.0',
+  extensions: ['system.commandpalette', 'system.settings-tree', 'system.ai-system'],
+  render: { tag: 'k-standard-app', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
+}, { autoStart: true });
 ```
 
-**Note**: You must be logged in to npm and have publish access to the `@kispace-io` organization.
+4. Add the app package to the root `package.json` workspaces and run `npm run dev` from the app package or via root scripts.
 
-### Trusted Publishing Setup
+---
 
-This repository uses npm's trusted publishing (OIDC) for automated releases. No `NPM_TOKEN` secret is required.
+## Technology stack
 
-**Prerequisites:**
-- The package must exist in the npm registry (publish manually first if needed)
-- The GitHub repository must be **public** (required for provenance)
-- You must have publish access to the `@kispace-io` organization on npm
+- **Lit** — Web components (core and extensions)
+- **TypeScript** — Typed API
+- **WebAwesome** — UI primitives
+- **Monaco** — Code editor (extension)
+- **Vite** — Build and dev server
 
-**Setup Steps:**
+Other extensions add: Pyodide, WebLLM, RxDB, Xenova transformers, etc.
 
-1. Go to npm organization settings: https://www.npmjs.com/org/kispace-io/settings
-2. Navigate to "Automation" → "Trusted Publishing"
-3. Click "Add GitHub Actions" or "Configure"
-4. Configure the trusted publisher with **exact** values:
-   - **Repository Owner**: `kispace-io` (must match GitHub organization)
-   - **Repository Name**: `appspace` (must match exactly)
-   - **Workflow Filename**: `.github/workflows/publish.yml` (must include the `.yml` extension)
-   - **Environment**: (leave empty for default, or specify if using GitHub environments)
-5. Save the configuration
+---
 
-**Critical Requirements:**
-- Repository must be **public** (private repos don't support provenance)
-- All values must match **exactly** (case-sensitive, including `.yml` extension)
-- The repository must be in the `kispace-io` GitHub organization
-- The workflow file must exist at `.github/workflows/publish.yml`
+## Repository and license
 
-**Troubleshooting 404 Errors:**
+- **Repository:** [github.com/kispace-io/appspace](https://github.com/kispace-io/appspace)
+- **License:** EPL-2.0
 
-If you see a "404 Not Found" or "401 Unauthorized" error:
-1. **Verify trusted publishing is configured**: https://www.npmjs.com/org/kispace-io/settings → Automation → Trusted Publishing
-2. **Check exact match**: Repository must be exactly `kispace-io/appspace` (not `erdalkaraca/appspace`)
-3. **Verify workflow path**: Must be exactly `.github/workflows/publish.yml` (with `.yml` extension)
-4. **Check repository visibility**: Must be **public** (not private)
-5. **Verify permissions**: Ensure `id-token: write` is in workflow permissions (already configured)
-6. **Test manually**: Try `npm publish --access public` locally to verify npm access
-
-Once configured correctly, the GitHub Actions workflow will automatically authenticate using OIDC when publishing.
-
+Publishing of `@kispace-io/core` is done via GitHub Actions on version tags; see workflow and npm trusted publishing in the repo.
