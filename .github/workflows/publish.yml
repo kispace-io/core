@@ -22,12 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@kispace-io'
-      
-      - name: Update npm
-        run: npm install -g npm@latest
-        
+          cache: 'npm'
+
       - name: Install dependencies
         run: npm ci
       
@@ -40,10 +36,12 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION from release tag: $TAG"
       
-      - name: Update core package version (CI only, not committed)
+      - name: Update package versions (CI only, not committed)
         run: |
-          cd packages/core && npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
-          echo "Updated packages/core version to ${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          for pkg in packages/core packages/extension-*; do
+            [ -d "$pkg" ] && (cd "$pkg" && npm version "$VERSION" --no-git-tag-version) && echo "Updated $pkg to $VERSION"
+          done
       
       - name: Build core package
         run: npm run build
@@ -51,7 +49,7 @@ jobs:
       - name: Run type check
         run: npm run type-check
         continue-on-error: true
-      
-      - name: Publish core to npm
-        run: npm publish --access public --workspace=@kispace-io/core
+
+      - name: Publish packages to npm
+        run: npm publish --access public --provenance --workspaces
 
