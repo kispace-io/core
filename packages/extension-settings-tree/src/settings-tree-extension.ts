@@ -5,7 +5,7 @@ import { KPart } from "@kispace-io/core";
 import { EditorInput, editorRegistry } from "@kispace-io/core";
 import { appSettings, TOPIC_SETTINGS_CHANGED } from "@kispace-io/core";
 import { subscribe } from "@kispace-io/core";
-import { commandRegistry } from "@kispace-io/core";
+import { commandRegistry, contributionRegistry, TOOLBAR_MAIN_RIGHT } from "@kispace-io/core";
 import { promptDialog, confirmDialog } from "@kispace-io/core";
 
 interface TreeNode {
@@ -784,6 +784,12 @@ export default (uiContext: any) => {
             } as EditorInput
             editorRegistry.loadEditor(editorInput).then()
         }
-    })
+    });
+
+    contributionRegistry.registerContribution(TOOLBAR_MAIN_RIGHT, {
+        command: "open_settings",
+        icon: "gear",
+        label: "Settings",
+    });
 };
 

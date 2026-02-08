@@ -3,6 +3,7 @@
     "en": {
         "APP_SUPPORT": "App Support",
         "APP_SUPPORT_DESC": "General app support",
+        "SIDEBAR_LABEL": "AI",
         "TOKEN_USAGE": "Token Usage",
         "OPEN_AI_CONFIG": "Open AI Config",
         "OPEN_AI_CONFIG_DESC": "Opens the AI settings editor",
@@ -77,6 +78,7 @@
     "de": {
         "APP_SUPPORT": "App-Unterstützung",
         "APP_SUPPORT_DESC": "Allgemeine App-Unterstützung",
+        "SIDEBAR_LABEL": "KI",
         "TOKEN_USAGE": "Token-Verbrauch",
         "OPEN_AI_CONFIG": "KI-Konfiguration öffnen",
         "OPEN_AI_CONFIG_DESC": "Öffnet den KI-Einstellungseditor",

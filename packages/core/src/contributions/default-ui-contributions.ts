@@ -2,7 +2,6 @@ import { html } from "lit";
 import { contributionRegistry } from "../core/contributionregistry";
 import {
     SIDEBAR_MAIN,
-    SIDEBAR_AUXILIARY,
     TOOLBAR_BOTTOM,
     TOOLBAR_BOTTOM_END,
     TOOLBAR_MAIN_RIGHT
@@ -13,13 +12,6 @@ contributionRegistry.registerContribution(SIDEBAR_MAIN, {
     label: "Workspace",
     icon: "folder-open",
     component: (id: string) => html`<k-filebrowser id="${id}"></k-filebrowser>`
-});
-
-contributionRegistry.registerContribution(SIDEBAR_AUXILIARY, {
-    name: "aiview",
-    label: "AI",
-    icon: "robot",
-    component: (id: string) => html`<k-aiview id="${id}"></k-aiview>`
 });
 
 contributionRegistry.registerContribution("system.fastviews-bottomend", {

@@ -4,7 +4,7 @@ import { aiService } from "./service/ai-service";
 import { contributionRegistry, HTMLContribution } from "@kispace-io/core";
 import { editorRegistry, EditorInput } from "@kispace-io/core";
 import { registerAll } from "@kispace-io/core";
-import { TOOLBAR_BOTTOM, TOOLBAR_MAIN_RIGHT } from "@kispace-io/core";
+import { TOOLBAR_BOTTOM, TOOLBAR_MAIN_RIGHT, SIDEBAR_AUXILIARY } from "@kispace-io/core";
 import { CID_AGENTS, KEY_AI_CONFIG } from "./core/constants";
 import type { AgentContribution, AgentToolsConfig } from "./core/interfaces";
 import type { AIConfig } from "./core/types";
@@ -24,6 +24,12 @@ import { t } from "./translation";
 // Register language bundle as early as possible to avoid race conditions
 contributionRegistry.registerContribution(SYSTEM_LANGUAGE_BUNDLES, aisystemBundle as any);
 
+contributionRegistry.registerContribution(SIDEBAR_AUXILIARY, {
+    name: "aiview",
+    label: t('SIDEBAR_LABEL'),
+    icon: "robot",
+    component: (id: string) => html`<k-aiview id="${id}"></k-aiview>`
+});
 
 // Register default App Support agent with general assistant prompt
 // Apps can enhance this prompt using prompt enhancers
