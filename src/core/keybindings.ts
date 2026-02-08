@@ -265,36 +265,14 @@ export class KeyBindingManager {
             return;
         }
 
-        // Don't intercept if user is typing in an input field
-        const target = event.target as HTMLElement;
-        if (target && (
-            target.tagName === 'INPUT' ||
-            target.tagName === 'TEXTAREA' ||
-            target.isContentEditable
-        )) {
-            // Allow certain global shortcuts even in input fields
-            const key = event.key.toUpperCase();
-            const isGlobalShortcut = (
-                (event.ctrlKey || event.metaKey) && 
-                event.shiftKey && 
-                key === 'P'
-            );
-            
-            if (!isGlobalShortcut) {
-                return;
-            }
-        }
-
-        // Create binding from event
         const eventBinding: KeyBinding = {
-            commandId: '', // Will be filled later
+            commandId: '',
             key: this.normalizeKey(event.key.toUpperCase()),
             ctrl: event.ctrlKey,
             alt: event.altKey,
             shift: event.shiftKey,
             meta: event.metaKey
         };
-
         const bindingKey = this.getBindingKey(eventBinding);
         const bindings = this.bindings.get(bindingKey);
 
