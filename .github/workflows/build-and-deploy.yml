@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build core package
+        run: npm run build -w @kispace-io/core
+
       - name: Set package.json version from tag
         run: |
           VERSION=${GITHUB_REF_NAME}

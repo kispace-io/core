@@ -18,7 +18,7 @@
     "scripts": {
         "dev": "npm run build -w @kispace-io/core && npm run dev -w @kispace-io/app",
         "build": "npm run build -w @kispace-io/core",
-        "build:app": "npm run build -w @kispace-io/app",
+        "build:app": "npm run build -w @kispace-io/core && npm run build -w @kispace-io/app",
         "type-check": "npm run type-check -w @kispace-io/core",
         "test": "npm run test -w @kispace-io/core"
     },
