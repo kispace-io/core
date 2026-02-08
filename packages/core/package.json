@@ -1,0 +1,78 @@
+{
+  "name": "@kispace-io/core",
+  "version": "0.0.0",
+  "description": "Appspace platform core: registries, services, parts, widgets, and API",
+  "type": "module",
+  "license": "EPL-2.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./api": {
+      "types": "./dist/api/index.d.ts",
+      "import": "./dist/api/index.js"
+    },
+    "./widgets": {
+      "types": "./dist/widgets/index.d.ts",
+      "import": "./dist/widgets/index.js"
+    },
+    "./widgets/*": {
+      "types": "./dist/widgets/*.d.ts",
+      "import": "./dist/widgets/*.js"
+    },
+    "./parts": {
+      "types": "./dist/parts/index.d.ts",
+      "import": "./dist/parts/index.js"
+    },
+    "./parts/*": {
+      "types": "./dist/parts/*.d.ts",
+      "import": "./dist/parts/*.js"
+    },
+    "./externals/webawesome": {
+      "types": "./dist/externals/webawesome.d.ts",
+      "import": "./dist/externals/webawesome.js"
+    },
+    "./externals/lit": {
+      "types": "./dist/externals/lit.d.ts",
+      "import": "./dist/externals/lit.js"
+    },
+    "./externals/third-party": {
+      "types": "./dist/externals/third-party.d.ts",
+      "import": "./dist/externals/third-party.js"
+    },
+    "./core/events": {
+      "types": "./dist/core/events.d.ts",
+      "import": "./dist/core/events.js"
+    }
+  },
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "vite build",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@awesome.me/webawesome": "^3.0.0",
+    "@fortawesome/fontawesome-free": "^7.1.0",
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@lit-labs/signals": "^0.1.3",
+    "idb-keyval": "^6.2.2",
+    "lit": "^3.2.1",
+    "marked": "^12.0.0 || ^16.4.1",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.18"
+  }
+}

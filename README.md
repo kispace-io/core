@@ -2,6 +2,14 @@
 
 A highly modular and extensible web application framework for building IDE-like applications with a plugin architecture, AI integration, and comprehensive workspace management.
 
+## Monorepo structure
+
+This repository is a monorepo (npm workspaces):
+
+- **`packages/core`** (`@kispace-io/core`) – Platform: registries, services, parts, widgets, dialogs, API. No extensions; extensions are separate packages.
+- **`packages/extension-*`** – One package per extension (e.g. `extension-command-palette`, `extension-ai-system`). Each depends on `@kispace-io/core` and optionally other extension packages.
+- **Root** – Workspace root. Run `npm run dev` to start the default app (in `packages/app`), `npm run build:app` to build it, `npm run build` to build the core library, `npm run test` to run core tests.
+
 ## Overview
 
 Appspace is a framework that provides a complete foundation for building modern web applications with:
@@ -276,24 +284,23 @@ export default function(uiContext: UIContext) {
 The framework exposes a clean public API:
 
 ```typescript
-// Main API entry point
+// Main API entry point (from core package)
 import {
-    appLoaderService,      // App lifecycle management
-    commandRegistry,        // Command system
-    contributionRegistry,  // Contribution system
-    extensionRegistry,      // Extension system
-    workspaceService,       // File system access
-    editorRegistry,         // Editor management
-    createLogger,          // Logging
-    // ... and more
-} from '@kispace-io/appspace';
+    appLoaderService,
+    commandRegistry,
+    contributionRegistry,
+    extensionRegistry,
+    workspaceService,
+    editorRegistry,
+    createLogger,
+} from '@kispace-io/core';
 
 // Base classes
-import { KPart, KContainer, KStandardApp } from '@kispace-io/appspace';
+import { KPart, KContainer, KStandardApp } from '@kispace-io/core';
 
-// Extensions
-import { /* AI system exports */ } from '@kispace-io/appspace/extensions/ai-system';
-import { /* RAG system exports */ } from '@kispace-io/appspace/extensions/rag-system';
+// Extensions (when using extension packages)
+import { /* AI system exports */ } from '@kispace-io/extension-ai-system';
+import { /* RAG system exports */ } from '@kispace-io/extension-rag-system';
 ```
 
 ## Usage Example
@@ -301,7 +308,7 @@ import { /* RAG system exports */ } from '@kispace-io/appspace/extensions/rag-sy
 ### Creating a Simple App
 
 ```typescript
-import { appLoaderService, AppDefinition, SIDEBAR_MAIN } from '@kispace-io/appspace';
+import { appLoaderService, AppDefinition, SIDEBAR_MAIN } from '@kispace-io/core';
 import { html } from 'lit';
 
 const myApp: AppDefinition = {
@@ -339,16 +346,18 @@ appLoaderService.registerApp(myApp, { autoStart: true });
 - **WebLLM**: Local LLM execution
 - **Xenova Transformers**: ML models in the browser
 
-## Package Exports
+## Package exports
 
-The package provides multiple entry points:
+The **core** package (`@kispace-io/core`) provides:
 
-- `.` - Main API
-- `./api` - Public API services
-- `./extensions/ai-system` - AI system extension
-- `./extensions/rag-system` - RAG system extension
-- `./widgets` - Widget components
-- `./parts` - Part components
+- `.` – Main API
+- `./api` – Public API services
+- `./widgets` – Widget components
+- `./parts` – Part components
+- `./core/events` – Event system
+- `./externals/*` – Re-exports (lit, webawesome, third-party)
+
+Extensions are published as separate packages (e.g. `@kispace-io/extension-ai-system`) and register with the core extension registry at runtime.
 
 ## License
 
@@ -360,7 +369,7 @@ https://github.com/kispace-io/appspace
 
 ## Publishing
 
-This package is automatically published to npm when a tagged release is created on GitHub.
+The **core** package (`@kispace-io/core`) is published to npm when a tagged release is created on GitHub. The root repo is not published; extension packages can be published separately if needed.
 
 ### Release Process
 

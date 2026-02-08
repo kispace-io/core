@@ -1,0 +1,11 @@
+{
+  "namespace": "extensions",
+  "en": {
+    "EXT_NOTEBOOK_NAME": "Jupyter-like Notebook Editor",
+    "EXT_NOTEBOOK_DESC": "View and execute Jupyter-like notebooks (.ipynb) with Python code execution and markdown rendering"
+  },
+  "de": {
+    "EXT_NOTEBOOK_NAME": "Jupyter-ähnlicher Notebook-Editor",
+    "EXT_NOTEBOOK_DESC": "Anzeigen und Ausführen von Jupyter-ähnlichen Notebooks (.ipynb) mit Python-Codeausführung und Markdown-Rendering"
+  }
+}

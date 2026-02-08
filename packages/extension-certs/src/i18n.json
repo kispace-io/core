@@ -1,0 +1,11 @@
+{
+  "namespace": "extensions",
+  "en": {
+    "EXT_P12SPLITTER_NAME": ".p12 file splitter",
+    "EXT_P12SPLITTER_DESC": "Adds a command to split/separate a .p12 file into private/public and additional .pem files"
+  },
+  "de": {
+    "EXT_P12SPLITTER_NAME": ".p12-Datei-Splitter",
+    "EXT_P12SPLITTER_DESC": "Fügt einen Befehl hinzu, um eine .p12-Datei in private/öffentliche und zusätzliche .pem-Dateien zu trennen"
+  }
+}

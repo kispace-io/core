@@ -28,9 +28,12 @@ jobs:
       - name: Run tests
         run: npm run test
       
-      - name: Build package
+      - name: Build core package
         run: npm run build
-      
+
+      - name: Build app
+        run: npm run build:app
+
       - name: Run type check
         run: npm run type-check
 

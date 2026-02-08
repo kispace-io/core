@@ -1,0 +1,11 @@
+{
+  "namespace": "extensions",
+  "en": {
+    "EXT_DOWNLOAD_NAME": "Download Files",
+    "EXT_DOWNLOAD_DESC": "Download files from URLs to the workspace"
+  },
+  "de": {
+    "EXT_DOWNLOAD_NAME": "Dateien herunterladen",
+    "EXT_DOWNLOAD_DESC": "Dateien von URLs in den Arbeitsbereich herunterladen"
+  }
+}

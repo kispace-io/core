@@ -40,18 +40,18 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION from release tag: $TAG"
       
-      - name: Update package.json version (CI only, not committed)
+      - name: Update core package version (CI only, not committed)
         run: |
-          npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
-          echo "Updated package.json version to ${{ steps.version.outputs.version }} (CI only, will not be committed)"
+          cd packages/core && npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+          echo "Updated packages/core version to ${{ steps.version.outputs.version }}"
       
-      - name: Build package
+      - name: Build core package
         run: npm run build
       
       - name: Run type check
         run: npm run type-check
         continue-on-error: true
       
-      - name: Publish to npm
-        run: npm publish --access public
+      - name: Publish core to npm
+        run: npm publish --access public --workspace=@kispace-io/core
 

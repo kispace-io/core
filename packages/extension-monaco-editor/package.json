@@ -1,0 +1,21 @@
+{
+  "name": "@kispace-io/extension-monaco-editor",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@kispace-io/core": "*",
+    "@kispace-io/extension-python-runtime": "*",
+    "@kispace-io/extension-ai-system": "*",
+    "monaco-editor": "0.55.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

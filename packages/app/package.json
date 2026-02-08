@@ -1,0 +1,45 @@
+{
+  "name": "@kispace-io/app",
+  "version": "0.0.0",
+  "description": "Default app template built on Appspace. Use as a starting point for downstream applications.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@kispace-io/core": "*",
+    "@kispace-io/extension-ai-system": "*",
+    "@kispace-io/extension-command-palette": "*",
+    "@kispace-io/extension-download": "*",
+    "@kispace-io/extension-git": "*",
+    "@kispace-io/extension-github-service": "*",
+    "@kispace-io/extension-howto-system": "*",
+    "@kispace-io/extension-in-browser-ml": "*",
+    "@kispace-io/extension-linuxterminal": "*",
+    "@kispace-io/extension-md-editor": "*",
+    "@kispace-io/extension-media-viewer": "*",
+    "@kispace-io/extension-memory-usage": "*",
+    "@kispace-io/extension-monaco-editor": "*",
+    "@kispace-io/extension-notebook": "*",
+    "@kispace-io/extension-python-runtime": "*",
+    "@kispace-io/extension-rag-system": "*",
+    "@kispace-io/extension-settings-tree": "*",
+    "@kispace-io/extension-unzip": "*",
+    "@kispace-io/extension-webdav": "*",
+    "@kispace-io/extension-webllm": "*",
+    "@kispace-io/extension-certs": "*",
+    "pace-js": "^1.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  },
+  "marketplace": {
+    "catalogUrls": [
+      "https://raw.githubusercontent.com/kispace-io/appspace-marketplace/main/catalogs/extensions.json",
+      "https://raw.githubusercontent.com/kispace-io/appspace-marketplace/main/catalogs/apps.json"
+    ]
+  }
+}

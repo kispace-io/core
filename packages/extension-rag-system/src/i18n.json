@@ -1,0 +1,11 @@
+{
+  "namespace": "extensions",
+  "en": {
+    "EXT_RAG_SYSTEM_NAME": "RAG System",
+    "EXT_RAG_SYSTEM_DESC": "Retrieval-Augmented Generation system for document indexing, search and retrieval"
+  },
+  "de": {
+    "EXT_RAG_SYSTEM_NAME": "RAG-System",
+    "EXT_RAG_SYSTEM_DESC": "Retrieval-Augmented Generation System für Dokumentenindizierung, Suche und Abruf"
+  }
+}
