@@ -18,7 +18,6 @@ export default defineConfig({
     include: ['@kispace-io/core'],
     exclude: [
       '@kispace-io/extension-python-runtime',
-      '@kispace-io/extension-git',
       '@kispace-io/extension-ai-system',
       '@kispace-io/extension-rag-system',
       '@kispace-io/extension-notebook',

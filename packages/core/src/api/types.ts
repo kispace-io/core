@@ -12,9 +12,7 @@ export type {
     CommandStack,
     CommandRegistry
 } from '../core/commandregistry';
-export type { 
-    Extension 
-} from '../core/extensionregistry';
+export type { Extension } from '../core/extensionregistry';
 export type {
     Contribution,
     IconContribution,

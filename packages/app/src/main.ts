@@ -15,7 +15,6 @@ applyAppHostConfig({
   marketplaceCatalogUrls: (appPkg as any).marketplace?.catalogUrls,
 });
 
-import '@kispace-io/extension-git';
 import '@kispace-io/extension-github-service';
 import '@kispace-io/extension-python-runtime';
 import '@kispace-io/extension-linuxterminal';

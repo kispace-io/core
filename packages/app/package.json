@@ -13,7 +13,6 @@
     "@kispace-io/extension-ai-system": "*",
     "@kispace-io/extension-command-palette": "*",
     "@kispace-io/extension-download": "*",
-    "@kispace-io/extension-git": "*",
     "@kispace-io/extension-github-service": "*",
     "@kispace-io/extension-howto-system": "*",
     "@kispace-io/extension-in-browser-ml": "*",
