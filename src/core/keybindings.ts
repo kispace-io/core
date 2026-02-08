@@ -1,15 +1,18 @@
 /**
  * Key Binding Manager for geo!space
- * 
+ *
  * Handles keyboard shortcuts and binds them to commands.
  * Supports standard modifiers: CTRL, ALT, SHIFT, META (CMD on Mac)
  */
 
 import logger from "./logger";
-import { commandRegistry } from "./commandregistry";
+import { subscribe } from "./events";
+import { commandRegistry, TOPIC_COMMAND_REGISTERED } from "./commandregistry";
 import { rootContext } from "./di";
 
 import type { Command } from "./commandregistry";
+
+export type ModifierField = 'ctrl' | 'alt' | 'shift' | 'meta';
 
 export interface KeyBinding {
     commandId: string;
@@ -20,6 +23,31 @@ export interface KeyBinding {
     meta?: boolean;
 }
 
+const MODIFIER_FIELDS: ModifierField[] = ['alt', 'ctrl', 'meta', 'shift'];
+
+const MODIFIER_ALIASES: Record<string, ModifierField> = {
+    CTRL: 'ctrl', CONTROL: 'ctrl',
+    ALT: 'alt', OPTION: 'alt',
+    SHIFT: 'shift',
+    META: 'meta', CMD: 'meta', COMMAND: 'meta', WIN: 'meta', WINDOWS: 'meta',
+};
+
+const MODIFIER_DISPLAY: Record<ModifierField, string> = {
+    ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift', meta: 'Cmd',
+};
+
+const KEY_NORMALIZE: Record<string, string> = {
+    SPACE: ' ', ESC: 'ESCAPE', RETURN: 'ENTER',
+    LEFT: 'ARROWLEFT', RIGHT: 'ARROWRIGHT', UP: 'ARROWUP', DOWN: 'ARROWDOWN',
+    DEL: 'DELETE', INS: 'INSERT', PAGEUP: 'PAGEUP', PAGEDOWN: 'PAGEDOWN',
+};
+
+const KNOWN_MODIFIERS = new Set<string>(Object.keys(MODIFIER_ALIASES));
+
+function normalizeKey(key: string): string {
+    return KEY_NORMALIZE[key] ?? key;
+}
+
 export class KeyBindingManager {
     private bindings: Map<string, KeyBinding[]> = new Map();
     private enabled: boolean = true;
@@ -27,12 +55,13 @@ export class KeyBindingManager {
     constructor() {
         document.addEventListener('keydown', this.handleKeyDown.bind(this), true);
         this.registerExistingCommandBindings();
-        this.watchCommandRegistry();
+        subscribe(TOPIC_COMMAND_REGISTERED, (command: Command) => {
+            if (command.keyBinding) {
+                this.registerKeyBinding(command.id, command.keyBinding);
+            }
+        });
     }
 
-    /**
-     * Register key bindings from commands that were already registered
-     */
     private registerExistingCommandBindings() {
         const commands = commandRegistry.listCommands();
         Object.values(commands).forEach((command: Command) => {
@@ -40,22 +69,6 @@ export class KeyBindingManager {
                 this.registerKeyBinding(command.id, command.keyBinding);
             }
         });
-    }
-
-    /**
-     * Watch the command registry for new commands with key bindings
-     */
-    private watchCommandRegistry() {
-        // Intercept command registration by wrapping the method
-        const originalRegister = commandRegistry.registerCommand.bind(commandRegistry);
-        commandRegistry.registerCommand = (command: Command) => {
-            originalRegister(command);
-            
-            // Auto-register key binding if present
-            if (command.keyBinding) {
-                this.registerKeyBinding(command.id, command.keyBinding);
-            }
-        };
     }
 
     /**
@@ -67,87 +80,32 @@ export class KeyBindingManager {
         }
 
         const parts = keyBindingString.toUpperCase().split('+').map(p => p.trim());
-        
         if (parts.length === 0) {
             return null;
         }
 
-        const binding: Partial<KeyBinding> = {
-            ctrl: false,
-            alt: false,
-            shift: false,
-            meta: false
-        };
-
-        // Last part is the key, everything else is modifiers
         const key = parts[parts.length - 1];
         const modifiers = parts.slice(0, -1);
-
-        for (const modifier of modifiers) {
-            switch (modifier) {
-                case 'CTRL':
-                case 'CONTROL':
-                    binding.ctrl = true;
-                    break;
-                case 'ALT':
-                case 'OPTION':
-                    binding.alt = true;
-                    break;
-                case 'SHIFT':
-                    binding.shift = true;
-                    break;
-                case 'META':
-                case 'CMD':
-                case 'COMMAND':
-                case 'WIN':
-                case 'WINDOWS':
-                    binding.meta = true;
-                    break;
-                default:
-                    logger.warn(`Unknown modifier: ${modifier}`);
-            }
+        if (parts.length === 1 && KNOWN_MODIFIERS.has(key)) {
+            return null;
         }
 
-        // Normalize key
-        binding.key = this.normalizeKey(key);
-
+        const binding: Partial<KeyBinding> = { ctrl: false, alt: false, shift: false, meta: false };
+        for (const modifier of modifiers) {
+            const field = MODIFIER_ALIASES[modifier];
+            if (field === undefined) return null;
+            binding[field] = true;
+        }
+        binding.key = normalizeKey(key);
         return binding as KeyBinding;
-    }
-
-    /**
-     * Normalize key names for consistency
-     */
-    private normalizeKey(key: string): string {
-        const keyMap: { [key: string]: string } = {
-            'SPACE': ' ',
-            'ESC': 'ESCAPE',
-            'RETURN': 'ENTER',
-            'LEFT': 'ARROWLEFT',
-            'RIGHT': 'ARROWRIGHT',
-            'UP': 'ARROWUP',
-            'DOWN': 'ARROWDOWN',
-            'DEL': 'DELETE',
-            'INS': 'INSERT',
-            'PAGEUP': 'PAGEUP',
-            'PAGEDOWN': 'PAGEDOWN',
-        };
-
-        return keyMap[key] || key;
     }
 
     /**
      * Create a unique key for a binding
      */
     private getBindingKey(binding: KeyBinding): string {
-        const modifiers = [];
-        if (binding.ctrl) modifiers.push('ctrl');
-        if (binding.alt) modifiers.push('alt');
-        if (binding.shift) modifiers.push('shift');
-        if (binding.meta) modifiers.push('meta');
-        
-        modifiers.sort(); // Ensure consistent ordering
-        
-        return `${modifiers.join('+')}+${binding.key.toUpperCase()}`;
+        const parts = [...MODIFIER_FIELDS.filter(f => binding[f]), binding.key.toUpperCase()];
+        return parts.join('+');
     }
 
     /**
@@ -170,14 +128,17 @@ export class KeyBindingManager {
         }
         
         const existing = this.bindings.get(bindingKey)!;
-        
-        // Check for conflicts
-        const conflict = existing.find(b => b.commandId === commandId);
-        if (conflict) {
+        const sameCommand = existing.find(b => b.commandId === commandId);
+        if (sameCommand) {
             logger.error(`Key binding ${keyBindingString} already registered for command ${commandId}`);
             return false;
         }
-        
+        const otherCommand = existing.find(b => b.commandId !== commandId);
+        if (otherCommand) {
+            logger.warn(`Key binding ${keyBindingString} already used by command ${otherCommand.commandId}; refusing for ${commandId}`);
+            return false;
+        }
+
         existing.push(binding);
         logger.debug(`Key binding registered: ${keyBindingString} -> ${commandId}`);
         
@@ -220,7 +181,6 @@ export class KeyBindingManager {
      */
     getKeyBindingsForCommand(commandId: string): string[] {
         const result: string[] = [];
-        
         for (const bindings of this.bindings.values()) {
             for (const binding of bindings) {
                 if (binding.commandId === commandId) {
@@ -228,32 +188,18 @@ export class KeyBindingManager {
                 }
             }
         }
-        
-        return result;
+        return result.sort();
     }
 
     /**
      * Format a key binding for display
      */
     formatKeyBinding(binding: KeyBinding): string {
-        const parts: string[] = [];
-        
-        if (binding.ctrl) parts.push('Ctrl');
-        if (binding.alt) parts.push('Alt');
-        if (binding.shift) parts.push('Shift');
-        if (binding.meta) parts.push('Cmd');
-        
-        // Format the key nicely
-        let key = binding.key;
-        if (key.length === 1) {
-            key = key.toUpperCase();
-        } else {
-            // Capitalize first letter for special keys
-            key = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
-        }
-        
+        const parts = MODIFIER_FIELDS.filter(f => binding[f]).map(f => MODIFIER_DISPLAY[f]);
+        const key = binding.key.length === 1
+            ? binding.key.toUpperCase()
+            : binding.key.charAt(0).toUpperCase() + binding.key.slice(1).toLowerCase();
         parts.push(key);
-        
         return parts.join('+');
     }
 
@@ -264,10 +210,10 @@ export class KeyBindingManager {
         if (!this.enabled) {
             return;
         }
-
+        // event.key can be empty or layout-specific with some IMEs or dead keys
         const eventBinding: KeyBinding = {
             commandId: '',
-            key: this.normalizeKey(event.key.toUpperCase()),
+            key: normalizeKey(event.key.toUpperCase()),
             ctrl: event.ctrlKey,
             alt: event.altKey,
             shift: event.shiftKey,
@@ -277,18 +223,13 @@ export class KeyBindingManager {
         const bindings = this.bindings.get(bindingKey);
 
         if (bindings && bindings.length > 0) {
-            // Execute the first matching command
-            // TODO: Handle multiple bindings (show picker?)
             const binding = bindings[0];
-            
             try {
                 event.preventDefault();
                 event.stopPropagation();
-                
                 const context = commandRegistry.createExecutionContext({});
-                
                 commandRegistry.execute(binding.commandId, context);
-                logger.info(`Executed command via key binding: ${binding.commandId}`);
+                logger.debug(`Executed command via key binding: ${binding.commandId}`);
             } catch (error: any) {
                 logger.error(`Failed to execute command ${binding.commandId}: ${error.message}`);
             }
@@ -313,7 +254,11 @@ export class KeyBindingManager {
      * Get all registered key bindings
      */
     getAllBindings(): Map<string, KeyBinding[]> {
-        return new Map(this.bindings);
+        const copy = new Map<string, KeyBinding[]>();
+        for (const [key, bindings] of this.bindings) {
+            copy.set(key, [...bindings]);
+        }
+        return copy;
     }
 
     /**
