@@ -12,7 +12,6 @@ node_modules
 
 # Build output
 dist
-dist-app
 dist-ssr
 *.local
 

@@ -35,32 +35,28 @@ jobs:
           if [ -z "$TAG_MESSAGE" ]; then
             TAG_MESSAGE="Release $TAG"
           fi
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          DELIM="EOF_$(date +%s)_$RANDOM"
+          echo "message<<$DELIM" >> $GITHUB_OUTPUT
+          printf '%s\n' "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+          echo "$DELIM" >> $GITHUB_OUTPUT
       
       - name: Create GitHub Release
         run: |
           TAG="${{ steps.version.outputs.tag }}"
-          BODY="${{ steps.tag_message.outputs.message }}"
           REPO="${{ github.repository }}"
+          echo "${{ steps.tag_message.outputs.message }}" > release_notes.txt
           
-          # Authenticate GitHub CLI
-          # Use Personal Access Token if available, otherwise use github.token
-          # github.token is functionally equivalent to secrets.GITHUB_TOKEN
-          echo "${{ secrets.GH_PAT || github.token }}" | gh auth login --with-token
+          echo "${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           
-          # Check if release already exists
           if gh release view "$TAG" --repo "$REPO" &>/dev/null; then
             echo "Release $TAG already exists, skipping creation"
             exit 0
           fi
           
-          # Create release using GitHub CLI
-          echo "$BODY" | gh release create "$TAG" \
+          gh release create "$TAG" \
             --repo "$REPO" \
             --title "Release $TAG" \
-            --notes-file -
+            --notes-file release_notes.txt
           
           echo "✓ Release $TAG created successfully"
 
