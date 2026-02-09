@@ -16,8 +16,8 @@ import {
 } from "../core/constants";
 import {KContainer} from "../parts/k-container";
 
-@customElement('k-standard-app')
-export class KStandardApp extends KContainer {
+@customElement('k-standard-layout')
+export class KStandardLayout extends KContainer {
     @property({type: Boolean, attribute: 'show-bottom-sidebar'})
     showBottomSidebar: boolean = false;
 
@@ -71,14 +71,14 @@ export class KStandardApp extends KContainer {
                     flex-direction: column;
                 }
                 
-                k-standard-app {
+                k-standard-layout {
                     display: flex;
                     flex-direction: column;
                     height: 100vh;
                     width: 100%;
                 }
                 
-                k-standard-app .toolbar-top {
+                k-standard-layout .toolbar-top {
                     width: 100%;
                     display: grid;
                     grid-template-columns: 1fr 2fr 1fr;
@@ -87,7 +87,7 @@ export class KStandardApp extends KContainer {
                     flex-shrink: 0;
                 }
                 
-                k-standard-app .toolbar-bottom {
+                k-standard-layout .toolbar-bottom {
                     width: 100%;
                     border-top: solid var(--wa-border-width-s) var(--wa-color-neutral-border-loud);
                     display: grid;
@@ -99,12 +99,12 @@ export class KStandardApp extends KContainer {
                     box-sizing: border-box;
                 }
                 
-                k-standard-app .main-layout {
+                k-standard-layout .main-layout {
                     flex: 1;
                     min-height: 0;
                 }
                 
-                k-standard-app .toolbar-end {
+                k-standard-layout .toolbar-end {
                     justify-self: end;
                 }
             </style>
@@ -169,7 +169,6 @@ export class KStandardApp extends KContainer {
 
 declare global {
     interface HTMLElementTagNameMap {
-        'k-standard-app': KStandardApp;
+        'k-standard-layout': KStandardLayout;
     }
 }
-

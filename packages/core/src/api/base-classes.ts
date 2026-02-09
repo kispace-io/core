@@ -2,9 +2,9 @@
 export { KPart } from '../parts/k-part';
 export { KContainer } from '../parts/k-container';
 export { KDialogContent } from '../parts/k-dialog-content';
-export { KStandardApp } from '../apps/k-standard-app';
+export { KStandardLayout } from '../layouts/k-standard-layout';
 export { KWidget } from '../widgets/k-widget';
 export { KElement } from '../parts/k-element';
 // Import to register the custom element
-import '../apps/k-standard-app';
+import '../layouts/k-standard-layout';
 

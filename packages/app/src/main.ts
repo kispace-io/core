@@ -67,5 +67,5 @@ appLoaderService.registerApp({
     'system.memoryusage',
     'system.ai-system',
   ],
-  render: { tag: 'k-standard-app', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
+  render: { tag: 'k-standard-layout', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
 });

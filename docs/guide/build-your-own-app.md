@@ -33,7 +33,7 @@ appLoaderService.registerApp(
       'system.ai-system',
     ],
     render: {
-      tag: 'k-standard-app',
+      tag: 'k-standard-layout',
       attributes: { 'show-bottom-panel': 'true' },
     } satisfies RenderDescriptor,
   },

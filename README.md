@@ -37,7 +37,7 @@ A modular web framework for building IDE-like applications with a plugin archite
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  UI (core)                                                   │
-│  k-standard-app · k-tabs · k-toolbar · k-filebrowser · …    │
+│  k-standard-layout · k-tabs · k-toolbar · k-filebrowser · …    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -107,7 +107,7 @@ appLoaderService.registerApp({
   name: 'My App',
   version: '1.0.0',
   extensions: ['system.commandpalette', 'system.settings-tree', 'system.ai-system'],
-  render: { tag: 'k-standard-app', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
+  render: { tag: 'k-standard-layout', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
 }, { autoStart: true });
 ```
 

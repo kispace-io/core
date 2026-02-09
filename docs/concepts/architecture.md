@@ -27,7 +27,7 @@
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  UI (core)                                                   │
-│  k-standard-app · k-tabs · k-toolbar · k-filebrowser · …    │
+│  k-standard-layout · k-tabs · k-toolbar · k-filebrowser · …    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
