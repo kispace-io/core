@@ -2,9 +2,9 @@
 
 A modular web framework for building IDE-like applications with a plugin architecture, AI integration, and workspace management.
 
-**Live example:** [https://app.kispace.de](https://app.kispace.de) — deployed app built on Appspace.
+**Live example:** [https://app.kispace.de](https://app.kispace.de)
 
-**Developer documentation:** Guides and API reference live in the `docs/` folder (VitePress + TypeDoc). Run `npm run docs:dev` for a local doc server or `npm run docs:build` to build for deployment.
+**Docs:** [https://app.kispace.de/docs/](https://app.kispace.de/docs/)
 
 ---
 
