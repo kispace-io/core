@@ -1,16 +1,6 @@
-# Appspace
+# Architecture
 
-A modular web framework for building IDE-like applications with a plugin architecture, AI integration, and workspace management.
-
-**Live example:** [https://app.kispace.de](https://app.kispace.de) — deployed app built on Appspace.
-
-**Developer documentation:** Guides and API reference live in the `docs/` folder (VitePress + TypeDoc). Run `npm run docs:dev` for a local doc server or `npm run docs:build` to build for deployment.
-
----
-
-## Architecture
-
-### Layers
+## Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -47,89 +37,20 @@ A modular web framework for building IDE-like applications with a plugin archite
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Monorepo layout
+## Monorepo layout
 
 | Path | Role |
 |------|------|
-| **`packages/core`** (`@kispace-io/core`) | Platform: registries, services, parts, widgets, dialogs, default UI contributions. No extension logic; extensions are separate packages. |
-| **`packages/extension-*`** | One package per extension (e.g. `extension-ai-system`, `extension-settings-tree`, `extension-monaco-editor`). Each depends on core and registers commands/contributions/editors. |
-| **`packages/app`** | Default app: imports core + extensions, defines `AppDefinition` and `extensions[]`, registers with app loader. Use as template for your own app. |
-| **Root** | Workspace root. Scripts: `dev`, `build`, `build:app`, `test`. |
+| **`packages/core`** (`@kispace-io/core`) | Platform: registries, services, parts, widgets, dialogs. No extension logic; extensions live in separate packages. |
+| **`packages/extension-*`** | One package per extension. Each depends on core and registers commands, contributions, and optionally editors. |
+| **`packages/app`** | Default app: imports core and extensions, defines `AppDefinition` and `extensions[]`, registers with the app loader. Use as a template. |
+| **Root** | Workspace root. Scripts: `dev`, `build`, `build:app`, `test`, `docs:dev`, `docs:build`. |
 
-### Main concepts
+## Main concepts
 
 - **Apps** — Implement `AppDefinition`: `id`, `name`, `version`, `extensions[]`, optional `contributions`, `render` (string tag, `{ tag, attributes }`, or Lit template), `initialize` / `dispose`.
-- **Extensions** — Register with `extensionRegistry`; provide a loader that runs when the extension is enabled. Register commands, contributions, editors, services.
+- **Extensions** — Register with `extensionRegistry`; provide a loader that runs when the extension is enabled. Register commands, contributions, editors.
 - **Contributions** — Declarative UI: tabs (sidebars, editor area), toolbar buttons, HTML blocks. Targets include `SIDEBAR_MAIN`, `SIDEBAR_AUXILIARY`, `TOOLBAR_MAIN_RIGHT`, `TOOLBAR_BOTTOM_END`, etc.
-- **Commands** — Id + handlers (with optional `canExecute`). Toolbar/menus reference commands; AI and command palette can execute them.
+- **Commands** — Id and handlers (optional `canExecute`). Toolbars and menus reference commands; the command palette and AI can execute them.
 
----
-
-## How to get started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or pnpm
-
-### Run the default app
-
-```bash
-git clone https://github.com/kispace-io/appspace.git
-cd appspace
-npm install
-npm run dev
-```
-
-This builds core, then starts the default app (Vite dev server). Open the URL shown in the terminal (e.g. `http://localhost:5173`).
-
-### Build for production
-
-```bash
-npm run build        # build core only
-npm run build:app    # build the default app (depends on core)
-```
-
-### Create your own app
-
-1. Use **`packages/app`** as a template: copy it or add a new workspace package.
-2. In your app entry (e.g. `main.ts`):
-   - Call `applyAppHostConfig({ packageInfo, marketplaceCatalogUrls })` if you use marketplace.
-   - Import the extensions you need (`@kispace-io/extension-*`).
-   - Call `appLoaderService.registerApp(appDefinition, { autoStart: true })`.
-3. **App definition** — Minimal example (no Lit in app):
-
-```ts
-import { appLoaderService, type RenderDescriptor } from '@kispace-io/core';
-
-appLoaderService.registerApp({
-  id: 'my-app',
-  name: 'My App',
-  version: '1.0.0',
-  extensions: ['system.commandpalette', 'system.settings-tree', 'system.ai-system'],
-  render: { tag: 'k-standard-app', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
-}, { autoStart: true });
-```
-
-4. Add the app package to the root `package.json` workspaces and run `npm run dev` from the app package or via root scripts.
-
----
-
-## Technology stack
-
-- **Lit** — Web components (core and extensions)
-- **TypeScript** — Typed API
-- **WebAwesome** — UI primitives
-- **Monaco** — Code editor (extension)
-- **Vite** — Build and dev server
-
-Other extensions add: Pyodide, WebLLM, RxDB, Xenova transformers, etc.
-
----
-
-## Repository and license
-
-- **Repository:** [github.com/kispace-io/appspace](https://github.com/kispace-io/appspace)
-- **License:** EPL-2.0
-
-Publishing of `@kispace-io/core` is done via GitHub Actions on version tags; see workflow and npm trusted publishing in the repo.
+Next: [Apps](/concepts/apps), [Extensions](/concepts/extensions), [Contributions](/concepts/contributions), [Commands](/concepts/commands).
