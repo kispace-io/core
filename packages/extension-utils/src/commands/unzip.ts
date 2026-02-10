@@ -113,15 +113,6 @@ registerAll({
         }
       });
     }
-  },
-  contribution: {
-    target: TOOLBAR_MAIN,
-    icon: "box-archive",
-    label: "Unzip",
-    disabled: () => {
-      const selectedItem = activeSelectionSignal.get();
-      return !selectedItem || !("path" in selectedItem) || !selectedItem.path.toLowerCase().endsWith(".zip");
-    }
-  } as CommandContribution
+  }
 });
 
