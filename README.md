@@ -2,9 +2,14 @@
 
 A modular web framework for building IDE-like applications with a plugin architecture, AI integration, and workspace management.
 
-**Live example:** [https://app.kispace.de](https://app.kispace.de)
+**Demo app:** [https://app.kispace.de](https://app.kispace.de)
 
 **Docs:** [https://app.kispace.de/docs/](https://app.kispace.de/docs/)
+
+---
+## Used by
+
+**geo!space (WebGIS):** [https://geo.kispace.de](https://geo.kispace.de)
 
 ---
 
