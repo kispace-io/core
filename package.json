@@ -16,6 +16,7 @@
         "access": "public"
     },
     "scripts": {
+        "publish:packages": "./scripts/publish-packages.sh",
         "dev": "npm run build -w @kispace-io/core && npm run dev -w @kispace-io/app",
         "build": "npm run build -w @kispace-io/core",
         "build:app": "npm run build -w @kispace-io/core && npm run build -w @kispace-io/app",
