@@ -59,6 +59,7 @@ appLoaderService.registerApp({
   version: '0.0.0',
   description: 'Default app!space application 2',
   extensions: [
+    'system.utils',
     'system.mdeditor',
     'system.monaco',
     'system.mediaviewer',
