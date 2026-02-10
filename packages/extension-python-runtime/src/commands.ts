@@ -1,4 +1,4 @@
-import { registerAll, workspaceService, toastError } from "@kispace-io/core";
+import { registerAll, workspaceService, toastError, Directory } from "@kispace-io/core";
 import { PyEnv } from "./pyservice";
 
 registerAll({
@@ -37,19 +37,20 @@ registerAll({
 
       const pyenv = new PyEnv();
 
+      let workspace: Directory | undefined;
+
       if (useWorkspace) {
-        const workspace = await workspaceService.getWorkspace();
+        workspace = await workspaceService.getWorkspace();
         if (!workspace) {
           toastError("No workspace selected.");
           return;
         }
-        await pyenv.init(workspace, context);
-      } else {
-        // Initialize Python runtime without mounting a workspace
-        await pyenv.init(undefined, context);
       }
 
-      await pyenv.execCode(code);
+      // Only pass structured-cloneable data to the worker
+      await pyenv.init(workspace, { params: context.params });
+      const result = await pyenv.execCode(code);
+      return result;
     }
   }
 });

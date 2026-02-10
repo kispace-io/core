@@ -30,7 +30,8 @@ export default (_context: any) => {
                 if (!script) return;
                 const pyenv = new PyEnv();
                 const workspace = await workspaceService.getWorkspace();
-                await pyenv.init(workspace!, context);
+                // Only pass structured-cloneable data to the worker
+                await pyenv.init(workspace!, { params: context.params });
                 await pyenv.installDependencies();
                 await pyenv.execScript(script);
             }
