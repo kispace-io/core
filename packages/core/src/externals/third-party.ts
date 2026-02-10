@@ -4,6 +4,7 @@
  * This ensures a single source of truth for these dependencies.
  */
 
-// Re-export uuid (all exports including v4)
-export * from "uuid";
+export function v4(): string {
+  return crypto.randomUUID();
+}
 
