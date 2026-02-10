@@ -50,6 +50,12 @@ jobs:
         run: npm run type-check
         continue-on-error: true
 
-      - name: Publish packages to npm
-        run: npm publish --access public --provenance --workspaces
+      - name: Publish core and extension packages to npm
+        run: |
+          for pkg in packages/core packages/extension-*; do
+            if [ -d "$pkg" ]; then
+              echo "Publishing $pkg..."
+              (cd "$pkg" && npm publish --access public --provenance)
+            fi
+          done
 

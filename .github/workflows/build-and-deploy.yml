@@ -1,4 +1,4 @@
-name: Build and deploy app!space
+name: Build and deploy
 
 permissions:
   contents: write

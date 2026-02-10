@@ -1,5 +1,5 @@
 {
-    "name": "@kispace-io/appspace",
+    "name": "@kispace-io/core",
     "version": "0.0.0",
     "description": "A highly modular and extensible web application framework for building IDE-like applications with a plugin architecture, AI integration, and comprehensive workspace management.",
     "type": "module",
@@ -7,7 +7,7 @@
     "readme": "README.md",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/kispace-io/appspace.git"
+        "url": "git+https://github.com/kispace-io/core.git"
     },
     "workspaces": [
         "packages/*"
