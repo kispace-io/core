@@ -765,7 +765,7 @@ except ImportError:
             </wa-button>
         ` : html`
             <k-command 
-                cmd="run_python"
+                cmd="python"
                 icon="play"
                 title="Run cell"
                 size="small"

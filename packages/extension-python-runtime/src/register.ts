@@ -9,8 +9,9 @@ extensionRegistry.registerExtension({
   id: "system.pythonruntime",
   name: t('EXT_PYTHONRUNTIME_NAME'),
   description: t('EXT_PYTHONRUNTIME_DESC'),
-  loader: () => import("./python-runtime-extension"),
+  loader: () => Promise.all([
+    import("./python-runtime-extension"),
+    import("./commands")
+  ]),
   icon: "k python",
-  
-  
 });

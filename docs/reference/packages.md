@@ -18,10 +18,11 @@
 | **@kispace-io/extension-rag-system** | RAG (retrieval-augmented generation) and document indexing. |
 | **@kispace-io/extension-howto-system** | How-to / tutorial system. |
 | **@kispace-io/extension-webdav** | WebDAV workspace and commands. |
-| **@kispace-io/extension-download** | Download arbitrary resources from any URL to the workspace. |
-| **@kispace-io/extension-unzip** | Unzip support. |
+| **@kispace-io/extension-download** | Download arbitrary resources from any URL to the workspace. (superseded by `@kispace-io/extension-utils`'s `wget` command) |
+| **@kispace-io/extension-unzip** | Unzip support. (superseded by `@kispace-io/extension-utils`) |
 | **@kispace-io/extension-memory-usage** | Memory usage display. |
-| **@kispace-io/extension-certs** | Certificate handling. |
+| **@kispace-io/extension-certs** | Certificate handling. (superseded by `@kispace-io/extension-utils`) |
+| **@kispace-io/extension-utils** | Convenience utility extension combining wget-style download, unzip, and certificate tools. |
 | **@kispace-io/extension-github-service** | GitHub service integration. |
 
 Add only the extensions your app needs to `AppDefinition.extensions` and import their packages so they register with the framework.

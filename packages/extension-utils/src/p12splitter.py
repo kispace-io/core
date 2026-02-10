@@ -39,3 +39,4 @@ def p12splitter(p12_path, password=None, output_path=None):
         with open(os.path.join(output_path, f"{cert_name}.chain.pem"), "wb") as ca_file:
             for ac in additional_certs:
                 ca_file.write(ac.public_bytes(Encoding.PEM))
+

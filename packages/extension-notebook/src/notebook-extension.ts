@@ -25,7 +25,7 @@ export default ({editorRegistry, commandRegistry, contributionRegistry}: any) =>
         nbformat: 4,
         nbformat_minor: 4
     };
-    commandRegistry.registerHandler('run_python', {
+    commandRegistry.registerHandler('python', {
         canExecute: (context: ExecutionContext) => {
             const activeEditor = activeEditorSignal.get();
             if (isNotebookEditorLike(activeEditor)) {

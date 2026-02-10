@@ -14,21 +14,6 @@ import "./version-info";
 
 registerAll({
     command: {
-        "id": "js",
-        "name": "Run JavaScript file",
-        "description": "Executes a JavaScript file given its path",
-        "parameters": [
-            {
-                "name": "script",
-                "description": "the path to a JavaScript file to run",
-                "required": false
-            }
-        ]
-    }
-})
-
-registerAll({
-    command: {
         "id": "save",
         "name": "Save editor",
         "description": "Saves the active/focused editor",
@@ -53,16 +38,6 @@ registerAll({
             return !part || !part.isDirty()
         }
     } as CommandContribution
-})
-
-registerAll({
-    command: {
-        "id": "run_python",
-        "name": "Run Python Cell",
-        "description": "Runs active Python code in a supporting context (e.g. notebook, terminal, etc.)",
-        "keyBinding": "CTRL+R",
-        "parameters": []
-    }
 })
 
 const THEME_SETTINGS_KEY = "theme"

@@ -12,7 +12,6 @@
     "@kispace-io/core": "*",
     "@kispace-io/extension-ai-system": "*",
     "@kispace-io/extension-command-palette": "*",
-    "@kispace-io/extension-download": "*",
     "@kispace-io/extension-github-service": "*",
     "@kispace-io/extension-howto-system": "*",
     "@kispace-io/extension-in-browser-ml": "*",
@@ -25,10 +24,9 @@
     "@kispace-io/extension-python-runtime": "*",
     "@kispace-io/extension-rag-system": "*",
     "@kispace-io/extension-settings-tree": "*",
-    "@kispace-io/extension-unzip": "*",
     "@kispace-io/extension-webdav": "*",
     "@kispace-io/extension-webllm": "*",
-    "@kispace-io/extension-certs": "*",
+    "@kispace-io/extension-utils": "*",
     "pace-js": "^1.2.4"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 {
-  "name": "@kispace-io/extension-unzip",
+  "name": "@kispace-io/extension-utils",
   "version": "0.0.0",
   "type": "module",
   "main": "./src/index.ts",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@kispace-io/core": "*",
+    "@kispace-io/extension-python-runtime": "*",
     "jszip": "^3.10.1"
   },
   "devDependencies": {

@@ -26,7 +26,7 @@ export class PyEnv {
     private stderrCallback?: (text: string) => void;
     private interruptBuffer?: Uint8Array;
 
-    public async init(workspace: Directory, vars?: any) {
+    public async init(workspace?: Directory, vars?: any) {
         this.workspace = workspace;
         this.vars = vars ?? {};
 
@@ -45,9 +45,11 @@ export class PyEnv {
         // Initialize Pyodide in worker
         await this.sendMessage('init', { vars: this.vars });
 
-        // Mount workspace and install dependencies
-        await this.mountWorkspace();
-        await this.installDependencies();
+        // Mount workspace and install dependencies only when a workspace is provided
+        if (this.workspace) {
+            await this.mountWorkspace();
+            await this.installDependencies();
+        }
     }
 
     private handleWorkerMessage(response: PyWorkerResponse) {
@@ -155,7 +157,11 @@ export class PyEnv {
     }
 
     public async mountWorkspace(mountPoint: string = "/workspace") {
-        const directory = await workspaceService.getWorkspace() as FileSysDirHandleResource;
+        const directory = this.workspace as FileSysDirHandleResource | undefined;
+        if (!directory) {
+            return;
+        }
+
         await this.sendMessage('mountWorkspace', {
             handle: directory.getHandle(),
             mountPoint
