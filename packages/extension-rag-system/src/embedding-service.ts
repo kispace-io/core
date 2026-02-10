@@ -1,6 +1,5 @@
-import type { FeatureExtractionPipeline } from '@xenova/transformers';
 import { createLogger } from '@kispace-io/core';
-import { inBrowserMLService, MLModel, MLTask } from '@kispace-io/extension-in-browser-ml';
+import { inBrowserMLService, MLModel, MLTask, type FeatureExtractionPipeline } from '@kispace-io/extension-in-browser-ml';
 
 const logger = createLogger('EmbeddingService');
 
