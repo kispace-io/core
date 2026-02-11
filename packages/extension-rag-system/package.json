@@ -20,7 +20,8 @@
     "@langchain/core": "^1.0.0",
     "@langchain/textsplitters": "^1.0.0",
     "pdfjs-dist": "^4.0.0",
-    "rxdb": "^15.0.0"
+    "rxdb": "^15.0.0",
+    "rxjs": "^7.8.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
