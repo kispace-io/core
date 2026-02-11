@@ -1,4 +1,4 @@
-import type { StreamChunk } from "@kispace-io/core";
+import type { StreamChunk } from "../../core/types";
 
 export abstract class StreamParser {
     protected decoder = new TextDecoder();

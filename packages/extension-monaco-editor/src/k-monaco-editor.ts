@@ -6,7 +6,7 @@ import {css, html} from "lit";
 import {createRef, ref} from "lit/directives/ref.js";
 import {EditorInput, EditorContentProvider} from "@kispace-io/core";
 import {styleMap} from "lit/directives/style-map.js";
-import { PyEnv, pythonPackageManagerService } from "@kispace-io/extension-python-runtime";
+import { PyEnv, pythonPackageManagerService } from "@kispace-io/extension-python-runtime/api";
 import { workspaceService } from "@kispace-io/core";
 import { logger } from '@kispace-io/core';
 

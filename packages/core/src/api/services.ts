@@ -4,6 +4,7 @@ export { commandRegistry, CommandStack, registerAll, CommandRegistry } from '../
 export { contributionRegistry, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry';
 export { extensionRegistry } from '../core/extensionregistry';
 export { workspaceService, File, StringFile, Directory, FileContentType, WorkspaceService, TOPIC_WORKSPACE_CHANGED, TOPIC_WORKSPACE_CONNECTED } from '../core/filesys';
+export type { FileContentsOptions, GetResourceOptions } from '../core/filesys';
 export { editorRegistry, type EditorInput } from '../core/editorregistry';
 export { 
     activePartSignal,
@@ -21,7 +22,7 @@ export {
     type Logger,
     default as logger
 } from '../core/logger';
-export { rootContext, uiContext } from '../core/di';
+export { rootContext, uiContext, type DependencyContext } from '../core/di';
 export { appSettings, TOPIC_SETTINGS_CHANGED } from '../core/settingsservice';
 export { 
     infoDialog,

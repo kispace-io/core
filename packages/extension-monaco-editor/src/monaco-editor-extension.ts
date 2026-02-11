@@ -2,7 +2,7 @@ import {html} from "lit";
 import {EditorInput, editorRegistry} from "@kispace-io/core";
 import {File} from "@kispace-io/core";
 import {contributionRegistry} from "@kispace-io/core";
-import {CID_PROMPT_ENHANCERS, type PromptEnhancer, type PromptEnhancerContribution} from "@kispace-io/extension-ai-system";
+import {CID_PROMPT_ENHANCERS, type PromptEnhancer, type PromptEnhancerContribution} from "@kispace-io/extension-ai-system/api";
 import type {ExecutionContext} from "@kispace-io/core";
 import PYTHON_PROMPT from "./py-programming-prompt.txt?raw";
 import JAVASCRIPT_PROMPT from "./js-programming-prompt.txt?raw";

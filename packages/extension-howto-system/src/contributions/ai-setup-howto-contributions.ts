@@ -3,8 +3,8 @@ import type { EditorContentProvider } from '@kispace-io/core';
 import { watchSignal } from '@kispace-io/core';
 import { HOWTO_CONTRIBUTION_TARGET } from '../howto-service';
 import type { HowToContribution, HowToContext } from '../howto-contribution';
-import { KEY_AI_CONFIG, TOPIC_AICONFIG_CHANGED } from '@kispace-io/extension-ai-system';
-import type { AIConfig } from '@kispace-io/extension-ai-system';
+import { KEY_AI_CONFIG, TOPIC_AICONFIG_CHANGED } from '@kispace-io/extension-ai-system/api';
+import type { AIConfig } from '@kispace-io/extension-ai-system/api';
 
 const AI_CONFIG_EDITOR_KEY = '.system.ai-config';
 

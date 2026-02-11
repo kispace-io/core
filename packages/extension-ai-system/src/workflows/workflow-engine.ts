@@ -1,12 +1,11 @@
 import type { DependencyContext } from "@kispace-io/core";
 import type { ExecutionContext } from "@kispace-io/core";
-import type { AgentWorkflowOptions, AgentWorkflowResult, AgentContribution } from "../core/interfaces";
-import type { ChatMessage, ChatProvider } from "../core/types";
+import type { AgentWorkflowOptions, AgentWorkflowResult, AgentContribution, ChatMessage, ChatProvider } from "@kispace-io/extension-ai-system/api";
 import { ParallelWorkflowStrategy } from "./parallel-workflow";
 import { SequentialWorkflowStrategy } from "./sequential-workflow";
 import { ConditionalWorkflowStrategy } from "./conditional-workflow";
 import type { IWorkflowStrategy } from "./workflow-strategy";
-import { TOPIC_AGENT_WORKFLOW_STARTED, TOPIC_AGENT_WORKFLOW_COMPLETE, TOPIC_AGENT_WORKFLOW_ERROR } from "../core/constants";
+import { TOPIC_AGENT_WORKFLOW_STARTED, TOPIC_AGENT_WORKFLOW_COMPLETE, TOPIC_AGENT_WORKFLOW_ERROR } from "@kispace-io/extension-ai-system/api";
 import { publish } from "@kispace-io/core";
 
 export class WorkflowEngine {

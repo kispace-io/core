@@ -1,24 +1,24 @@
 {
   "name": "@kispace-io/extension-python-runtime",
-  "version": "0.0.0",
+  "version": "0.8.1",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "import": "./src/index.ts",
-      "types": "./src/index.ts"
-    },
-    "./package-manager": {
-      "import": "./src/package-manager.ts",
-      "types": "./src/package-manager.ts"
-    }
+    ".": {"types": "./dist/index.d.ts", "import": "./dist/index.js"},
+    "./api": {"types": "./dist/api.d.ts", "import": "./dist/api.js"}
   },
+  "files": ["dist"],
+  "scripts": {"build": "vite build"},
   "dependencies": {
     "@kispace-io/core": "*",
     "pip-requirements-js": "^1.0.2",
     "pyodide": "^0.27.7"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vite-plugin-dts": "^4.5.4"
   }
 }

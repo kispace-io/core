@@ -6,10 +6,10 @@ import { rootContext } from '@kispace-io/core';
 import { SEARCH_CONFIG } from './utils/constants';
 import { RAGResultFormatter } from './services/rag-result-formatter';
 import { SnippetExtractor } from './utils/snippet-extractor';
-import { aiService } from '@kispace-io/extension-ai-system';
+import { aiService } from '@kispace-io/extension-ai-system/api';
 import { commandRegistry, registerAll } from '@kispace-io/core';
 import type { ExecutionContext } from '@kispace-io/core';
-import type { PromptEnhancer, ToolDefinition } from '@kispace-io/extension-ai-system';
+import type { PromptEnhancer, ToolDefinition } from '@kispace-io/extension-ai-system/api';
 import { createLogger } from '@kispace-io/core';
 
 const logger = createLogger('RAGIntegration');

@@ -1,5 +1,5 @@
 import { appSettings } from "@kispace-io/core";
-import type { ChatProvider, AIConfig } from "../core/types";
+import type { ChatProvider, AIConfig } from "@kispace-io/extension-ai-system/api";
 import type { AIService } from "../service/ai-service";
 
 export interface AIViewSettings {

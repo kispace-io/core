@@ -9,7 +9,7 @@ import * as monaco from 'monaco-editor';
 import monacoStyles from "monaco-editor/min/vs/editor/editor.main.css?raw";
 import type { EditorInput } from "@kispace-io/core";
 import { File, workspaceService } from "@kispace-io/core";
-import { PyEnv, pythonPackageManagerService } from "@kispace-io/extension-python-runtime";
+import { PyEnv, pythonPackageManagerService } from "@kispace-io/extension-python-runtime/api";
 import { KPart } from "@kispace-io/core";
 import type { NotebookCell, NotebookData, NotebookEditorLike } from "./notebook-types";
 

@@ -4,8 +4,7 @@ import { html, css } from "lit";
 import { tokenUsageTracker } from "../service/token-usage-tracker";
 import { subscribe } from "@kispace-io/core";
 import { confirmDialog } from "@kispace-io/core";
-import { TOPIC_AI_STREAM_COMPLETE } from "../core/constants";
-import type { ProviderTokenUsage } from "../core/types";
+import { TOPIC_AI_STREAM_COMPLETE, type ProviderTokenUsage } from "@kispace-io/extension-ai-system/api";
 import { t } from "../translation";
 
 @customElement('k-token-usage')

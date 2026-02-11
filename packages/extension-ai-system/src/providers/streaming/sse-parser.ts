@@ -1,5 +1,5 @@
 import { StreamParser } from "./stream-parser";
-import type { StreamChunk, ToolCall, TokenUsage } from "@kispace-io/core";
+import type { StreamChunk, ToolCall, TokenUsage } from "../../core/types";
 
 export class SSEParser extends StreamParser {
     private usage: TokenUsage | null = null;

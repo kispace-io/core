@@ -1,5 +1,4 @@
-import type { ChatMessage, UserAttentionRequest } from "../core/types";
-import type { AgentWorkflowOptions, AgentWorkflowResult } from "../core/interfaces";
+import type { ChatMessage, UserAttentionRequest, AgentWorkflowOptions, AgentWorkflowResult } from "@kispace-io/extension-ai-system/api";
 
 export interface AgentResponseInfo {
     role: string;

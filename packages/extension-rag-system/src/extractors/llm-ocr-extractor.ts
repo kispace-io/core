@@ -1,7 +1,7 @@
 import type { File } from '@kispace-io/core';
 import { createLogger } from '@kispace-io/core';
 import type { IDocumentExtractor, DocumentExtractionOptions } from './document-extractor-interface';
-import { aiService, type ChatProvider } from '@kispace-io/extension-ai-system';
+import { aiService, type ChatProvider } from '@kispace-io/extension-ai-system/api';
 
 const logger = createLogger('LLMOCRExtractor');
 

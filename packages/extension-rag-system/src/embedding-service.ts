@@ -1,5 +1,5 @@
 import { createLogger } from '@kispace-io/core';
-import { inBrowserMLService, MLModel, MLTask, type FeatureExtractionPipeline } from '@kispace-io/extension-in-browser-ml';
+import { inBrowserMLService, MLModel, MLTask, type FeatureExtractionPipeline } from '@kispace-io/extension-in-browser-ml/api';
 
 const logger = createLogger('EmbeddingService');
 

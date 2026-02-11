@@ -1,4 +1,4 @@
-import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, workspaceService} from "@kispace-io/core";
+import {Directory, File, TOPIC_WORKSPACE_CHANGED, workspaceService} from "@kispace-io/core";
 type PipRequirementsModule = typeof import("pip-requirements-js");
 
 let pipRequirementsModulePromise: Promise<PipRequirementsModule> | null = null;
@@ -11,7 +11,7 @@ async function getPipRequirementsModule(): Promise<PipRequirementsModule> {
 }
 import {publish} from "@kispace-io/core";
 import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker";
-import PyWorker from "./pyworker?worker";
+import PyWorker from "./pyworker?worker&inline";
 
 // Message counter for tracking requests/responses
 let messageId = 0;
@@ -31,14 +31,14 @@ export class PyEnv {
         this.vars = vars ?? {};
 
         // Create Web Worker using Vite's ?worker import
-        this.worker = new PyWorker();
+        const worker = new PyWorker();
+        this.worker = worker;
 
-        // Set up message handler
-        this.worker.onmessage = (event: MessageEvent<PyWorkerResponse>) => {
+        worker.onmessage = (event: MessageEvent<PyWorkerResponse>) => {
             this.handleWorkerMessage(event.data);
         };
 
-        this.worker.onerror = (error) => {
+        worker.onerror = (error) => {
             console.error('Python Worker error:', error);
         };
 
@@ -157,14 +157,14 @@ export class PyEnv {
     }
 
     public async mountWorkspace(mountPoint: string = "/workspace") {
-        const directory = this.workspace as FileSysDirHandleResource | undefined;
-        if (!directory) {
-            return;
-        }
-
-        await this.sendMessage('mountWorkspace', {
-            handle: directory.getHandle(),
-            mountPoint
+        if (!this.workspace) return;
+        // Only browser workspaces backed by File System Access API expose getHandle(); we use a capability check
+        // so the extension stays agnostic of core's FileSysDirHandleResource implementation.
+        const getHandle = (this.workspace as { getHandle?: () => FileSystemDirectoryHandle }).getHandle;
+        if (typeof getHandle !== "function") return;
+        await this.sendMessage("mountWorkspace", {
+            handle: getHandle.call(this.workspace),
+            mountPoint,
         });
     }
 

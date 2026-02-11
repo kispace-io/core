@@ -1,5 +1,5 @@
 import { createLogger } from '@kispace-io/core';
-import { inBrowserMLService, MLTask, MLModel } from '@kispace-io/extension-in-browser-ml';
+import { inBrowserMLService, MLTask, MLModel } from '@kispace-io/extension-in-browser-ml/api';
 
 const logger = createLogger('ToolDetector');
 

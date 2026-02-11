@@ -1,5 +1,5 @@
 import { StreamParser } from "./stream-parser";
-import type { StreamChunk, TokenUsage } from "@kispace-io/core";
+import type { StreamChunk, TokenUsage } from "../../core/types";
 
 export class OllamaParser extends StreamParser {
     private usage: TokenUsage | null = null;

@@ -1,7 +1,7 @@
 import {ChatCompletionMessageParam, MLCEngine} from "@mlc-ai/web-llm";
-import type {ChatMessage, ChatProvider, StreamChunk} from "@kispace-io/extension-ai-system";
-import type {IProvider, StreamingParams, CompletionParams} from "@kispace-io/extension-ai-system";
-import {aiService} from "@kispace-io/extension-ai-system";
+import type {ChatMessage, ChatProvider, StreamChunk} from "@kispace-io/extension-ai-system/api";
+import type {IProvider, StreamingParams, CompletionParams} from "@kispace-io/extension-ai-system/api";
+import {aiService} from "@kispace-io/extension-ai-system/api";
 
 class WebLLMProvider implements IProvider {
     name = "webllm";

@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../core/types";
+import type { ChatMessage } from "@kispace-io/extension-ai-system/api";
 
 export interface StreamingMessage {
     message: ChatMessage;

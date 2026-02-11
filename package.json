@@ -1,35 +1,36 @@
 {
-    "name": "@kispace-io/core",
-    "version": "0.0.0",
-    "description": "A highly modular and extensible web application framework for building IDE-like applications with a plugin architecture, AI integration, and comprehensive workspace management.",
-    "type": "module",
-    "license": "EPL-2.0",
-    "readme": "README.md",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/kispace-io/core.git"
-    },
-    "workspaces": [
-        "packages/*"
-    ],
-    "publishConfig": {
-        "access": "public"
-    },
-    "scripts": {
-        "publish:packages": "./scripts/publish-packages.sh",
-        "dev": "npm run build -w @kispace-io/core && npm run dev -w @kispace-io/app",
-        "build": "npm run build -w @kispace-io/core",
-        "build:app": "npm run build -w @kispace-io/core && npm run build -w @kispace-io/app",
-        "type-check": "npm run type-check -w @kispace-io/core",
-        "test": "npm run test -w @kispace-io/core",
-        "docs:api": "typedoc",
-        "docs:build": "npm run docs:api && vitepress build docs",
-        "docs:dev": "vitepress dev docs"
-    },
-    "devDependencies": {
-        "typescript": "^5.9.3",
-        "typedoc": "^0.27.0",
-        "vite": "^7.1.12",
-        "vitepress": "^1.6.0"
-    }
+  "name": "@kispace-io/core",
+  "version": "0.0.0",
+  "description": "A highly modular and extensible web application framework for building IDE-like applications with a plugin architecture, AI integration, and comprehensive workspace management.",
+  "type": "module",
+  "license": "EPL-2.0",
+  "readme": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kispace-io/core.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "publish:packages": "./scripts/publish-packages.sh",
+    "dev": "npm run build -w @kispace-io/core && npm run build:extensions && npm run dev -w @kispace-io/app",
+    "build": "npm run build -w @kispace-io/core && npm run build:extensions",
+    "build:app": "npm run build -w @kispace-io/core && npm run build -w @kispace-io/app",
+    "type-check": "npm run type-check -w @kispace-io/core",
+    "test": "npm run test -w @kispace-io/core",
+    "docs:api": "typedoc",
+    "docs:build": "npm run docs:api && vitepress build docs",
+    "docs:dev": "vitepress dev docs",
+    "build:extensions": "node scripts/build-extensions.cjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "typedoc": "^0.27.0",
+    "vite": "^7.1.12",
+    "vitepress": "^1.6.0"
+  }
 }

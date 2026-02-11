@@ -1,4 +1,4 @@
-import type { ChatHistory, ChatMessage } from "../core/types";
+import type { ChatHistory, ChatMessage } from "@kispace-io/extension-ai-system/api";
 
 export interface Session {
     id: string;

@@ -1,5 +1,5 @@
 import { persistenceService } from "@kispace-io/core";
-import type { TokenUsage, ProviderTokenUsage } from "../core/types";
+import type { TokenUsage, ProviderTokenUsage } from "@kispace-io/extension-ai-system/api";
 
 interface TokenUsageData {
     providers: Record<string, ProviderTokenUsage>;
