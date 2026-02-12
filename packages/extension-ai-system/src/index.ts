@@ -1,15 +1,16 @@
 import { extensionRegistry, i18nLazy, contributionRegistry, SYSTEM_LANGUAGE_BUNDLES } from '@kispace-io/core';
 import bundle from './i18n.json';
+import pkg from '../package.json';
 
 contributionRegistry.registerContribution(SYSTEM_LANGUAGE_BUNDLES, bundle as any);
 
 const t = i18nLazy('extensions');
 
 extensionRegistry.registerExtension({
-  id: "system.ai-system",
+  id: pkg.name,
   name: t('EXT_AI_SYSTEM_NAME'),
   description: t('EXT_AI_SYSTEM_DESC'),
   loader: () => import("./ai-system-extension"),
   icon: "robot",
-  dependencies: ["system.in-browser-ml"],
+  dependencies: ["@kispace-io/extension-in-browser-ml"],
 });

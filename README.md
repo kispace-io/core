@@ -111,7 +111,7 @@ appLoaderService.registerApp({
   id: 'my-app',
   name: 'My App',
   version: '1.0.0',
-  extensions: ['system.commandpalette', 'system.settings-tree', 'system.ai-system'],
+  extensions: ['@kispace-io/extension-command-palette', '@kispace-io/extension-settings-tree', '@kispace-io/extension-ai-system'],
   render: { tag: 'k-standard-layout', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
 }, { autoStart: true });
 ```

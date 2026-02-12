@@ -23,20 +23,23 @@ import {
   SYSTEM_LANGUAGE_BUNDLES,
 } from '@kispace-io/core';
 import bundle from './i18n.json';
+import pkg from '../package.json';
 
 contributionRegistry.registerContribution(SYSTEM_LANGUAGE_BUNDLES, bundle as any);
 
 const t = i18nLazy('extensions');
 
 extensionRegistry.registerExtension({
-  id: 'system.myfeature',
+  id: pkg.name,
   name: t('EXT_MYFEATURE_NAME'),
   description: t('EXT_MYFEATURE_DESC'),
   loader: () => import('./myfeature-extension'),
   icon: 'puzzle-piece',
-  dependencies: ['system.someother'], // optional
+  dependencies: ['@kispace-io/extension-someother'], // optional
 });
 ```
+
+The extension id should match the package name (e.g. `@kispace-io/extension-myfeature`).
 
 The **loader** should dynamically import the module that performs the actual registration (commands, contributions, editors).
 

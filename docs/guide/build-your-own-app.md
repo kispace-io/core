@@ -28,9 +28,9 @@ appLoaderService.registerApp(
     name: 'My App',
     version: '1.0.0',
     extensions: [
-      'system.commandpalette',
-      'system.settings-tree',
-      'system.ai-system',
+      '@kispace-io/extension-command-palette',
+      '@kispace-io/extension-settings-tree',
+      '@kispace-io/extension-ai-system',
     ],
     render: {
       tag: 'k-standard-layout',

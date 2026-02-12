@@ -6,7 +6,7 @@
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `id` | Yes | Unique id (e.g. `system.commandpalette`). |
+| `id` | Yes | Unique id (e.g. `@kispace-io/extension-command-palette`, typically the package name). |
 | `name` | Yes | Human-readable name (can be an i18n label). |
 | `description` | No | Short description. |
 | `loader` | No | Function that dynamically imports the extension module. Runs when the extension is enabled. |

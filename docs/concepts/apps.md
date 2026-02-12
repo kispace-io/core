@@ -10,7 +10,7 @@ An **app** is the top-level unit of the framework. You define it with an `AppDef
 | `name` | Yes | Human-readable name. |
 | `version` | Yes | Semantic version string. |
 | `description` | No | Short description. |
-| `extensions` | No | List of extension ids to enable when the app loads. |
+| `extensions` | No | List of extension ids (e.g. `@kispace-io/extension-command-palette`) to enable when the app loads. |
 | `contributions` | No | App-level contributions (UI and/or extensions). |
 | `render` | No | Root component: tag string, `{ tag, attributes }`, or a function returning a Lit `TemplateResult`. Defaults to `k-standard-layout`. |
 | `initialize` | No | Called after extensions and contributions are registered. |
@@ -28,7 +28,7 @@ appLoaderService.registerApp(
     id: 'my-app',
     name: 'My App',
     version: '1.0.0',
-    extensions: ['system.commandpalette', 'system.settings-tree'],
+    extensions: ['@kispace-io/extension-command-palette', '@kispace-io/extension-settings-tree'],
     render: { tag: 'k-standard-layout', attributes: { 'show-bottom-panel': 'true' } },
   },
   { autoStart: true }
