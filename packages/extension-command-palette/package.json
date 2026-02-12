@@ -1,6 +1,6 @@
 {
   "name": "@kispace-io/extension-command-palette",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -11,8 +11,12 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
-  "scripts": { "build": "vite build" },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build"
+  },
   "dependencies": {
     "@kispace-io/core": "*"
   },
