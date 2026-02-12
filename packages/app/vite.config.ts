@@ -29,6 +29,7 @@ export default defineConfig({
       '@kispace-io/extension-unzip',
       '@kispace-io/extension-certs',
       '@kispace-io/extension-command-palette',
+      '@kispace-io/extension-command-shell',
       '@kispace-io/extension-download',
       '@kispace-io/extension-media-viewer',
       '@kispace-io/extension-memory-usage',

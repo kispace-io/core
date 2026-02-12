@@ -21,6 +21,7 @@ import '@kispace-io/extension-linuxterminal';
 import '@kispace-io/extension-webllm';
 import '@kispace-io/extension-notebook';
 import '@kispace-io/extension-command-palette';
+import '@kispace-io/extension-command-shell';
 import '@kispace-io/extension-md-editor';
 import '@kispace-io/extension-media-viewer';
 import '@kispace-io/extension-monaco-editor';
@@ -42,6 +43,7 @@ appLoaderService.registerApp(
     extensions: [
       'system.utils',
       'system.commandpalette',
+      'system.commandshell',
       'system.mdeditor',
       'system.monaco',
       'system.mediaviewer',
