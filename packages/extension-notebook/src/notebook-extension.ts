@@ -72,7 +72,7 @@ export default ({editorRegistry, commandRegistry, contributionRegistry}: any) =>
     contributionRegistry.registerContribution('filebrowser.create', {
         label: 'Jupyter Notebook',
         icon: 'k jupyter',
-        command: 'create_file',
+        command: 'touch',
         params: {
             path: "notebook.ipynb",
             extension: '.ipynb',

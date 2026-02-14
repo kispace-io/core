@@ -69,25 +69,17 @@ export class KFileBrowser extends KPart {
     }
 
     protected renderToolbar() {
-        const canModify = activeSelectionSignal.get() instanceof Resource;
-
         return html`
             <k-command icon="folder-open" title="${t('CONNECT_WORKSPACE')}" dropdown="filebrowser.connections"></k-command>
             <k-command cmd="reload_workspace" icon="repeat" title="${t('RELOAD_WORKSPACE')}"></k-command>
-            <k-command cmd="create_file" icon="plus" title="${t('CREATE_NEW')}" dropdown="filebrowser.create"></k-command>
-            <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify} title="${t('RENAME_RESOURCE')}"></k-command>
-            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify} title="${t('DELETE_RESOURCE')}"></k-command>
+            <k-command cmd="touch" icon="plus" title="${t('CREATE_NEW')}" dropdown="filebrowser.create"></k-command>
         `;
     }
 
     protected renderContextMenu() {
-        const canModify = activeSelectionSignal.get() instanceof Resource;
-
         return html`
             <k-command cmd="open_editor" icon="folder-open">${t('OPEN')}</k-command>
-            <k-command cmd="create_file" icon="plus" dropdown="filebrowser.create">${t('CREATE_NEW')}</k-command>
-            <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify}>${t('RENAME')}</k-command>
-            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify}>${t('DELETE')}</k-command>
+            <k-command cmd="touch" icon="plus" dropdown="filebrowser.create">${t('CREATE_NEW')}</k-command>
         `;
     }
 

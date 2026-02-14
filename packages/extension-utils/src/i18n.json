@@ -1,4 +1,5 @@
 {
+  "namespace": "extensions",
   "en": {
     "EXT_UTILS_NAME": "Utilities",
     "EXT_UTILS_DESC": "Utility commands such as wget, unzip and certificate tools.",
@@ -7,6 +8,8 @@
     "CMD_UNZIP_NAME": "Unzip Archive",
     "CMD_UNZIP_DESC": "Extract a zip archive from the workspace.",
     "CMD_P12SPLIT_NAME": ".p12 file splitter",
-    "CMD_P12SPLIT_DESC": "Split a .p12 certificate file into separate PEM files."
+    "CMD_P12SPLIT_DESC": "Split a .p12 certificate file into separate PEM files.",
+    "RENAME": "Rename",
+    "DELETE": "Delete"
   }
 }

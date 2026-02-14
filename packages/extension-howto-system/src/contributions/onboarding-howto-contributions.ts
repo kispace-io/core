@@ -141,7 +141,7 @@ const onboardingContribution: HowToContribution = {
             postCondition: async () => {
                 return await onboardingFileExists();
             },
-            command: 'create_file',
+            command: 'touch',
             commandParams: {
                 path: ONBOARDING_FILE_PATH,
                 contents: 'Welcome to AppSpace!\n\nThis is your first file. You can edit it and save your changes.'
