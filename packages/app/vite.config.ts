@@ -43,7 +43,7 @@ export default defineConfig({
     alias: workspaceSourceAliases(),
   },
   optimizeDeps: {
-    include: ['@kispace-io/core'],
+    exclude: ['@kispace-io/core'],
   },
   server: {
     watch: {

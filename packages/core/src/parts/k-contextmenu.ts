@@ -34,6 +34,20 @@ export class KContextMenu extends KElement {
     private anchorRef = createRef<HTMLElement>();
     private dropdownRef = createRef<HTMLElement>();
 
+    private boundHandleDocumentPointerDown = this.handleDocumentPointerDown.bind(this);
+
+    private handleDocumentPointerDown(e: PointerEvent) {
+        if (!this.isOpen) return;
+        const target = (e.composedPath()[0] as Element) || e.target;
+        if (!(target instanceof Element)) return;
+        if (
+            this.dropdownRef.value &&
+            (target === this.dropdownRef.value || this.dropdownRef.value.contains(target))
+        ) return;
+        if (target.closest('[part="submenu"]')) return;
+        this.onClose();
+    }
+
     protected doBeforeUI() {
         const id = this.getAttribute("id");
         if (id) {
@@ -145,17 +159,19 @@ export class KContextMenu extends KElement {
     }
 
     public show(position: { x: number, y: number }, mouseEvent?: MouseEvent) {
-        // Trigger click before showing context menu to update selection
         if (mouseEvent) {
             this.triggerClickUnderCursor(mouseEvent);
         }
-        
         this.position = position;
         this.isOpen = true;
+        this.updateComplete.then(() => {
+            document.addEventListener('pointerdown', this.boundHandleDocumentPointerDown, { capture: true });
+        });
     }
 
     private onClose() {
         this.isOpen = false;
+        document.removeEventListener('pointerdown', this.boundHandleDocumentPointerDown, { capture: true });
     }
 
     private handleCommandClick(commandId: string, params?: Record<string, any>) {
@@ -231,7 +247,7 @@ export class KContextMenu extends KElement {
             min-width: 200px;
         }
         
-        wa-dropdown::part(panel) {
+        wa-dropdown::part(menu) {
             min-width: 200px;
         }
     `;
