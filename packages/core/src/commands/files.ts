@@ -160,58 +160,24 @@ registerAll({
         "parameters": [
             {
                 "name": "path",
-                "description": "tha path of the file to open within the workspace",
-                "required": true
+                "description": "The path of the file to open within the workspace; if omitted, the active selection is opened",
+                "required": false
             }
         ]
     },
     handler: {
         execute: async context => {
-            const result = await getWorkspaceAndFile({path: context.params?.["path"]})
-            if (!result) {
-                return
+            const path = context.params?.["path"]
+            let file: File | null = null
+            if (path) {
+                const result = await getWorkspaceAndFile({ path })
+                file = result?.file ?? null
+            } else {
+                const selection = activeSelectionSignal.get()
+                file = selection instanceof File ? selection : null
             }
-
-            const { file } = result
+            if (!file) return
             await editorRegistry.loadEditor(file)
-        }
-    }
-})
-
-registerAll({
-    command: {
-        "id": "file_exists",
-        "name": "Check if file exists",
-        "description": "Checks if a file exists at the given path",
-        "parameters": [
-            {
-                "name": "path",
-                "description": "the path of the file to check, relative to the workspace",
-                "required": true
-            }
-        ],
-        "output": [
-            {
-                "name": "exists",
-                "description": "true if the file exists, false otherwise"
-            }
-        ]
-    },
-    handler: {
-        execute: async ({params}: any) => {
-            const result = await getWorkspaceAndPath(params)
-            if (!result) {
-                return false
-            }
-
-            const { workspace, path } = result
-
-            try {
-                const resource = await workspace.getResource(path)
-                return resource instanceof File
-            } catch (err: any) {
-                return false
-            }
         }
     }
 })

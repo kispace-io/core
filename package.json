@@ -17,7 +17,7 @@
   },
   "scripts": {
     "publish:packages": "./scripts/publish-packages.sh",
-    "dev": "npm run build -w @kispace-io/core && npm run build:extensions && npm run dev -w @kispace-io/app",
+    "dev": "npm run dev -w @kispace-io/app",
     "build": "npm run build -w @kispace-io/core && npm run build:extensions",
     "build:app": "npm run build -w @kispace-io/core && npm run build -w @kispace-io/app",
     "type-check": "npm run type-check -w @kispace-io/core",
