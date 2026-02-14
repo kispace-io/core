@@ -13,6 +13,7 @@ import {Signal} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {subscribe} from "../core/events";
 import {createRef, ref} from "lit/directives/ref.js";
+import '../components/k-command';
 
 @customElement('k-contextmenu')
 export class KContextMenu extends KElement {
@@ -36,15 +37,25 @@ export class KContextMenu extends KElement {
 
     private boundHandleDocumentPointerDown = this.handleDocumentPointerDown.bind(this);
 
+    /**
+     * "Click outside to close" runs in capture phase before the target's click.
+     * We use composedPath() so hits inside the menu still count as inside:
+     * - Clicks on items (e.g. k-command / wa-dropdown-item) or their icon/label
+     *   are inside shadow roots; contains(target) can miss those.
+     * - composedPath() is the path from target to root crossing shadow boundaries,
+     *   so if the dropdown is in the path, the click was inside the menu and we
+     *   do not close (so the item's click can run). We only close when the click
+     *   is truly outside (dropdown not in path). Submenus: same idea, skip close
+     *   when any node in the path has part="submenu".
+     */
     private handleDocumentPointerDown(e: PointerEvent) {
         if (!this.isOpen) return;
-        const target = (e.composedPath()[0] as Element) || e.target;
-        if (!(target instanceof Element)) return;
+        const path = e.composedPath() as Element[];
         if (
             this.dropdownRef.value &&
-            (target === this.dropdownRef.value || this.dropdownRef.value.contains(target))
+            path.includes(this.dropdownRef.value)
         ) return;
-        if (target.closest('[part="submenu"]')) return;
+        if (path.some((el) => el.getAttribute?.('part') === 'submenu')) return;
         this.onClose();
     }
 
@@ -174,22 +185,18 @@ export class KContextMenu extends KElement {
         document.removeEventListener('pointerdown', this.boundHandleDocumentPointerDown, { capture: true });
     }
 
-    private handleCommandClick(commandId: string, params?: Record<string, any>) {
-        return async () => {
-            this.executeCommand(commandId, params || {});
-        };
-    }
-
     private renderContribution(contribution: Contribution) {
         if ("command" in contribution) {
             const commandContribution = contribution as CommandContribution;
+            const disabled = (commandContribution.disabled as Signal.Computed<boolean>)?.get();
             return html`
-                <wa-dropdown-item 
-                    @click=${this.handleCommandClick(commandContribution.command, commandContribution.params)}
-                    ?disabled="${(commandContribution.disabled as Signal.Computed<boolean>)?.get()}">
-                    ${commandContribution.icon ? html`<wa-icon slot="icon" name=${commandContribution.icon}></wa-icon>` : ''}
+                <k-command
+                    cmd="${commandContribution.command}"
+                    icon="${commandContribution.icon ?? ''}"
+                    .params=${commandContribution.params ?? {}}
+                    ?disabled="${disabled}">
                     ${commandContribution.label}
-                </wa-dropdown-item>
+                </k-command>
             `;
         } else if ("html" in contribution) {
             const contents = (contribution as HTMLContribution).html;
@@ -207,12 +214,10 @@ export class KContextMenu extends KElement {
         const partContent = this.partContextMenuRenderer ? this.partContextMenuRenderer() : nothing;
 
         return html`
-            <wa-dropdown 
+            <wa-dropdown
                 ${ref(this.dropdownRef)}
                 ?open=${this.isOpen}
-                @wa-after-hide=${this.onClose}
-                placement="bottom-start"
-                distance="0">
+                @wa-after-hide=${this.onClose}>
                 
                 <div 
                     slot="trigger"

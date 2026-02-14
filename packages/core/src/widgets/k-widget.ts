@@ -11,7 +11,9 @@ Object.defineProperty(LitElement.prototype, "model", {
     writable: true
 });
 
-export abstract class KWidget extends SignalWatcher(LitElement) {
+const KWidgetBase = SignalWatcher(LitElement) as unknown as typeof LitElement;
+
+export abstract class KWidget extends KWidgetBase {
     private signalCleanups = new Set<() => void>();
     private eventSubscriptions = new Set<SubscriptionToken>();
 
