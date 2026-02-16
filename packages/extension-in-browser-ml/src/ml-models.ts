@@ -93,11 +93,15 @@ export enum MLModel {
     OBJECT_DETECTION = 'Xenova/detr-resnet-50',
 
     /**
-     * Object detection model (YOLOv9)
-     * Model: yolov9-c
-     * Use case: Object detection in images, YOLO family
+     * Object detection model (YOLO-style, default for YOLO flows)
+     * Uses YOLOS-tiny (public, no auth). For YOLOv9-web see OBJECT_DETECTION_YOLOV9_WEB (may require HF token).
      */
-    OBJECT_DETECTION_YOLOV9 = 'Xenova/yolov9-c',
+    OBJECT_DETECTION_YOLOV9 = 'Xenova/yolos-tiny',
+
+    /**
+     * Object detection model (YOLOv9 web). May require Hugging Face token if repo is gated.
+     */
+    OBJECT_DETECTION_YOLOV9_WEB = 'Xenova/yolov9-web',
 
     /**
      * Object detection model (YOLOS tiny)
@@ -121,9 +125,8 @@ export enum MLModel {
     OBJECT_DETECTION_YOLOS_BASE = 'Xenova/yolos-base',
 
     /**
-     * Object detection model (GELAN / YOLOv9-based)
-     * Model: gelan-c_all
-     * Use case: Object detection, YOLOv9 variant
+     * Object detection model (GELAN / YOLOv9-based). Not supported by pipeline() API.
+     * Use OBJECT_DETECTION_YOLOS_* or OBJECT_DETECTION (DETR) instead.
      */
     OBJECT_DETECTION_GELAN = 'Xenova/gelan-c_all',
 

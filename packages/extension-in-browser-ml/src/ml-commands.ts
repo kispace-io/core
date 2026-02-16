@@ -85,14 +85,14 @@ registerAll({
 });
 
 /**
- * Run object detection on an image using YOLO (YOLOv9)
- * Same interface as Detect objects in image but uses Xenova YOLOv9 model
+ * Run object detection on an image using YOLOv9 (yolov9-web)
+ * Same interface as Detect objects in image but uses Xenova YOLOv9 web model
  */
 registerAll({
     command: {
         id: "detect_objects_in_image_yolo",
         name: "Detect objects in image (YOLO)",
-        description: "Detects objects in an image using YOLOv9. Returns bounding boxes with object labels and confidence scores. Use when you prefer the YOLO model over the default DETR detector.",
+        description: "Detects objects in an image using YOLOv9 (yolov9-web). Returns bounding boxes with object labels and confidence scores. Use when you prefer the YOLO model over the default DETR detector.",
         parameters: [...OBJECT_DETECTION_PARAMS],
         output: [...OBJECT_DETECTION_OUTPUT]
     },

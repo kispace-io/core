@@ -1,8 +1,6 @@
-import {customElement, property, state} from "lit/decorators.js";
-import {KPart} from "@kispace-io/core";
-import {css, html} from "lit";
-import {EditorInput, editorRegistry} from "@kispace-io/core";
-import {File} from "@kispace-io/core";
+import { customElement, property, state } from "lit/decorators.js";
+import { css, html, nothing } from "lit";
+import { KPart, EditorInput, editorRegistry, File } from "@kispace-io/core";
 
 const SUPPORTED_EXTENSIONS = [
     '.pdf',
@@ -20,6 +18,27 @@ const isSupportedMediaFile = (file: File): boolean => {
     const fileName = file.getName().toLowerCase();
     return SUPPORTED_EXTENSIONS.some(ext => fileName.endsWith(ext));
 };
+
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp', '.ico'];
+
+const isImageFile = (file: File): boolean => {
+    const name = file.getName().toLowerCase();
+    return IMAGE_EXTENSIONS.some(ext => name.endsWith(ext));
+};
+
+/** Normalized bounding box overlay (0–1). Used by extensions to draw on the image. */
+export interface BboxOverlay {
+    type: 'bbox';
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    label?: string;
+    /** CSS color for border and label (e.g. by category). */
+    color?: string;
+}
+
+export type MediaViewerOverlay = BboxOverlay;
 
 editorRegistry.registerEditorInputHandler({
     canHandle: input => input instanceof File && isSupportedMediaFile(input),
@@ -48,12 +67,49 @@ export class KMediaViewer extends KPart {
     @state()
     private mediaUrl?: string
 
+    @state()
+    private imageNaturalWidth = 0
+
+    @state()
+    private imageNaturalHeight = 0
+
+    @state()
+    private overlays: MediaViewerOverlay[] = []
+
+    getMediaUrl(): string | undefined {
+        return this.mediaUrl;
+    }
+
+    getIsImage(): boolean {
+        return !!(this.input?.data instanceof File && this.mediaUrl && isImageFile(this.input.data));
+    }
+
+    getImageDimensions(): { width: number; height: number } {
+        return { width: this.imageNaturalWidth, height: this.imageNaturalHeight };
+    }
+
+    /** Set overlays drawn on the image (e.g. from object detection or other extensions). Coordinates in 0–1. */
+    setOverlays(overlays: MediaViewerOverlay[]): void {
+        this.overlays = overlays ?? [];
+    }
+
+    getOverlays(): MediaViewerOverlay[] {
+        return [...this.overlays];
+    }
+
+    clearOverlays(): void {
+        this.overlays = [];
+    }
+
     protected doClose() {
         if (this.mediaUrl && this.mediaUrl.startsWith('blob:')) {
             URL.revokeObjectURL(this.mediaUrl)
         }
         this.input = undefined
         this.mediaUrl = undefined
+        this.overlays = []
+        this.imageNaturalWidth = 0
+        this.imageNaturalHeight = 0
     }
 
     protected async doInitUI() {
@@ -68,6 +124,15 @@ export class KMediaViewer extends KPart {
         const file = this.input.data
         const url = await file.getContents({uri: true}) as string
         this.mediaUrl = url
+        this.overlays = []
+    }
+
+    private onImageLoad = (e: Event): void => {
+        const img = e.target as HTMLImageElement;
+        if (img?.naturalWidth && img?.naturalHeight) {
+            this.imageNaturalWidth = img.naturalWidth;
+            this.imageNaturalHeight = img.naturalHeight;
+        }
     }
 
     protected render() {
@@ -77,6 +142,41 @@ export class KMediaViewer extends KPart {
                     <wa-spinner></wa-spinner>
                 </div>
             `
+        }
+
+        const isImage = this.getIsImage();
+        if (isImage) {
+            const w = this.imageNaturalWidth || 1;
+            const h = this.imageNaturalHeight || 1;
+            const aspectRatio = w / h;
+            return html`
+                <div class="image-container">
+                    <div
+                        class="image-wrapper"
+                        style="aspect-ratio: ${aspectRatio};"
+                    >
+                        <img
+                            class="media-image"
+                            src="${this.mediaUrl}"
+                            alt=""
+                            @load=${this.onImageLoad}
+                        />
+                        ${this.overlays.length > 0 ? html`
+                            <div class="overlay-layer">
+                                ${this.overlays.map((o) => o.type === 'bbox' ? html`
+                                    <div
+                                        class="overlay-bbox"
+                                        style="left: ${o.left * 100}%; top: ${o.top * 100}%; width: ${o.width * 100}%; height: ${o.height * 100}%;${o.color ? ` --overlay-color: ${o.color};` : ''}"
+                                        title="${o.label ?? ''}"
+                                    >
+                                        ${o.label ? html`<span class="overlay-label">${o.label}</span>` : nothing}
+                                    </div>
+                                ` : nothing)}
+                            </div>
+                        ` : nothing}
+                    </div>
+                </div>
+            `;
         }
 
         return html`
@@ -98,11 +198,53 @@ export class KMediaViewer extends KPart {
             background: var(--wa-color-surface-default, #1a1a1a);
         }
 
-        .media-iframe {
+        .image-container {
+            position: relative;
             width: 100%;
             height: 100%;
-            border: none;
-            background: var(--wa-color-surface-default, #1a1a1a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .image-wrapper {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .media-image {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .overlay-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .overlay-bbox {
+            position: absolute;
+            border: 2px solid var(--overlay-color, var(--wa-color-brand-fill, #0d6efd));
+            background: color-mix(in srgb, var(--overlay-color, #0d6efd) 15%, transparent);
+            pointer-events: auto;
+            box-sizing: border-box;
+        }
+
+        .overlay-label {
+            position: absolute;
+            left: 0;
+            top: -1.25em;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            background: var(--overlay-color, var(--wa-color-brand-fill, #0d6efd));
+            color: var(--wa-color-surface-default, #fff);
+            padding: 1px 4px;
+            border-radius: 2px;
         }
     `
 }
