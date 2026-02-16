@@ -8,12 +8,21 @@ const logger = createLogger("InBrowserML");
 const MEDIA_VIEWER_TOOLBAR_TARGET = "toolbar:media-viewer";
 
 const detectionRunningSignal = signal(false);
+const segmentationRunningSignal = signal(false);
+
+function isMlRunning(): boolean {
+    return detectionRunningSignal.get() || segmentationRunningSignal.get();
+}
+
+type BboxOverlay = { type: 'bbox'; left: number; top: number; width: number; height: number; label?: string; color?: string };
+type MaskOverlay = { type: 'mask'; dataUrl: string; label?: string; color?: string };
+type MediaViewerOverlay = BboxOverlay | MaskOverlay;
 
 function isMediaViewerWithImage(part: unknown): part is {
     getMediaUrl(): string | undefined;
     getIsImage(): boolean;
     getImageDimensions(): { width: number; height: number };
-    setOverlays(overlays: Array<{ type: 'bbox'; left: number; top: number; width: number; height: number; label?: string; color?: string }>): void;
+    setOverlays(overlays: MediaViewerOverlay[]): void;
 } {
     if (!part || typeof (part as any).getMediaUrl !== "function") return false;
     return (part as any).getIsImage?.() === true;
@@ -34,7 +43,7 @@ function detectionResultsToOverlays(
     results: Array<{ label: string; score: number; box: { xmin: number; ymin: number; xmax: number; ymax: number } }>,
     imageWidth: number,
     imageHeight: number
-): Array<{ type: 'bbox'; left: number; top: number; width: number; height: number; label?: string; color?: string }> {
+): BboxOverlay[] {
     const w = imageWidth || 1;
     const h = imageHeight || 1;
     return results.map((r) => ({
@@ -94,9 +103,57 @@ registerAll({
     }
 });
 
+registerAll({
+    command: {
+        id: "segment_image_in_current_image",
+        name: "Segment",
+        description: "Runs image segmentation on the image currently open in the media viewer.",
+        parameters: [],
+        output: []
+    },
+    handler: {
+        execute: async (context: ExecutionContext) => {
+            const part = context.activeEditor;
+            if (!isMediaViewerWithImage(part)) {
+                return { error: "No image open in the media viewer." };
+            }
+            const url = part.getMediaUrl();
+            if (!url) {
+                return { error: "No image URL available." };
+            }
+            try {
+                segmentationRunningSignal.set(true);
+                await taskService.runAsync("Segmenting image", async () => {
+                    const segmenter = await inBrowserMLService.getPipeline(
+                        MLTask.IMAGE_SEGMENTATION,
+                        MLModel.IMAGE_SEGMENTATION
+                    );
+                    const results = (await segmenter(url, { taskType: "image-segmentation" })) as MaskOverlay[];
+                    part.setOverlays(results);
+                });
+                return { ok: true };
+            } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : String(err);
+                logger.error(`Segmentation failed: ${msg}`);
+                toastError(msg);
+                return { error: msg };
+            } finally {
+                segmentationRunningSignal.set(false);
+            }
+        }
+    }
+});
+
 contributionRegistry.registerContribution(MEDIA_VIEWER_TOOLBAR_TARGET, {
     label: "Detect objects",
     icon: "magnifying-glass",
     command: "detect_objects_in_current_image",
-    disabled: () => detectionRunningSignal.get()
+    disabled: () => isMlRunning()
+});
+
+contributionRegistry.registerContribution(MEDIA_VIEWER_TOOLBAR_TARGET, {
+    label: "Segment",
+    icon: "scissors",
+    command: "segment_image_in_current_image",
+    disabled: () => isMlRunning()
 });

@@ -38,7 +38,16 @@ export interface BboxOverlay {
     color?: string;
 }
 
-export type MediaViewerOverlay = BboxOverlay;
+/** Segment mask overlay: PNG data URL (alpha where segment is), drawn over the image. */
+export interface MaskOverlay {
+    type: 'mask';
+    /** Data URL of the mask image (e.g. image/png with alpha). */
+    dataUrl: string;
+    label?: string;
+    color?: string;
+}
+
+export type MediaViewerOverlay = BboxOverlay | MaskOverlay;
 
 editorRegistry.registerEditorInputHandler({
     canHandle: input => input instanceof File && isSupportedMediaFile(input),
@@ -171,6 +180,13 @@ export class KMediaViewer extends KPart {
                                     >
                                         ${o.label ? html`<span class="overlay-label">${o.label}</span>` : nothing}
                                     </div>
+                                ` : o.type === 'mask' ? html`
+                                    <img
+                                        class="overlay-mask"
+                                        src="${o.dataUrl}"
+                                        alt="${o.label ?? ''}"
+                                        title="${o.label ?? ''}"
+                                    />
                                 ` : nothing)}
                             </div>
                         ` : nothing}
@@ -245,6 +261,15 @@ export class KMediaViewer extends KPart {
             color: var(--wa-color-surface-default, #fff);
             padding: 1px 4px;
             border-radius: 2px;
+        }
+
+        .overlay-mask {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            pointer-events: none;
         }
     `
 }

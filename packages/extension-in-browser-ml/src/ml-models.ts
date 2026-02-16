@@ -131,6 +131,13 @@ export enum MLModel {
     OBJECT_DETECTION_GELAN = 'Xenova/gelan-c_all',
 
     /**
+     * Image segmentation model (panoptic)
+     * Model: detr-resnet-50-panoptic
+     * Use case: Segment objects in images, each with label and mask
+     */
+    IMAGE_SEGMENTATION = 'Xenova/detr-resnet-50-panoptic',
+
+    /**
      * Automatic speech recognition model
      * Model: whisper-tiny
      * Size: ~75MB quantized
@@ -201,6 +208,8 @@ export function getModelForTask(task: MLTask): MLModel | null {
             return MLModel.IMAGE_CLASSIFICATION;
         case MLTask.OBJECT_DETECTION:
             return MLModel.OBJECT_DETECTION;
+        case MLTask.IMAGE_SEGMENTATION:
+            return MLModel.IMAGE_SEGMENTATION;
         case MLTask.AUTOMATIC_SPEECH_RECOGNITION:
             return MLModel.AUTOMATIC_SPEECH_RECOGNITION;
         case MLTask.AUDIO_CLASSIFICATION:

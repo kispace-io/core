@@ -88,7 +88,7 @@ self.onmessage = async (event: MessageEvent) => {
             return;
         }
     } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : String(err);
+        const errorMsg = formatError(err);
         if (msg.type === 'load') {
             self.postMessage({ type: 'loadResult', pipelineKey: msg.pipelineKey, error: errorMsg });
         } else if (msg.type === 'run') {
@@ -96,3 +96,14 @@ self.onmessage = async (event: MessageEvent) => {
         }
     }
 };
+
+function formatError(err: unknown): string {
+    if (err instanceof Error) {
+        const stack = err.stack ? `\n${err.stack}` : '';
+        return `${err.name}: ${err.message}${stack}`;
+    }
+    if (typeof err === 'object' && err !== null && 'message' in err) {
+        return String((err as { message: unknown }).message);
+    }
+    return String(err);
+}

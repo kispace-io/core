@@ -17,6 +17,7 @@ dist-ssr
 docs/.vitepress/dist
 docs/.vitepress/public
 docs/.vitepress/cache
+/.vitepress
 
 # Environment files
 .env

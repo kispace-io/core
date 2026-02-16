@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite';
+import mkcert from 'vite-plugin-mkcert';
+import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -51,6 +53,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    mkcert(),
+    crossOriginIsolation(),
     {
       name: 'watch-workspace-packages',
       configureServer(server) {

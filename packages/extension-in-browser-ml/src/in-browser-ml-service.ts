@@ -89,7 +89,11 @@ export class InBrowserMLService {
         const modelStr = typeof model === 'string' ? model : model;
         const pipelineKey = `${taskStr}:${modelStr}`;
 
-        await this.ensurePipelineLoaded(pipelineKey, taskStr, modelStr, { quantized: true, ...options });
+        const loadOptions: Record<string, unknown> = { quantized: true, ...options };
+        if (options.device === "webgpu" && !('gpu' in navigator)) {
+            loadOptions.device = undefined;
+        }
+        await this.ensurePipelineLoaded(pipelineKey, taskStr, modelStr, loadOptions);
 
         return (input: unknown, runOptions?: Record<string, unknown>) => {
             const requestId = ++this.runRequestId;
