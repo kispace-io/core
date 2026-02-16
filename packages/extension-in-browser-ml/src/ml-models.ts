@@ -91,7 +91,42 @@ export enum MLModel {
      * Use case: Object detection in images
      */
     OBJECT_DETECTION = 'Xenova/detr-resnet-50',
-    
+
+    /**
+     * Object detection model (YOLOv9)
+     * Model: yolov9-c
+     * Use case: Object detection in images, YOLO family
+     */
+    OBJECT_DETECTION_YOLOV9 = 'Xenova/yolov9-c',
+
+    /**
+     * Object detection model (YOLOS tiny)
+     * Model: yolos-tiny
+     * Use case: Lightweight object detection, ViT-based
+     */
+    OBJECT_DETECTION_YOLOS_TINY = 'Xenova/yolos-tiny',
+
+    /**
+     * Object detection model (YOLOS small)
+     * Model: yolos-small
+     * Use case: Object detection, higher accuracy than tiny
+     */
+    OBJECT_DETECTION_YOLOS_SMALL = 'Xenova/yolos-small',
+
+    /**
+     * Object detection model (YOLOS base)
+     * Model: yolos-base
+     * Use case: Object detection, higher accuracy
+     */
+    OBJECT_DETECTION_YOLOS_BASE = 'Xenova/yolos-base',
+
+    /**
+     * Object detection model (GELAN / YOLOv9-based)
+     * Model: gelan-c_all
+     * Use case: Object detection, YOLOv9 variant
+     */
+    OBJECT_DETECTION_GELAN = 'Xenova/gelan-c_all',
+
     /**
      * Automatic speech recognition model
      * Model: whisper-tiny

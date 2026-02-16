@@ -6,6 +6,48 @@ import { workspaceService, File } from "@kispace-io/core";
 
 const logger = createLogger('MLCommands');
 
+const OBJECT_DETECTION_PARAMS = [
+    { name: "imageUrl", description: "URL or workspace path of the image to analyze. Can be a URL (http://, https://, data:), a workspace file path (e.g., 'screenshot.png' or 'images/photo.jpg'), or any accessible image URL.", type: "string", required: true },
+    { name: "filterClasses", description: "Optional array of object class names to filter results (e.g., ['tree', 'building']). If not provided, returns all detected objects.", type: "array", required: false },
+    { name: "minConfidence", description: "Minimum confidence score (0-1) for detected objects. Default: 0.5", type: "number", required: false }
+] as const;
+
+const OBJECT_DETECTION_OUTPUT = [
+    { name: "objects", description: "Array of detected objects with label, confidence, and bounding box coordinates" },
+    { name: "filteredCount", description: "Number of objects after filtering (if filterClasses was provided)" }
+] as const;
+
+async function runObjectDetection(
+    imageUrl: string,
+    filterClasses: string[],
+    minConfidence: number,
+    model: MLModel
+): Promise<{ objects: any[]; filteredCount: number; totalDetected: number } | { error: string }> {
+    const detector = await inBrowserMLService.getPipeline(MLTask.OBJECT_DETECTION, model);
+    const imageInput = await loadImageInput(imageUrl);
+    try {
+        const results = await detector(imageInput.input);
+        if (imageInput.cleanup) imageInput.cleanup();
+
+        let objects = results.map((result: any) => ({
+            label: result.label,
+            confidence: result.score,
+            bbox: { xmin: result.box.xmin, ymin: result.box.ymin, xmax: result.box.xmax, ymax: result.box.ymax },
+            center: { x: (result.box.xmin + result.box.xmax) / 2, y: (result.box.ymin + result.box.ymax) / 2 }
+        })).filter((obj: any) => obj.confidence >= minConfidence);
+
+        if (filterClasses.length > 0) {
+            const filterLower = filterClasses.map((c: string) => c.toLowerCase());
+            objects = objects.filter((obj: any) =>
+                filterLower.some((filter: string) => obj.label.toLowerCase().includes(filter))
+            );
+        }
+        return { objects, filteredCount: objects.length, totalDetected: results.length };
+    } finally {
+        if (imageInput.cleanup) imageInput.cleanup();
+    }
+}
+
 /**
  * Commands for in-browser ML tasks that can be used by the LLM
  * These commands expose ML service capabilities as tools
@@ -17,103 +59,57 @@ const logger = createLogger('MLCommands');
  */
 registerAll({
     command: {
-        "id": "detect_objects_in_image",
-        "name": "Detect objects in image",
-        "description": "Detects objects in an image using computer vision. Returns bounding boxes with object labels and confidence scores. Useful for extracting positions of objects like trees, buildings, vehicles, etc. from aerial imagery or photos.",
-        "parameters": [
-            {
-                "name": "imageUrl",
-                "description": "URL or workspace path of the image to analyze. Can be a URL (http://, https://, data:), a workspace file path (e.g., 'screenshot.png' or 'images/photo.jpg'), or any accessible image URL.",
-                "type": "string",
-                "required": true
-            },
-            {
-                "name": "filterClasses",
-                "description": "Optional array of object class names to filter results (e.g., ['tree', 'building']). If not provided, returns all detected objects.",
-                "type": "array",
-                "required": false
-            },
-            {
-                "name": "minConfidence",
-                "description": "Minimum confidence score (0-1) for detected objects. Default: 0.5",
-                "type": "number",
-                "required": false
-            }
-        ],
-        "output": [
-            {
-                "name": "objects",
-                "description": "Array of detected objects with label, confidence, and bounding box coordinates"
-            },
-            {
-                "name": "filteredCount",
-                "description": "Number of objects after filtering (if filterClasses was provided)"
-            }
-        ]
+        id: "detect_objects_in_image",
+        name: "Detect objects in image",
+        description: "Detects objects in an image using computer vision. Returns bounding boxes with object labels and confidence scores. Useful for extracting positions of objects like trees, buildings, vehicles, etc. from aerial imagery or photos.",
+        parameters: [...OBJECT_DETECTION_PARAMS],
+        output: [...OBJECT_DETECTION_OUTPUT]
     },
     handler: {
         execute: async (context: ExecutionContext) => {
+            const imageUrl = context.params?.imageUrl;
+            if (!imageUrl) return { error: "imageUrl parameter is required" };
             try {
-                const imageUrl = context.params?.imageUrl;
-                if (!imageUrl) {
-                    return { error: "imageUrl parameter is required" };
-                }
-
-                const filterClasses = context.params?.filterClasses || [];
-                const minConfidence = context.params?.minConfidence ?? 0.5;
-
-                // Load the object detection pipeline
-                const detector = await inBrowserMLService.getPipeline(
-                    MLTask.OBJECT_DETECTION,
+                return await runObjectDetection(
+                    imageUrl,
+                    context.params?.filterClasses || [],
+                    context.params?.minConfidence ?? 0.5,
                     MLModel.OBJECT_DETECTION
                 );
-
-                // Load image - transformers.js accepts URLs, blobs, or image elements
-                const imageInput = await loadImageInput(imageUrl);
-
-                // Run object detection
-                const results = await detector(imageInput.input);
-                
-                // Clean up object URL if we created one
-                if (imageInput.cleanup) {
-                    imageInput.cleanup();
-                }
-
-                // Process results
-                let objects = results.map((result: any) => ({
-                    label: result.label,
-                    confidence: result.score,
-                    bbox: {
-                        xmin: result.box.xmin,
-                        ymin: result.box.ymin,
-                        xmax: result.box.xmax,
-                        ymax: result.box.ymax
-                    },
-                    center: {
-                        x: (result.box.xmin + result.box.xmax) / 2,
-                        y: (result.box.ymin + result.box.ymax) / 2
-                    }
-                }))
-                .filter((obj: any) => obj.confidence >= minConfidence);
-
-                // Filter by class if specified
-                let filteredCount = objects.length;
-                if (filterClasses.length > 0) {
-                    const filterLower = filterClasses.map((c: string) => c.toLowerCase());
-                    objects = objects.filter((obj: any) => 
-                        filterLower.some((filter: string) => obj.label.toLowerCase().includes(filter))
-                    );
-                    filteredCount = objects.length;
-                }
-
-                return {
-                    objects,
-                    filteredCount,
-                    totalDetected: results.length
-                };
             } catch (error: any) {
                 logger.error(`Object detection failed: ${error.message}`);
                 return { error: `Object detection failed: ${error.message}` };
+            }
+        }
+    }
+});
+
+/**
+ * Run object detection on an image using YOLO (YOLOv9)
+ * Same interface as Detect objects in image but uses Xenova YOLOv9 model
+ */
+registerAll({
+    command: {
+        id: "detect_objects_in_image_yolo",
+        name: "Detect objects in image (YOLO)",
+        description: "Detects objects in an image using YOLOv9. Returns bounding boxes with object labels and confidence scores. Use when you prefer the YOLO model over the default DETR detector.",
+        parameters: [...OBJECT_DETECTION_PARAMS],
+        output: [...OBJECT_DETECTION_OUTPUT]
+    },
+    handler: {
+        execute: async (context: ExecutionContext) => {
+            const imageUrl = context.params?.imageUrl;
+            if (!imageUrl) return { error: "imageUrl parameter is required" };
+            try {
+                return await runObjectDetection(
+                    imageUrl,
+                    context.params?.filterClasses || [],
+                    context.params?.minConfidence ?? 0.5,
+                    MLModel.OBJECT_DETECTION_YOLOV9
+                );
+            } catch (error: any) {
+                logger.error(`Object detection (YOLO) failed: ${error.message}`);
+                return { error: `Object detection (YOLO) failed: ${error.message}` };
             }
         }
     }
