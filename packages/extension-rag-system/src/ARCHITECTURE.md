@@ -411,7 +411,7 @@ Indexes: ['documentId', 'idx0', 'idx1', 'idx2', 'idx3', 'idx4']
 
 ### External
 - `rxdb`: Client-side database
-- `@xenova/transformers`: Embedding model
+- `@huggingface/transformers`: Embedding model (transformers.js)
 - `pdfjs-dist`: PDF text extraction
 
 ## Future Improvements

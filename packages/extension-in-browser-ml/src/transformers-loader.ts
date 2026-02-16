@@ -1,11 +1,11 @@
-type TransformersModule = typeof import('@xenova/transformers');
+type TransformersModule = typeof import('@huggingface/transformers');
 
 let transformersModulePromise: Promise<TransformersModule> | null = null;
 let transformersEnvConfigured = false;
 
 export async function getTransformersModule(): Promise<TransformersModule> {
     if (!transformersModulePromise) {
-        transformersModulePromise = import('@xenova/transformers');
+        transformersModulePromise = import('@huggingface/transformers');
     }
     const module = await transformersModulePromise;
     if (!transformersEnvConfigured) {

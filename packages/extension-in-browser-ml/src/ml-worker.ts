@@ -1,9 +1,9 @@
 /**
  * Web Worker for running transformers.js pipelines off the main thread.
- * Loads @xenova/transformers and handles load/run/clear messages.
+ * Uses @huggingface/transformers (https://github.com/huggingface/transformers.js).
  */
 
-import { pipeline, env } from '@xenova/transformers';
+import { pipeline, env } from '@huggingface/transformers';
 
 const pipelines = new Map<string, any>();
 
@@ -57,7 +57,9 @@ self.onmessage = async (event: MessageEvent) => {
                 return;
             }
             configureEnv(authToken);
-            const pipe = await pipeline(task as any, model, { quantized: true, ...options });
+            const { quantized, ...rest } = options as Record<string, unknown>;
+            const pipelineOptions = { dtype: quantized !== undefined && quantized !== null ? quantized : undefined, ...rest };
+            const pipe = await pipeline(task as any, model, pipelineOptions as any);
             pipelines.set(pipelineKey, pipe);
             self.postMessage({ type: 'loadResult', pipelineKey });
             return;

@@ -8,7 +8,7 @@ const logger = createLogger('ToolDetector');
  * Uses a lightweight text classification model running in the browser.
  */
 export class ToolDetector {
-    private classifier: any = null; // ZeroShotClassificationPipeline from @xenova/transformers
+    private classifier: any = null; // ZeroShotClassificationPipeline from @huggingface/transformers
     private loading = false;
     private loadPromise: Promise<void> | null = null;
 
