@@ -1,18 +1,21 @@
 import { createLogger } from '@kispace-io/core';
 import { MLTask, MLModel, getModelForTask } from './ml-models';
-import { getTransformersModule, setTransformersAuthToken } from './transformers-loader';
+import MLWorker from './ml-worker?worker&inline';
 
 const logger = createLogger('InBrowserMLService');
 
+type RunResolver = { resolve: (value: unknown) => void; reject: (reason: unknown) => void };
+
 /**
- * Service for in-browser machine learning tasks using transformers.js
- * Handles specialized ML tasks like zero-shot classification, embeddings, etc.
- * Not intended for chat/text generation - use regular LLM providers for that.
+ * Service for in-browser machine learning tasks using transformers.js in a Web Worker.
+ * Keeps pipeline loading and inference off the main thread so the UI does not freeze.
  */
 export class InBrowserMLService {
     private static instance: InBrowserMLService;
-    private pipelines: Map<string, any> = new Map();
-    private loadingPipelines: Set<string> = new Set();
+    private worker: Worker | null = null;
+    private pendingLoad: Map<string, Promise<void>> = new Map();
+    private runRequestId = 0;
+    private runPending: Map<number, RunResolver> = new Map();
 
     private constructor() {}
 
@@ -23,92 +26,92 @@ export class InBrowserMLService {
         return InBrowserMLService.instance;
     }
 
-    /**
-     * Set Hugging Face token for authenticated model access
-     */
-    setAuthToken(token: string | null): void {
-        setTransformersAuthToken(token).then(() => {
-            if (token && token.trim()) {
-                logger.info('Hugging Face token set for authenticated model access');
+    private getWorker(): Worker {
+        if (this.worker) return this.worker;
+        this.worker = new MLWorker();
+        this.worker.onmessage = (e: MessageEvent) => {
+            const { type, requestId, result, error } = e.data ?? {};
+            if (type === 'runResult') {
+                const resolver = requestId != null ? this.runPending.get(requestId) : undefined;
+                if (resolver) {
+                    this.runPending.delete(requestId);
+                    if (error != null) resolver.reject(new Error(error));
+                    else resolver.resolve(result);
+                }
             }
-        }).catch(error => {
-            logger.warn(`Failed to configure auth token: ${error instanceof Error ? error.message : String(error)}`);
-        });
+        };
+        this.worker.onerror = (err) => logger.error(`ML worker error: ${err.message ?? String(err)}`);
+        return this.worker;
     }
 
     /**
-     * Get or load a pipeline for a specific task and model
-     * @param task The ML task
-     * @param modelName The model identifier (can be MLModel enum or custom model string)
-     * @param options Optional pipeline options
+     * Set Hugging Face token for authenticated model access (forwarded to worker).
+     */
+    setAuthToken(token: string | null): void {
+        try {
+            this.getWorker().postMessage({ type: 'setAuthToken', token });
+            if (token?.trim()) logger.info('Hugging Face token set for authenticated model access');
+        } catch (e) {
+            logger.warn(`Failed to set auth token: ${e instanceof Error ? e.message : String(e)}`);
+        }
+    }
+
+    private ensurePipelineLoaded(pipelineKey: string, task: string, model: string, options: Record<string, unknown>): Promise<void> {
+        let p = this.pendingLoad.get(pipelineKey);
+        if (p) return p;
+        p = new Promise((resolve, reject) => {
+            const handler = (e: MessageEvent) => {
+                const data = e.data ?? {};
+                if (data.type !== 'loadResult' || data.pipelineKey !== pipelineKey) return;
+                this.getWorker().removeEventListener('message', handler);
+                this.pendingLoad.delete(pipelineKey);
+                if (data.error) reject(new Error(data.error));
+                else resolve();
+            };
+            this.getWorker().addEventListener('message', handler);
+            this.getWorker().postMessage({ type: 'load', pipelineKey, task, model, options });
+        });
+        this.pendingLoad.set(pipelineKey, p);
+        return p;
+    }
+
+    /**
+     * Get a callable pipeline for a specific task and model. Pipeline runs in a Web Worker.
      */
     async getPipeline(
         task: MLTask | string,
         modelName: MLModel | string,
-        options: any = {}
-    ): Promise<any> {
-        // If modelName is not provided, try to get recommended model for task
-        if (!modelName && typeof task !== 'string') {
-            const recommendedModel = getModelForTask(task);
-            if (recommendedModel) {
-                modelName = recommendedModel;
-            }
-        }
-        
+        options: Record<string, unknown> = {}
+    ): Promise<(input: unknown, runOptions?: Record<string, unknown>) => Promise<unknown>> {
+        const model = modelName || (typeof task !== 'string' ? getModelForTask(task as MLTask) : undefined);
+        if (!model) throw new Error('Model is required');
         const taskStr = typeof task === 'string' ? task : task;
-        const modelStr = typeof modelName === 'string' ? modelName : modelName;
+        const modelStr = typeof model === 'string' ? model : model;
         const pipelineKey = `${taskStr}:${modelStr}`;
 
-        if (this.pipelines.has(pipelineKey)) {
-            return this.pipelines.get(pipelineKey);
-        }
+        await this.ensurePipelineLoaded(pipelineKey, taskStr, modelStr, { quantized: true, ...options });
 
-        if (this.loadingPipelines.has(pipelineKey)) {
-            // Wait for the pipeline to finish loading
-            while (this.loadingPipelines.has(pipelineKey)) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            return this.pipelines.get(pipelineKey);
-        }
-
-        this.loadingPipelines.add(pipelineKey);
-        try {
-            logger.info(`Loading transformers.js pipeline: ${taskStr} with model ${modelStr}...`);
-            const { pipeline } = await getTransformersModule();
-            const pipe = await pipeline(taskStr as any, modelStr, {
-                quantized: true,
-                ...options
+        return (input: unknown, runOptions?: Record<string, unknown>) => {
+            const requestId = ++this.runRequestId;
+            return new Promise<unknown>((resolve, reject) => {
+                this.runPending.set(requestId, { resolve, reject });
+                this.getWorker().postMessage({ type: 'run', requestId, pipelineKey, input, options: runOptions });
             });
-            this.pipelines.set(pipelineKey, pipe);
-            logger.info(`Pipeline ${pipelineKey} loaded successfully`);
-            return pipe;
-        } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            logger.error(`Failed to load pipeline ${pipelineKey}: ${errorMsg}`);
-            throw error;
-        } finally {
-            this.loadingPipelines.delete(pipelineKey);
-        }
+        };
     }
 
-    /**
-     * Clear a cached pipeline
-     */
     clearPipeline(task: MLTask | string, modelName: MLModel | string): void {
         const taskStr = typeof task === 'string' ? task : task;
         const modelStr = typeof modelName === 'string' ? modelName : modelName;
         const pipelineKey = `${taskStr}:${modelStr}`;
-        this.pipelines.delete(pipelineKey);
+        this.pendingLoad.delete(pipelineKey);
+        this.getWorker().postMessage({ type: 'clear', pipelineKey });
     }
 
-    /**
-     * Clear all cached pipelines
-     */
     clearAllPipelines(): void {
-        this.pipelines.clear();
+        this.pendingLoad.clear();
+        if (this.worker) this.worker.postMessage({ type: 'clearAll' });
     }
 }
 
-// Export singleton instance
 export const inBrowserMLService = InBrowserMLService.getInstance();
-

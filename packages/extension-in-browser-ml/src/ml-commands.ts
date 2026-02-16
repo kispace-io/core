@@ -26,7 +26,7 @@ async function runObjectDetection(
     const detector = await inBrowserMLService.getPipeline(MLTask.OBJECT_DETECTION, model);
     const imageInput = await loadImageInput(imageUrl);
     try {
-        const results = await detector(imageInput.input);
+        const results = (await detector(imageInput.input)) as Array<{ label: string; score: number; box: { xmin: number; ymin: number; xmax: number; ymax: number } }>;
         if (imageInput.cleanup) imageInput.cleanup();
 
         let objects = results.map((result: any) => ({
@@ -168,7 +168,8 @@ registerAll({
                     imageInput.cleanup();
                 }
 
-                const predictions = results
+                const resultsArr = results as Array<{ label: string; score: number }>;
+                const predictions = resultsArr
                     .slice(0, topK)
                     .map((result: any) => ({
                         label: result.label,
@@ -235,14 +236,15 @@ registerAll({
                 const results = await classifier(text);
 
                 // Handle different result formats
-                const predictions = Array.isArray(results) 
-                    ? results.map((r: any) => ({
+                const res = results as Array<{ label?: string; class?: string; classification?: string; score?: number; confidence?: number }> | { label?: string; class?: string; classification?: string; score?: number; confidence?: number };
+                const predictions = Array.isArray(res)
+                    ? res.map((r: any) => ({
                         label: r.label || r.class || r.classification,
-                        confidence: r.score || r.confidence || 0
+                        confidence: r.score ?? r.confidence ?? 0
                     }))
                     : [{
-                        label: results.label || results.class || results.classification,
-                        confidence: results.score || results.confidence || 0
+                        label: res.label || res.class || res.classification,
+                        confidence: res.score ?? res.confidence ?? 0
                     }];
 
                 return { predictions };
@@ -290,7 +292,7 @@ registerAll({
                     MLModel.TOKEN_CLASSIFICATION
                 );
 
-                const results = await ner(text);
+                const results = (await ner(text)) as Array<{ entity: string; word: string; score: number; start: number; end: number }>;
 
                 const entities = results.map((result: any) => ({
                     entity: result.entity,
@@ -365,7 +367,7 @@ registerAll({
                     MLModel.QUESTION_ANSWERING
                 );
 
-                const result = await qa(question, contextText);
+                const result = (await qa(question, contextText)) as { answer: string; score: number; start: number; end: number };
 
                 return {
                     answer: result.answer,

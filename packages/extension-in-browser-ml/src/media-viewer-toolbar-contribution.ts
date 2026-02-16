@@ -1,10 +1,13 @@
-import { contributionRegistry, registerAll, type ExecutionContext, infoDialog, createLogger } from "@kispace-io/core";
+import { contributionRegistry, registerAll, type ExecutionContext, taskService, toastError, createLogger } from "@kispace-io/core";
+import { signal } from "@kispace-io/core/externals/lit";
 import { inBrowserMLService } from "./in-browser-ml-service";
 import { MLTask, MLModel } from "./ml-models";
 
 const logger = createLogger("InBrowserML");
 
 const MEDIA_VIEWER_TOOLBAR_TARGET = "toolbar:media-viewer";
+
+const detectionRunningSignal = signal(false);
 
 function isMediaViewerWithImage(part: unknown): part is {
     getMediaUrl(): string | undefined;
@@ -64,26 +67,28 @@ registerAll({
                 return { error: "No image URL available." };
             }
             try {
-                const detector = await inBrowserMLService.getPipeline(
-                    MLTask.OBJECT_DETECTION,
-                    MLModel.OBJECT_DETECTION_YOLOV9
-                );
-                const results = (await detector(url)) as Array<{
-                    label: string;
-                    score: number;
-                    box: { xmin: number; ymin: number; xmax: number; ymax: number };
-                }>;
-                const { width, height } = part.getImageDimensions();
-                part.setOverlays(detectionResultsToOverlays(results, width, height));
-                const lines = results.map((r) => `- **${r.label}** (${(r.score * 100).toFixed(1)}%)`);
-                const message = lines.length ? lines.join("\n") : "No objects detected.";
-                await infoDialog("Detected objects", message, true);
+                detectionRunningSignal.set(true);
+                await taskService.runAsync("Detecting objects", async () => {
+                    const detector = await inBrowserMLService.getPipeline(
+                        MLTask.OBJECT_DETECTION,
+                        MLModel.OBJECT_DETECTION_YOLOV9
+                    );
+                    const results = (await detector(url)) as Array<{
+                        label: string;
+                        score: number;
+                        box: { xmin: number; ymin: number; xmax: number; ymax: number };
+                    }>;
+                    const { width, height } = part.getImageDimensions();
+                    part.setOverlays(detectionResultsToOverlays(results, width, height));
+                });
                 return { ok: true };
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : String(err);
                 logger.error(`Object detection failed: ${msg}`);
-                await infoDialog("Detection failed", msg, false);
+                toastError(msg);
                 return { error: msg };
+            } finally {
+                detectionRunningSignal.set(false);
             }
         }
     }
@@ -92,5 +97,6 @@ registerAll({
 contributionRegistry.registerContribution(MEDIA_VIEWER_TOOLBAR_TARGET, {
     label: "Detect objects",
     icon: "magnifying-glass",
-    command: "detect_objects_in_current_image"
+    command: "detect_objects_in_current_image",
+    disabled: () => detectionRunningSignal.get()
 });

@@ -24,3 +24,13 @@ export * from "lit/directives/until.js";
 export * from "lit/directives/live.js";
 export * from "lit/directives/ref.js";
 
+// Re-export only signal APIs to avoid conflict with lit's html/svg
+export {
+    signal,
+    computed,
+    Signal,
+    watch,
+    SignalWatcher,
+    withWatch,
+} from "@lit-labs/signals";
+

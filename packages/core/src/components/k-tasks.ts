@@ -224,6 +224,14 @@ export class KTasks extends KPart {
         :host-context(.wa-light) .task-count {
             color: var(--wa-color-neutral-30);
         }
+        
+        .task-bar-wrap {
+            width: 3rem;
+        }
+        
+        .task-bar-wrap wa-progress-bar {
+            --track-height: 4px;
+        }
     `
 
     protected doBeforeUI() {
@@ -235,28 +243,28 @@ export class KTasks extends KPart {
     }
 
     private handleIndicatorClick() {
-        // Show the dialog when clicking the hourglass
         showProgressDialog();
     }
 
     protected render() {
-        activeTasksSignal.get()
+        activeTasksSignal.get();
         const tasks = taskService.getActiveTasks();
         const taskCount = tasks.length;
-        
+
         if (taskCount === 0) {
             return html``;
         }
-        
+
         return html`
             <div class="task-indicator" @click=${this.handleIndicatorClick} title="${t('ACTIVE_TASKS_TITLE', { taskCount: taskCount.toString() })}">
-                <wa-spinner 
-                    style="font-size: 1rem; --indicator-color: var(--wa-color-warning-fill-loud);" 
+                <wa-spinner
+                    style="font-size: 1rem; --indicator-color: var(--wa-color-warning-fill-loud);"
                     label="${t('ACTIVE_TASKS')}"
                 ></wa-spinner>
                 <span class="task-count">${taskCount}</span>
+                <div class="task-bar-wrap"><wa-progress-bar indeterminate></wa-progress-bar></div>
             </div>
-        `
+        `;
     }
 }
 
