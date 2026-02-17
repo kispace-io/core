@@ -25,6 +25,8 @@ import { i18n } from '../core/i18n';
 
 const t = i18n('filebrowser');
 
+const WORKSPACE_CHANGED_DEBOUNCE_MS = 250;
+
 @customElement('k-filebrowser')
 export class KFileBrowser extends KPart {
 
@@ -33,6 +35,8 @@ export class KFileBrowser extends KPart {
     private workspaceDir?: Directory
     private treeRef = createRef<HTMLElement>();
     private loadingNodes = new Set<TreeNode>();
+    private workspaceChangedDebounceId: ReturnType<typeof setTimeout> | undefined;
+    private pendingWorkspaceDir: Directory | undefined;
 
     protected doBeforeUI() {
         this.initializeWorkspace();
@@ -45,6 +49,15 @@ export class KFileBrowser extends KPart {
 
         this.subscribe(TOPIC_WORKSPACE_CHANGED, (workspaceDir: Directory) => this.onWorkspaceChanged(workspaceDir));
         this.subscribe(TOPIC_WORKSPACE_CONNECTED, (workspaceDir: Directory) => this.onWorkspaceConnected(workspaceDir));
+    }
+
+    disconnectedCallback() {
+        if (this.workspaceChangedDebounceId !== undefined) {
+            clearTimeout(this.workspaceChangedDebounceId);
+            this.workspaceChangedDebounceId = undefined;
+        }
+        this.pendingWorkspaceDir = undefined;
+        super.disconnectedCallback();
     }
 
     protected firstUpdated(changedProperties: Map<string, any>) {
@@ -83,22 +96,35 @@ export class KFileBrowser extends KPart {
         `;
     }
 
-    async onWorkspaceChanged(workspaceDir: Directory) {
-        activeSelectionSignal.set(undefined)
-        await this.loadWorkspace(workspaceDir)
-        await this.syncTreeSelection()
+    onWorkspaceChanged(workspaceDir: Directory) {
+        this.pendingWorkspaceDir = workspaceDir;
+        if (this.workspaceChangedDebounceId !== undefined) {
+            clearTimeout(this.workspaceChangedDebounceId);
+        }
+        this.workspaceChangedDebounceId = setTimeout(() => {
+            this.workspaceChangedDebounceId = undefined;
+            const dir = this.pendingWorkspaceDir;
+            this.pendingWorkspaceDir = undefined;
+            if (dir) this.applyWorkspaceChange(dir);
+        }, WORKSPACE_CHANGED_DEBOUNCE_MS);
+    }
+
+    private async applyWorkspaceChange(workspaceDir: Directory) {
+        activeSelectionSignal.set(undefined);
+        await this.loadWorkspace(workspaceDir, true);
+        await this.syncTreeSelection();
     }
 
     async onWorkspaceConnected(workspaceDir: Directory) {
-        await this.loadWorkspace(workspaceDir)
+        await this.loadWorkspace(workspaceDir, true)
     }
 
-    async loadWorkspace(workspaceDir?: Directory) {
+    async loadWorkspace(workspaceDir?: Directory, forceRefresh = false) {
         this.workspaceDir = workspaceDir
         if (!workspaceDir) {
             this.root = undefined
         } else {
-            this.root = await this.resourceToTreeNode(workspaceDir, true)
+            this.root = await this.resourceToTreeNode(workspaceDir, true, forceRefresh)
         }
     }
 
@@ -113,7 +139,7 @@ export class KFileBrowser extends KPart {
         }
     }
 
-    async resourceToTreeNode(resource: Resource, loadChildren: boolean = false): Promise<TreeNode> {
+    async resourceToTreeNode(resource: Resource, loadChildren = false, forceRefreshChildren = false): Promise<TreeNode> {
         const isFile = resource instanceof File;
         const node: TreeNode = {
             data: resource,
@@ -123,7 +149,7 @@ export class KFileBrowser extends KPart {
         };
 
         if (resource instanceof Directory && loadChildren) {
-            for (const childResource of await resource.listChildren(false)) {
+            for (const childResource of await resource.listChildren(forceRefreshChildren)) {
                 if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
                     continue
                 }
