@@ -1,0 +1,28 @@
+{
+  "name": "@kispace-io/extension-webmcp",
+  "version": "0.8.3",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@kispace-io/core": "*",
+    "@kispace-io/extension-ai-system": "*",
+    "@mcp-b/global": "^1.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "vite build"
+  }
+}

@@ -34,6 +34,7 @@ import '@kispace-io/extension-in-browser-ml';
 import '@kispace-io/extension-ai-system';
 import '@kispace-io/extension-rag-system';
 import '@kispace-io/extension-howto-system';
+import '@kispace-io/extension-webmcp';
 
 appLoaderService.registerApp(
   {
@@ -51,6 +52,7 @@ appLoaderService.registerApp(
       '@kispace-io/extension-settings-tree',
       '@kispace-io/extension-memory-usage',
       '@kispace-io/extension-ai-system',
+      '@kispace-io/extension-webmcp',
     ],
   },
   { autoStart: true }
@@ -69,6 +71,7 @@ appLoaderService.registerApp({
     '@kispace-io/extension-settings-tree',
     '@kispace-io/extension-memory-usage',
     '@kispace-io/extension-ai-system',
+    '@kispace-io/extension-webmcp',
   ],
   render: { tag: 'k-standard-layout', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
 });

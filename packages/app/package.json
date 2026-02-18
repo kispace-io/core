@@ -29,7 +29,8 @@
     "@kispace-io/extension-webdav": "*",
     "@kispace-io/extension-webllm": "*",
     "@kispace-io/extension-utils": "*",
-    "pace-js": "^1.2.4"
+    "pace-js": "^1.2.4",
+    "@kispace-io/extension-webmcp": "*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
