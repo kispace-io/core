@@ -23,7 +23,12 @@ export {
     default as logger
 } from '../core/logger';
 export { rootContext, uiContext, type DependencyContext } from '../core/di';
-export { appSettings, TOPIC_SETTINGS_CHANGED } from '../core/settingsservice';
+export {
+    appSettings,
+    TOPIC_SETTINGS_CHANGED,
+    type SettingsJsonSchema,
+    type SettingsCategoryInfo,
+} from '../core/settingsservice';
 export { 
     infoDialog,
     navigableInfoDialog,
