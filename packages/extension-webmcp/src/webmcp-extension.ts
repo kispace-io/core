@@ -29,14 +29,14 @@ function textContent(text: string): { content: Array<{ type: "text"; text: strin
 function registerCommandAsTool(
   command: Command,
   toolRegistry: ToolRegistry,
-  context: ExecutionContext,
   registrations: RegistrationHandle[],
   registeredIds: Set<string>
 ): void {
   if (registeredIds.has(command.id)) return;
   if (!navigator.modelContext) return;
 
-  const toolDef = toolRegistry.commandToTool(command, context) as ToolDefinition;
+  const schemaContext = commandRegistry.createExecutionContext?.() ?? {};
+  const toolDef = toolRegistry.commandToTool(command, schemaContext) as ToolDefinition;
   const commandId = command.id;
 
   const registration = navigator.modelContext.registerTool({
@@ -45,10 +45,7 @@ function registerCommandAsTool(
     inputSchema: toolDefToInputSchema(toolDef.function.parameters),
     async execute(args: Record<string, unknown>) {
       try {
-        const execContext: ExecutionContext = {
-          ...context,
-          params: args ?? {},
-        };
+        const execContext = commandRegistry.createExecutionContext?.(args as Record<string, unknown>) ?? { params: args ?? {} };
         const result = await commandRegistry.execute(commandId, execContext);
         const text =
           result === undefined || result === null
@@ -72,17 +69,16 @@ export default async (_uiContext: unknown): Promise<void> => {
   if (!navigator.modelContext) return;
 
   const toolRegistry = new ToolRegistry();
-  const context: ExecutionContext = commandRegistry.createExecutionContext?.() ?? {};
   const registrations: RegistrationHandle[] = [];
   const registeredIds = new Set<string>();
 
   const initialCommands = Object.values(commandRegistry.listCommands()) as Command[];
   for (const command of initialCommands) {
-    registerCommandAsTool(command, toolRegistry, context, registrations, registeredIds);
+    registerCommandAsTool(command, toolRegistry, registrations, registeredIds);
   }
 
   const commandSubscriptionToken = subscribe(TOPIC_COMMAND_REGISTERED, (command: Command) => {
-    registerCommandAsTool(command, toolRegistry, context, registrations, registeredIds);
+    registerCommandAsTool(command, toolRegistry, registrations, registeredIds);
   });
 
   const cleanup = () => {
