@@ -73,7 +73,7 @@ export class PromptBuilder {
         if (toolsConfig?.enabled) {
             if (toolsConfig.smartToolDetection) {
                 const lastUser = messages[messages.length - 1];
-                if (await toolDetector.needsTools(lastUser?.content || '')) {
+                if (toolDetector.needsTools(lastUser?.content || '')) {
                     tools = this.toolRegistry.getAvailableTools(context, toolsConfig.commandFilter);
                 }
             } else {

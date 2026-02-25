@@ -1,6 +1,6 @@
 import { createLogger } from '@kispace-io/core';
 import { MLTask, MLModel, getModelForTask } from './ml-models';
-import MLWorker from './ml-worker?worker&inline';
+import MLWorker from './ml-worker?worker';
 
 const logger = createLogger('InBrowserMLService');
 
