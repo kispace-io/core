@@ -1,6 +1,16 @@
 import { createLogger } from '@kispace-io/core';
+import * as duckdb from '@duckdb/duckdb-wasm';
+import duckdb_wasm_mvp from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
+import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
+import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
+import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
 const logger = createLogger('DuckDBService');
+
+const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
+  mvp: { mainModule: duckdb_wasm_mvp, mainWorker: mvp_worker },
+  eh: { mainModule: duckdb_wasm_eh, mainWorker: eh_worker },
+};
 
 /** Plain JS result: columns in order, rows as array of value arrays. */
 export interface DuckDBQueryResult {
@@ -8,7 +18,7 @@ export interface DuckDBQueryResult {
   rows: unknown[][];
 }
 
-type AsyncDuckDB = import('@duckdb/duckdb-wasm').AsyncDuckDB;
+type AsyncDuckDB = duckdb.AsyncDuckDB;
 type AsyncDuckDBConnection = Awaited<ReturnType<AsyncDuckDB['connect']>>;
 
 export class DuckDBService {
@@ -32,16 +42,8 @@ export class DuckDBService {
 
     this.initPromise = (async () => {
       try {
-        const duckdb = await import('@duckdb/duckdb-wasm');
-        const bundles = duckdb.getJsDelivrBundles();
-        const bundle = await duckdb.selectBundle(bundles);
-
-        const workerUrl = URL.createObjectURL(
-          new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' })
-        );
-        const worker = new Worker(workerUrl);
-        URL.revokeObjectURL(workerUrl);
-
+        const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+        const worker = new Worker(bundle.mainWorker!);
         const log = new duckdb.ConsoleLogger();
         this.db = new duckdb.AsyncDuckDB(log, worker);
         await this.db.instantiate(bundle.mainModule, bundle.pthreadWorker);
@@ -56,6 +58,32 @@ export class DuckDBService {
     })();
 
     await this.initPromise;
+  }
+
+  private static readonly EXTENSION_NAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+
+  /**
+   * Installs and loads a DuckDB extension (e.g. 'spatial' for spatial operations).
+   * Safe to call multiple times; already installed/loaded extensions are a no-op.
+   */
+  async enableExtension(extensionName: string): Promise<void> {
+    if (!DuckDBService.EXTENSION_NAME_REGEX.test(extensionName)) {
+      throw new Error(`Invalid extension name: ${extensionName}`);
+    }
+    await this.ensureInit();
+    if (!this.conn) throw new Error('DuckDB connection not available');
+
+    const installSql = `INSTALL ${extensionName}`;
+    const loadSql = `LOAD ${extensionName}`;
+    try {
+      await this.conn.query(installSql);
+      await this.conn.query(loadSql);
+      logger.info(`DuckDB extension enabled: ${extensionName}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`Failed to enable extension ${extensionName}: ${msg}`);
+      throw new Error(`Failed to enable extension ${extensionName}: ${msg}`);
+    }
   }
 
   async runQuery(sql: string): Promise<DuckDBQueryResult> {
