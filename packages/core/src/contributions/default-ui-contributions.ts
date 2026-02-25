@@ -2,7 +2,6 @@ import { html } from "lit";
 import { contributionRegistry } from "../core/contributionregistry";
 import {
     SIDEBAR_MAIN,
-    TOOLBAR_BOTTOM,
     TOOLBAR_BOTTOM_END,
     TOOLBAR_MAIN_RIGHT
 } from "../core/constants";
@@ -19,12 +18,6 @@ contributionRegistry.registerContribution("system.fastviews-bottomend", {
     label: "Log Messages",
     icon: "list",
     component: (id: string) => html`<k-log-terminal id="${id}"></k-log-terminal>`
-});
-
-contributionRegistry.registerContribution(TOOLBAR_BOTTOM, {
-    slot: "start",
-    label: "Workspace",
-    html: `<k-workspace-name></k-workspace-name>`
 });
 
 contributionRegistry.registerContribution(TOOLBAR_BOTTOM_END, {

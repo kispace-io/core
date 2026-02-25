@@ -47,8 +47,8 @@ export class KFileBrowser extends KPart {
             }
         });
 
-        this.subscribe(TOPIC_WORKSPACE_CHANGED, (workspaceDir: Directory) => this.onWorkspaceChanged(workspaceDir));
-        this.subscribe(TOPIC_WORKSPACE_CONNECTED, (workspaceDir: Directory) => this.onWorkspaceConnected(workspaceDir));
+        this.subscribe(TOPIC_WORKSPACE_CHANGED, (workspaceDir: Directory | undefined) => this.onWorkspaceChanged(workspaceDir));
+        this.subscribe(TOPIC_WORKSPACE_CONNECTED, (workspaceDir: Directory | undefined) => this.onWorkspaceConnected(workspaceDir));
     }
 
     disconnectedCallback() {
@@ -96,7 +96,7 @@ export class KFileBrowser extends KPart {
         `;
     }
 
-    onWorkspaceChanged(workspaceDir: Directory) {
+    onWorkspaceChanged(workspaceDir: Directory | undefined) {
         this.pendingWorkspaceDir = workspaceDir;
         if (this.workspaceChangedDebounceId !== undefined) {
             clearTimeout(this.workspaceChangedDebounceId);
@@ -106,6 +106,7 @@ export class KFileBrowser extends KPart {
             const dir = this.pendingWorkspaceDir;
             this.pendingWorkspaceDir = undefined;
             if (dir) this.applyWorkspaceChange(dir);
+            else this.loadWorkspace(undefined, true);
         }, WORKSPACE_CHANGED_DEBOUNCE_MS);
     }
 
@@ -115,8 +116,8 @@ export class KFileBrowser extends KPart {
         await this.syncTreeSelection();
     }
 
-    async onWorkspaceConnected(workspaceDir: Directory) {
-        await this.loadWorkspace(workspaceDir, true)
+    async onWorkspaceConnected(workspaceDir: Directory | undefined) {
+        await this.loadWorkspace(workspaceDir, true);
     }
 
     async loadWorkspace(workspaceDir?: Directory, forceRefresh = false) {
@@ -153,7 +154,7 @@ export class KFileBrowser extends KPart {
                 if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
                     continue
                 }
-                const child = await this.resourceToTreeNode(childResource, false);
+                const child = await this.resourceToTreeNode(childResource, true);
                 node.children.push(child);
             }
             node.children.sort(treeNodeComparator)
@@ -247,10 +248,11 @@ export class KFileBrowser extends KPart {
     async onFileDoubleClicked(event: Event) {
         // @ts-ignore
         const node: TreeNode = event.currentTarget.model
-        const filePath = (node.data as Resource).getWorkspacePath()
-        this.executeCommand("open_editor", {
-            "path": filePath
-        })
+        const resource = node.data as Resource
+        if (resource instanceof File) {
+            activeSelectionSignal.set(resource)
+            this.executeCommand("open_editor", {})
+        }
     }
 
     onSelectionChanged(event: Event) {
@@ -404,7 +406,7 @@ export class KFileBrowser extends KPart {
                 `)}
                 <wa-tree @wa-selection-change=${this.nobubble(this.onSelectionChanged)}
                          style="--indent-guide-width: 1px;">
-                    ${this.createTreeItems(this.root!, true)}
+                    ${this.root!.children.map(child => this.createTreeItems(child, true))}
                 </wa-tree>
             </div>
         `

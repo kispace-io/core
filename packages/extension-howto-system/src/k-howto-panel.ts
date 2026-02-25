@@ -403,7 +403,9 @@ export class KHowToPanel extends KWidget {
         }
 
         try {
-            const execContext = commandRegistry.createExecutionContext(state.step.commandParams || {});
+            const rawParams = state.step.commandParams;
+            const params = typeof rawParams === 'function' ? await rawParams() : (rawParams || {});
+            const execContext = commandRegistry.createExecutionContext(params);
             await commandRegistry.execute(state.step.command, execContext);
             return true;
         } catch (error) {

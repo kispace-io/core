@@ -4,7 +4,16 @@ import { watchSignal } from '@kispace-io/core';
 import { HOWTO_CONTRIBUTION_TARGET } from '../howto-service';
 import type { HowToContribution, HowToContext } from '../howto-contribution';
 
-const ONBOARDING_FILE_PATH = 'welcome.txt';
+const ONBOARDING_FILE_NAME = 'welcome.txt';
+
+async function getOnboardingFilePath(): Promise<string | null> {
+    const workspace = await workspaceService.getWorkspace();
+    if (!workspace) return null;
+    const folders = await workspaceService.getFolders();
+    if (folders.length === 0) return null;
+    const firstFolderName = folders[0].name;
+    return `${firstFolderName}/${ONBOARDING_FILE_NAME}`;
+}
 
 /**
  * Type guard to check if an editor implements EditorContentProvider
@@ -25,11 +34,12 @@ async function isWorkspaceSelected(): Promise<boolean> {
  * Checks if the onboarding file exists
  */
 async function onboardingFileExists(): Promise<boolean> {
+    const path = await getOnboardingFilePath();
+    if (!path) return false;
     const workspace = await workspaceService.getWorkspace();
     if (!workspace) return false;
-    
     try {
-        const resource = await workspace.getResource(ONBOARDING_FILE_PATH);
+        const resource = await workspace.getResource(path);
         return resource instanceof File;
     } catch {
         return false;
@@ -44,9 +54,8 @@ function isOnboardingFileOpen(): boolean {
     if (!activeEditor || !isEditorContentProvider(activeEditor)) {
         return false;
     }
-    
     const filePath = activeEditor.getFilePath();
-    return filePath === ONBOARDING_FILE_PATH;
+    return filePath === ONBOARDING_FILE_NAME || filePath?.endsWith('/' + ONBOARDING_FILE_NAME) === true;
 }
 
 /**
@@ -142,9 +151,12 @@ const onboardingContribution: HowToContribution = {
                 return await onboardingFileExists();
             },
             command: 'touch',
-            commandParams: {
-                path: ONBOARDING_FILE_PATH,
-                contents: 'Welcome to AppSpace!\n\nThis is your first file. You can edit it and save your changes.'
+            commandParams: async () => {
+                const path = await getOnboardingFilePath();
+                return path ? {
+                    path,
+                    contents: 'Welcome to AppSpace!\n\nThis is your first file. You can edit it and save your changes.'
+                } : {};
             }
         },
         {
@@ -158,8 +170,9 @@ const onboardingContribution: HowToContribution = {
                 return isOnboardingFileOpen();
             },
             command: 'open_editor',
-            commandParams: {
-                path: ONBOARDING_FILE_PATH
+            commandParams: async () => {
+                const path = await getOnboardingFilePath();
+                return path ? { path } : {};
             }
         },
         {

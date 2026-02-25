@@ -40,6 +40,9 @@ registerAll({
         return;
       }
 
+      const folders = await workspaceService.getFolders();
+      const targetFolderName = folders.length > 0 ? folders[0].name : null;
+
       await taskService.runAsync("Downloading file", async (progress: any) => {
         progress.message = "Starting download...";
         progress.progress = 0;
@@ -83,7 +86,8 @@ registerAll({
             }
           }
 
-          const downloadedFile = await workspaceDir.getResource(fileName, { create: true }) as File;
+          const targetPath = targetFolderName ? `${targetFolderName}/${fileName}` : fileName;
+          const downloadedFile = await workspaceDir.getResource(targetPath, { create: true }) as File;
 
           progress.message = `Downloading ${fileName}...`;
           progress.progress = 50;

@@ -1,6 +1,5 @@
 import "./k-filebrowser"
 import "./k-tasks"
-import "./k-workspace-name"
 import "./k-part-name"
 import "./k-extensions"
 import "./k-log-terminal"

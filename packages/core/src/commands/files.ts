@@ -107,6 +107,37 @@ async function getWorkspaceAndFile(params: any, requirePath: boolean = true): Pr
     }
 }
 
+registerAll({
+    command: {
+        "id": "disconnect_folder",
+        "name": "Disconnect folder",
+        "description": "Disconnects a folder from the workspace"
+    },
+    handler: {
+        execute: async () => {
+            const selection = activeSelectionSignal.get()
+            if (!(selection instanceof Directory && selection.getParent() === undefined)) {
+                toastError("Select a folder root to disconnect.")
+                return
+            }
+            try {
+                await workspaceService.disconnectFolder(selection)
+            } catch (err: any) {
+                toastError(err.message)
+            }
+        }
+    },
+    contribution: {
+        target: "contextmenu:filebrowser",
+        label: "Disconnect folder",
+        icon: "folder-minus",
+        disabled: () => {
+            const selection = activeSelectionSignal.get();
+            return !(selection instanceof Directory && selection.getParent() === undefined);
+        }
+    }
+})
+
 // Register local filesystem workspace contribution
 registerAll({
     command: {
@@ -146,8 +177,9 @@ registerAll({
             const workspace = await workspaceService.getWorkspace()
             if (!workspace) {
                 toastError("No workspace selected.")
+                return
             }
-            workspace!.touch()
+            workspace.touch()
         }
     }
 })

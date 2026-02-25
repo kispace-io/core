@@ -4,7 +4,7 @@ export { commandRegistry, CommandStack, registerAll, CommandRegistry, TOPIC_COMM
 export { RUN_ACTIVE_SCRIPT_ID } from '../core/constants';
 export { contributionRegistry, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry';
 export { extensionRegistry } from '../core/extensionregistry';
-export { workspaceService, File, StringFile, Directory, FileContentType, WorkspaceService, TOPIC_WORKSPACE_CHANGED, TOPIC_WORKSPACE_CONNECTED } from '../core/filesys';
+export { workspaceService, File, StringFile, Directory, FileContentType, WorkspaceService, TOPIC_WORKSPACE_CHANGED, TOPIC_WORKSPACE_CONNECTED, CompositeDirectory, FileSysDirHandleResource } from '../core/filesys';
 export type { FileContentsOptions, GetResourceOptions } from '../core/filesys';
 export { editorRegistry, type EditorInput } from '../core/editorregistry';
 export { 

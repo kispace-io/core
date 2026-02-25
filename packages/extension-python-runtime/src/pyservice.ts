@@ -45,10 +45,8 @@ export class PyEnv {
         // Initialize Pyodide in worker
         await this.sendMessage('init', { vars: this.vars });
 
-        // Mount workspace and install dependencies only when a workspace is provided
         if (this.workspace) {
             await this.mountWorkspace();
-            await this.installDependencies();
         }
     }
 
@@ -168,17 +166,18 @@ export class PyEnv {
         });
     }
 
-    public async installDependencies() {
-        const reqFile = await this.workspace?.getResource("requirements.txt") as File;
-        if (reqFile) {
-            // @ts-ignore
-            const reqContents: string = ((await reqFile.getContents()) as string).replaceAll("\r", "");
-            const { parsePipRequirementsFile } = await getPipRequirementsModule();
-            const packages = parsePipRequirementsFile(reqContents)
-                .filter(p => "name" in p)
-                .map(p => (p as any).name);
-            await this.loadPackages(packages);
-        }
+    public async installDependencies(pyFile?: File) {
+        if (!pyFile) return;
+        const parent = pyFile.getParent();
+        if (!parent) return;
+        const reqFile = await parent.getResource("requirements.txt") as File | null;
+        if (!reqFile) return;
+        const reqContents: string = ((await reqFile.getContents()) as string).replaceAll("\r", "");
+        const { parsePipRequirementsFile } = await getPipRequirementsModule();
+        const packages = parsePipRequirementsFile(reqContents)
+            .filter(p => "name" in p)
+            .map(p => (p as any).name);
+        await this.loadPackages(packages);
     }
 
     public async loadPackages(packages: string[]) {
@@ -200,6 +199,10 @@ export class PyEnv {
     }
 
     public async execScript(path: string) {
+        const pyFile = this.workspace ? (await this.workspace.getResource(path) as File) : undefined;
+        if (pyFile) {
+            await this.installDependencies(pyFile);
+        }
         const moduleName = path.split(".")[0];
         const entryName = path.includes(":") ? path.split(":").reverse()[0] : undefined;
         return await this.execModule(moduleName, entryName);

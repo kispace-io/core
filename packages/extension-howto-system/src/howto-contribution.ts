@@ -41,8 +41,8 @@ export interface HowToStep {
     /** Optional command to execute when the step is activated */
     command?: string;
     
-    /** Optional command parameters */
-    commandParams?: Record<string, any>;
+    /** Optional command parameters (or function returning params for dynamic values) */
+    commandParams?: Record<string, any> | (() => Record<string, any> | Promise<Record<string, any>>);
     
     /** Whether this step is optional */
     optional?: boolean;

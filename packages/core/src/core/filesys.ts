@@ -22,12 +22,19 @@ export abstract class Resource {
     public getWorkspacePath(): string {
         const paths: string[] = []
         let current: Resource | undefined = this
+        let root: Directory | undefined
         while (current) {
             paths.push(current.getName())
-            current = current.getParent()
+            const parent = current.getParent()
+            if (!parent) root = current as Directory
+            current = parent
         }
         paths.reverse()
-        // the first path is the workspace itself, remove it as the path is always realtive to the workspace
+        const workspace = typeof workspaceService?.getWorkspaceSync === 'function' ? workspaceService.getWorkspaceSync() : undefined
+        if (workspace && root && 'isDirectChild' in workspace && typeof (workspace as any).isDirectChild === 'function' && (workspace as any).isDirectChild(root)) {
+            const folderName = (workspace as any).getFolderNameForDirectory(root)
+            if (folderName && paths.length > 0) return folderName + '/' + paths.slice(1).join('/')
+        }
         paths.shift()
         return paths.join("/");
     }
@@ -437,6 +444,78 @@ export class FileSysDirHandleResource extends Directory {
     }
 }
 
+export class CompositeDirectory extends Directory {
+    private readonly entriesByName: Map<string, Directory>;
+
+    constructor(
+        directories: Directory[],
+        private readonly displayName: string = '/'
+    ) {
+        super();
+        this.entriesByName = new Map(directories.map(d => [d.getName(), d]));
+    }
+
+    getFolderNameForDirectory(dir: Directory): string | undefined {
+        for (const [name, d] of this.entriesByName) {
+            if (d === dir) return name;
+        }
+        return undefined;
+    }
+
+    isDirectChild(dir: Directory): boolean {
+        return this.getFolderNameForDirectory(dir) !== undefined;
+    }
+
+    getName(): string {
+        return this.displayName;
+    }
+
+    getParent(): Directory | undefined {
+        return undefined;
+    }
+
+    async listChildren(_forceRefresh: boolean): Promise<Resource[]> {
+        return Array.from(this.entriesByName.values());
+    }
+
+    async getResource(path: string, options?: GetResourceOptions): Promise<Resource | null> {
+        if (!path || !path.trim()) {
+            return null;
+        }
+        const idx = path.indexOf('/');
+        const folderName = idx >= 0 ? path.slice(0, idx).trim() : path.trim();
+        const rest = idx >= 0 ? path.slice(idx + 1).trim() : '';
+        const dir = this.entriesByName.get(folderName);
+        if (!dir) {
+            return null;
+        }
+        if (!rest) {
+            return dir;
+        }
+        return dir.getResource(rest, options);
+    }
+
+    touch(): void {
+        // no-op at composite level
+    }
+
+    async delete(_name?: string, _recursive?: boolean): Promise<void> {
+        throw new Error('Delete not supported on workspace root');
+    }
+
+    async copyTo(_targetPath: string): Promise<void> {
+        throw new Error('Copy not supported on workspace root');
+    }
+
+    async rename(_newName: string): Promise<void> {
+        throw new Error('Rename not supported on workspace root');
+    }
+
+    getFolderByName(name: string): Directory | undefined {
+        return this.entriesByName.get(name);
+    }
+}
+
 /**
  * Interface for workspace contributions
  * 
@@ -475,22 +554,27 @@ export interface WorkspaceContribution {
 }
 
 interface PersistedWorkspaceData {
-    type: string;
-    data: any;
+    type?: string;
+    data?: any;
+    folders?: Array<{ type: string; data: any }>;
 }
+
+const LEGACY_WORKSPACE_KEY = "workspace_data";
 
 export class WorkspaceService {
     private workspace?: Promise<Directory | undefined>;
+    private _currentWorkspace: Directory | undefined = undefined;
+    private folders: Array<{ type: string; data: any; directory: Directory }> = [];
     private currentType?: string;
     private contributions: Map<string, WorkspaceContribution> = new Map();
+    private initPromise: Promise<void>;
+
+    getWorkspaceSync(): Directory | undefined {
+        return this._currentWorkspace;
+    }
 
     constructor() {
-        this.workspace = this.loadPersistedWorkspace();
-        this.workspace.then(workspace => {
-            if (workspace) {
-                publish(TOPIC_WORKSPACE_CONNECTED, workspace);
-            }
-        });
+        this.initPromise = this.loadPersistedWorkspace();
     }
 
     /**
@@ -508,62 +592,132 @@ export class WorkspaceService {
         return Array.from(this.contributions.values());
     }
 
-    private async loadPersistedWorkspace(): Promise<Directory | undefined> {
-        const persistedData = await persistenceService.getObject("workspace_data") as PersistedWorkspaceData | null;
-        
-        if (!persistedData) {
-            return undefined;
+    private async loadPersistedWorkspace(): Promise<void> {
+        const raw = await persistenceService.getObject(LEGACY_WORKSPACE_KEY) as PersistedWorkspaceData | null;
+        if (!raw) {
+            this.workspace = Promise.resolve(undefined);
+            this._currentWorkspace = undefined;
+            return;
         }
 
-        const contribution = this.contributions.get(persistedData.type);
-        if (!contribution) {
-            console.warn(`No contribution found for workspace type: ${persistedData.type}`);
-            return undefined;
-        }
-
-        try {
-            if (contribution.restore) {
-                const workspace = await contribution.restore(persistedData.data);
-                if (workspace) {
-                    this.currentType = persistedData.type;
-                }
-                return workspace;
+        if (raw.folders && Array.isArray(raw.folders) && raw.folders.length > 0) {
+            const normalized = raw.folders.map((f: { type: string; data: any }) => ({ type: f.type, data: f.data }));
+            await this.resolveFolders(normalized);
+            const composite = this.buildComposite();
+            this.workspace = Promise.resolve(composite);
+            this._currentWorkspace = composite ?? undefined;
+            if (composite) {
+                publish(TOPIC_WORKSPACE_CONNECTED, composite);
             }
-        } catch (error) {
-            console.error(`Failed to restore workspace of type ${persistedData.type}:`, error);
+            return;
         }
 
-        return undefined;
+        if (raw.type && raw.data !== undefined) {
+            const contribution = this.contributions.get(raw.type);
+            if (contribution?.restore) {
+                try {
+                    const dir = await contribution.restore!(raw.data);
+                    if (dir) {
+                        this.folders = [{ type: raw.type, data: raw.data, directory: dir }];
+                        const comp = this.buildComposite();
+                        this.workspace = Promise.resolve(comp);
+                        this._currentWorkspace = comp ?? undefined;
+                        this.currentType = raw.type;
+                        await this.persistFolders();
+                        publish(TOPIC_WORKSPACE_CONNECTED, comp);
+                    }
+                } catch (error) {
+                    console.error('Failed to restore legacy workspace:', error);
+                }
+            }
+        }
+        if (!this.workspace) {
+            this.workspace = Promise.resolve(undefined);
+            this._currentWorkspace = undefined;
+        }
     }
 
-    async connectWorkspace(input: any): Promise<Directory> {
-        // Find a contribution that can handle this input
+    private async resolveFolders(persisted: Array<{ type: string; data: any }>): Promise<void> {
+        this.folders = [];
+        for (const folder of persisted) {
+            const contribution = this.contributions.get(folder.type);
+            if (!contribution?.restore) {
+                continue;
+            }
+            try {
+                const dir = await contribution.restore(folder.data);
+                if (dir) {
+                    this.folders.push({ type: folder.type, data: folder.data, directory: dir });
+                }
+            } catch (error) {
+                console.warn(`Failed to restore folder (${folder.type}):`, error);
+            }
+        }
+    }
+
+    private buildComposite(): CompositeDirectory | undefined {
+        if (this.folders.length === 0) {
+            return undefined;
+        }
+        return new CompositeDirectory(this.folders.map(f => f.directory));
+    }
+
+    private async persistFolders(): Promise<void> {
+        const toPersist = this.folders.length > 0
+            ? { folders: this.folders.map(f => ({ type: f.type, data: f.data })) }
+            : null;
+        await persistenceService.persistObject(LEGACY_WORKSPACE_KEY, toPersist);
+        await persistenceService.persistObject("workspace", null);
+    }
+
+    async getFolders(): Promise<Array<{ name: string; type: string }>> {
+        await this.initPromise;
+        return this.folders.map(f => ({ name: f.directory.getName(), type: f.type }));
+    }
+
+    async connectFolder(input: any): Promise<Directory> {
+        await this.initPromise;
         const contribution = Array.from(this.contributions.values()).find(c => c.canHandle(input));
-        
         if (!contribution) {
             throw new Error('No workspace contribution can handle this input');
         }
+        const directory = await contribution.connect(input);
+        const data = contribution.persist ? await contribution.persist(directory) : input;
+        this.folders.push({ type: contribution.type, data, directory });
+        await this.persistFolders();
+        this.currentType = this.folders.length === 1 ? contribution.type : undefined;
+        const composite = this.buildComposite()!;
+        this.workspace = Promise.resolve(composite);
+        this._currentWorkspace = composite;
+        publish(TOPIC_WORKSPACE_CONNECTED, composite);
+        return composite;
+    }
 
-        // Connect using the contribution
-        const workspace = await contribution.connect(input);
-        
-        // Persist the workspace data
-        const persistData = contribution.persist ? await contribution.persist(workspace) : input;
-        const workspaceData: PersistedWorkspaceData = {
-            type: contribution.type,
-            data: persistData
-        };
-        await persistenceService.persistObject("workspace_data", workspaceData);
+    async disconnectFolder(directory: Directory): Promise<void> {
+        await this.initPromise;
+        const idx = this.folders.findIndex(f => f.directory === directory);
+        if (idx < 0) {
+            return;
+        }
+        this.folders.splice(idx, 1);
+        await this.persistFolders();
+        if (this.folders.length > 0) {
+            this.currentType = this.folders[0].type;
+        } else {
+            this.currentType = undefined;
+        }
+        const composite = this.buildComposite();
+        this.workspace = Promise.resolve(composite);
+        this._currentWorkspace = composite ?? undefined;
+        publish(TOPIC_WORKSPACE_CONNECTED, composite);
+    }
 
-        // Update current workspace
-        this.currentType = contribution.type;
-        this.workspace = Promise.resolve(workspace);
-        publish(TOPIC_WORKSPACE_CONNECTED, workspace);
-
-        return workspace;
+    async connectWorkspace(input: any): Promise<Directory> {
+        return this.connectFolder(input);
     }
 
     public async getWorkspace(): Promise<Directory | undefined> {
+        await this.initPromise;
         if (!this.workspace) {
             throw new Error('No workspace connected.');
         }
@@ -571,7 +725,7 @@ export class WorkspaceService {
     }
 
     public isConnected(): boolean {
-        return !!this.workspace;
+        return this.folders.length > 0;
     }
 
     public getWorkspaceType(): string | undefined {
@@ -579,10 +733,13 @@ export class WorkspaceService {
     }
 
     public async disconnectWorkspace(): Promise<void> {
-        this.workspace = undefined;
+        await this.initPromise;
+        this.workspace = Promise.resolve(undefined);
+        this._currentWorkspace = undefined;
+        this.folders = [];
         this.currentType = undefined;
-        await persistenceService.persistObject("workspace_data", null);
-        await persistenceService.persistObject("workspace", null); // Clean up legacy
+        await this.persistFolders();
+        publish(TOPIC_WORKSPACE_CONNECTED, undefined as any);
     }
 }
 
