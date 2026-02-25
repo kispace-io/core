@@ -1,6 +1,6 @@
 {
   "name": "@kispace-io/core",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "Appspace platform core: registries, services, parts, widgets, and API",
   "type": "module",
   "license": "EPL-2.0",
