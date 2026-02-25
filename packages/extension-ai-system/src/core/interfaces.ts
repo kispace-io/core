@@ -1,7 +1,12 @@
-import type { ExecutionContext } from "@kispace-io/core";
-import type { Contribution } from "@kispace-io/core";
-import type { DependencyContext } from "@kispace-io/core";
-import type { ChatMessage, ChatHistory, ChatProvider, ToolDefinition, StreamChunk, UserAttentionRequest, WorkflowExecution, ApiMessage, TokenUsage } from "./types";
+import type { ExecutionContext, Contribution, DependencyContext } from "@kispace-io/core";
+import type {
+    ChatMessage, ChatHistory, ChatProvider, ToolDefinition, StreamChunk, ToolCall,
+    WorkflowExecution, ApiMessage, TokenUsage, ArtifactType, TaskPlan, TaskStep,
+    Artifact
+} from "./types";
+
+export type StreamStatus = 'starting' | 'streaming' | 'complete' | 'error';
+export type CompletionExecutor = (messages: any[], chatConfig: ChatProvider) => Promise<string>;
 
 export interface ChatProviderContribution extends Contribution {
     provider: ChatProvider;
@@ -27,11 +32,6 @@ export interface IProvider {
     canHandle(chatProvider: ChatProvider): boolean;
     stream(params: StreamingParams): AsyncIterable<StreamChunk>;
     complete?(params: CompletionParams): Promise<ChatMessage>;
-    /**
-     * Get available models for this provider
-     * Returns a list of models with id and display name
-     * If not implemented, returns empty array
-     */
     getAvailableModels?(chatProvider: ChatProvider): Promise<Array<{ id: string; name: string }>> | Array<{ id: string; name: string }>;
 }
 
@@ -58,7 +58,7 @@ export interface AgentHooks {
 export interface AgentToolsConfig {
     enabled: boolean;
     commandFilter?: (command: any, context: ExecutionContext) => boolean;
-    smartToolDetection?: boolean; // Use ML model to detect if prompt needs tools (reduces token usage)
+    smartToolDetection?: boolean;
 }
 
 export interface AgentContribution extends Contribution {
@@ -67,21 +67,28 @@ export interface AgentContribution extends Contribution {
     sysPrompt: string | (() => string);
     canHandle?: (context: ExecutionContext) => boolean;
     priority?: number;
-    
+
     promptEnhancers?: PromptEnhancer[];
     messageProcessors?: MessageProcessor[];
     hooks?: AgentHooks;
     tools?: AgentToolsConfig | (() => AgentToolsConfig | Promise<AgentToolsConfig>);
+
+    // V2 cooperative agent fields (optional, ignored by V1-style workflows)
+    produces?: ArtifactType[];
+    consumes?: ArtifactType[];
+    reviewerFor?: string[];
+    maxRevisions?: number;
+    isOrchestrator?: boolean;
+    idempotent?: boolean;
 }
 
 export interface UserAttentionHandler {
-    onAttentionRequest?: (request: UserAttentionRequest, context: ExecutionContext) => Promise<boolean | string | null>;
     onConfirmation?: (message: string, context: ExecutionContext) => Promise<boolean>;
     onInput?: (prompt: string, defaultValue?: string, context?: ExecutionContext) => Promise<string | null>;
 }
 
 export interface ToolApprovalRequest {
-    toolCalls: import("../core/types").ToolCall[];
+    toolCalls: ToolCall[];
     message: string;
 }
 
@@ -96,12 +103,9 @@ export interface AgentWorkflowOptions {
     onAgentComplete?: (role: string, message: ChatMessage) => void;
     onAgentError?: (role: string, error: Error) => void;
     onToken?: (role: string, token: string) => void;
-    onStatus?: (role: string, status: 'starting' | 'streaming' | 'complete' | 'error') => void;
-    onAttentionRequest?: (role: string, request: UserAttentionRequest) => void;
+    onStatus?: (role: string, status: StreamStatus) => void;
     onToolApprovalRequest?: (role: string, request: ToolApprovalRequest) => Promise<boolean>;
     requireToolApproval?: boolean;
-    userAttentionHandler?: UserAttentionHandler;
-    pauseOnAttention?: boolean;
     signal?: AbortSignal;
     stream?: boolean;
 }
@@ -110,9 +114,6 @@ export interface AgentWorkflowResult {
     messages: Map<string, ChatMessage>;
     sharedState: ExecutionContext;
     errors: Map<string, Error>;
-    pendingAttention?: Map<string, UserAttentionRequest[]>;
-    paused?: boolean;
-    continuationToken?: string;
 }
 
 export interface AIServiceOptions {
@@ -121,7 +122,7 @@ export interface AIServiceOptions {
     callContext?: DependencyContext;
     stream?: boolean;
     onToken?: (token: string) => void;
-    onStatus?: (status: 'starting' | 'streaming' | 'complete' | 'error') => void;
+    onStatus?: (status: StreamStatus) => void;
     onProgress?: (progress: { received: number; total?: number }) => void;
     signal?: AbortSignal;
     tools?: ToolDefinition[];
@@ -133,5 +134,24 @@ export interface AIServiceResult {
     tokenUsage?: TokenUsage;
 }
 
-export type { ApiMessage } from "./types";
+// V2 task system interfaces
 
+export interface TaskOptions {
+    prompt: string;
+    chatContext?: ChatHistory;
+    chatConfig?: ChatProvider;
+    callContext?: DependencyContext;
+    signal?: AbortSignal;
+    onStepStart?: (step: TaskStep) => void;
+    onStepComplete?: (step: TaskStep, artifact: Artifact) => void;
+    onStepError?: (step: TaskStep, error: Error) => void;
+    onPlanReady?: (plan: TaskPlan) => void;
+}
+
+export interface TaskResult {
+    plan: TaskPlan;
+    artifacts: Artifact[];
+    errors: Map<string, Error>;
+}
+
+export type { ApiMessage } from "./types";

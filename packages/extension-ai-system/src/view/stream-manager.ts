@@ -1,16 +1,14 @@
-import type { ChatMessage } from "@kispace-io/extension-ai-system/api";
+import type { ChatMessage } from "../core/types";
 
 export interface StreamingMessage {
     message: ChatMessage;
     isStreaming: boolean;
-    timestamp: Date;
-    sessionId?: string;
 }
 
 export class StreamManager {
     private streamingMessages = new Map<number, StreamingMessage>();
-    private currentStreamingIndex: number = -1;
-    private updateAnimationFrame?: number;
+    private currentIndex = -1;
+    private rafHandle?: number;
     private pendingUpdate = false;
     private onUpdate?: () => void;
 
@@ -18,106 +16,58 @@ export class StreamManager {
         this.onUpdate = onUpdate;
     }
 
-    createStreamingMessage(role: string, sessionId?: string): number {
-        const index = ++this.currentStreamingIndex;
-        this.streamingMessages.set(index, {
-            message: {
-                role,
-                content: ''
-            },
-            isStreaming: true,
-            timestamp: new Date(),
-            sessionId
-        });
+    createStreamingMessage(role: string): number {
+        const index = ++this.currentIndex;
+        this.streamingMessages.set(index, { message: { role, content: '' }, isStreaming: true });
         return index;
-    }
-
-    getStreamingMessage(index: number): StreamingMessage | undefined {
-        return this.streamingMessages.get(index);
     }
 
     updateStreamingMessage(index: number, token: string): void {
         const msg = this.streamingMessages.get(index);
-        if (msg) {
-            msg.message.content += token;
-            this.scheduleUpdate();
-        }
+        if (!msg) return;
+        msg.message.content += token;
+        this.scheduleUpdate();
     }
 
     completeStreamingMessage(index: number, message: ChatMessage): void {
         const msg = this.streamingMessages.get(index);
-        if (msg) {
-            msg.message = message;
-            msg.isStreaming = false;
-        }
+        if (!msg) return;
+        msg.message = message;
+        msg.isStreaming = false;
     }
 
     removeStreamingMessage(index: number): void {
         this.streamingMessages.delete(index);
     }
 
+    findStreamingMessage(role: string): ChatMessage | undefined {
+        return Array.from(this.streamingMessages.values()).find(m => m.message.role === role)?.message;
+    }
+
     getAllStreamingMessages(): StreamingMessage[] {
         return Array.from(this.streamingMessages.values());
     }
 
-    getAllStreamingMessagesByRole(role: string): StreamingMessage[] {
-        return Array.from(this.streamingMessages.values())
-            .filter(msg => msg.message.role === role);
-    }
-
-    findStreamingMessage(role: string): ChatMessage | undefined {
-        const msg = Array.from(this.streamingMessages.values())
-            .find(m => m.message.role === role);
-        return msg?.message;
-    }
-
     scheduleUpdate(): void {
-        if (!this.pendingUpdate) {
-            this.pendingUpdate = true;
-            this.updateAnimationFrame = requestAnimationFrame(() => {
-                this.pendingUpdate = false;
-                this.onUpdate?.();
-            });
-        }
+        if (this.pendingUpdate) return;
+        this.pendingUpdate = true;
+        this.rafHandle = requestAnimationFrame(() => {
+            this.pendingUpdate = false;
+            this.onUpdate?.();
+        });
     }
 
     cancelUpdates(): void {
-        if (this.updateAnimationFrame) {
-            cancelAnimationFrame(this.updateAnimationFrame);
-            this.updateAnimationFrame = undefined;
+        if (this.rafHandle !== undefined) {
+            cancelAnimationFrame(this.rafHandle);
+            this.rafHandle = undefined;
             this.pendingUpdate = false;
         }
     }
 
-    clearAll(): void {
-        for (const [index, msg] of this.streamingMessages.entries()) {
-            if (msg.isStreaming) {
-                msg.isStreaming = false;
-            }
-        }
+    reset(): void {
         this.streamingMessages.clear();
         this.cancelUpdates();
-    }
-
-    clearForSession(sessionId: string): void {
-        const toRemove: number[] = [];
-        for (const [index, msg] of this.streamingMessages.entries()) {
-            if (msg.sessionId === sessionId) {
-                if (msg.isStreaming) {
-                    msg.isStreaming = false;
-                }
-                toRemove.push(index);
-            }
-        }
-        toRemove.forEach(index => this.streamingMessages.delete(index));
-        if (toRemove.length > 0) {
-            this.scheduleUpdate();
-        }
-    }
-
-    reset(): void {
-        this.clearAll();
-        this.currentStreamingIndex = -1;
+        this.currentIndex = -1;
     }
 }
-

@@ -7,14 +7,8 @@ export class ProviderFactory {
     private providers: IProvider[] = [];
 
     constructor() {
-        this.registerDefaultProviders();
-    }
-
-    private registerDefaultProviders(): void {
         this.providers.push(new OpenAIProvider());
         this.providers.push(new OllamaProvider());
-        // Note: Transformers.js is used for in-browser ML tasks (zero-shot classification, embeddings)
-        // via InBrowserMLService, not as a chat provider
     }
 
     registerProvider(provider: IProvider): void {
@@ -22,15 +16,10 @@ export class ProviderFactory {
     }
 
     getProvider(chatProvider: ChatProvider): IProvider {
-        const provider = this.providers.find(p => p.canHandle(chatProvider));
-        if (!provider) {
-            return this.providers[0];
-        }
-        return provider;
+        return this.providers.find(p => p.canHandle(chatProvider)) ?? this.providers[0];
     }
 
     getAllProviders(): IProvider[] {
         return [...this.providers];
     }
 }
-

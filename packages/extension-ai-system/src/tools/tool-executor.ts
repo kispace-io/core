@@ -2,68 +2,43 @@ import type { Command, ExecutionContext } from "@kispace-io/core";
 import { commandRegistry } from "@kispace-io/core";
 import type { ToolCall, ToolResult } from "../core/types";
 import { ToolCallAccumulator } from "./tool-call-accumulator";
+import { sanitizeFunctionName } from "./tool-name-utils";
 
 export class ToolExecutor {
-    private sanitizeFunctionName(name: string): string {
-        return name
-            .replace(/[^a-zA-Z0-9_-]/g, '_')
-            .replace(/^[^a-zA-Z]/, 'cmd_$&')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '');
-    }
-
     findCommand(toolCall: ToolCall, context: ExecutionContext): Command | null {
-        const sanitizedFunctionName = toolCall.function.name;
-        
-        // First try direct lookup (in case command ID matches sanitized name)
-        const directCommand = commandRegistry.getCommand(sanitizedFunctionName);
-        if (directCommand) {
-            return directCommand;
-        }
-        
-        // If not found, search through all commands to find one whose sanitized ID matches
+        const sanitizedName = toolCall.function.name;
+        const direct = commandRegistry.getCommand(sanitizedName);
+        if (direct) return direct;
+
         const allCommands = commandRegistry.listCommands();
         for (const [commandId, command] of Object.entries(allCommands)) {
-            const sanitizedId = this.sanitizeFunctionName(commandId);
-            if (sanitizedId === sanitizedFunctionName) {
+            if (sanitizeFunctionName(commandId) === sanitizedName) {
                 return command;
             }
         }
-        
         return null;
     }
 
     private parseArguments(argsStr: string): Record<string, any> {
-        if (!argsStr || argsStr.trim() === "" || argsStr === "{}") {
-            return {};
-        }
-        
+        if (!argsStr?.trim() || argsStr === "{}") return {};
         try {
             const parsed = JSON.parse(argsStr);
             return parsed && typeof parsed === 'object' ? parsed : {};
-        } catch (e) {
-            const errorMsg = e instanceof Error ? e.message : String(e);
-            console.error(`[ToolExecutor] Failed to parse arguments: ${argsStr} - ${errorMsg}`);
+        } catch {
             return {};
         }
     }
 
-    private sanitizeArguments(
-        args: Record<string, any>,
-        command: Command | null
-    ): Record<string, any> {
-        if (!command || !command.parameters || !args || typeof args !== 'object') {
-            return args || {};
-        }
+    private sanitizeArguments(args: Record<string, any>, command: Command | null): Record<string, any> {
+        if (!command?.parameters || !args || typeof args !== 'object') return args || {};
 
         const sanitizedArgs: Record<string, any> = {};
         command.parameters.forEach(param => {
-            const sanitizedParamName = this.sanitizeFunctionName(param.name);
+            const sanitizedParamName = sanitizeFunctionName(param.name);
             if (sanitizedParamName in args) {
                 sanitizedArgs[param.name] = args[sanitizedParamName];
             }
         });
-
         return sanitizedArgs;
     }
 
@@ -71,82 +46,56 @@ export class ToolExecutor {
         try {
             const command = this.findCommand(toolCall, context);
             const commandId = command?.id || toolCall.function.name;
-            
-            const argsStr = toolCall.function.arguments || "{}";
-            const args = this.parseArguments(argsStr);
+            const args = this.parseArguments(toolCall.function.arguments || "{}");
             const sanitizedArgs = this.sanitizeArguments(args, command);
-            
+
             const freshContext = commandRegistry.createExecutionContext(sanitizedArgs);
-            const execContext: ExecutionContext = {
-                ...context,
-                ...freshContext,
-                params: sanitizedArgs
-            };
-            
-            let commandResult = await commandRegistry.execute(commandId, execContext);
-            
+            const execContext: ExecutionContext = { ...context, ...freshContext, params: sanitizedArgs };
+
+            const commandResult = await commandRegistry.execute(commandId, execContext);
             const commandName = command?.name || commandId;
+
             const resultMessage: any = {
                 success: true,
                 message: `Command "${commandName}" executed successfully`,
                 command: commandId
             };
-            
-            if (sanitizedArgs && typeof sanitizedArgs === 'object' && Object.keys(sanitizedArgs).length > 0) {
+
+            if (Object.keys(sanitizedArgs).length > 0) {
                 resultMessage.parameters = sanitizedArgs;
             }
-            
-            if (!!commandResult) {
-                let resolvedResult = commandResult;
-                if (resolvedResult instanceof Promise) {
-                    resolvedResult = await resolvedResult;
-                }
-                resultMessage.result = resolvedResult;
-                
-                if (command?.output && command.output.length > 0) {
-                    const outputDescriptions = command.output.map(v => `${v.name}: ${v.description || v.type || 'value'}`).join(', ');
-                    resultMessage.output = outputDescriptions;
+
+            if (commandResult != null) {
+                let resolved = commandResult;
+                if (resolved instanceof Promise) resolved = await resolved;
+                resultMessage.result = resolved;
+
+                if (command?.output?.length) {
+                    resultMessage.output = command.output.map(v => `${v.name}: ${v.description || v.type || 'value'}`).join(', ');
                 }
             }
-            
-            return {
-                id: toolCall.id,
-                result: resultMessage
-            };
+
+            return { id: toolCall.id, result: resultMessage };
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
             let command: Command | null = null;
-            try {
-                command = this.findCommand(toolCall, context);
-            } catch {
-                command = null;
-            }
+            try { command = this.findCommand(toolCall, context); } catch { /* noop */ }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
             const commandName = command?.name || toolCall.function.name;
-            
+
             let detailedError = errorMessage;
-            
             if (errorMessage.includes('No handler found') || errorMessage.includes('No handlers registered')) {
-                detailedError = `Command "${commandName}" cannot be executed. ${errorMessage}. This usually means the command is not available in the current context (e.g., a map editor may not be open or active).`;
-            } else if (errorMessage.includes('not available') || errorMessage.includes('GsMapEditor')) {
-                detailedError = `Command "${commandName}" cannot be executed: ${errorMessage}. Please ensure the required editor or component is open and active.`;
+                detailedError = `Command "${commandName}" cannot be executed. ${errorMessage}.`;
             }
-            
-            return {
-                id: toolCall.id,
-                result: null,
-                error: detailedError
-            };
+
+            return { id: toolCall.id, result: null, error: detailedError };
         }
     }
 
-    async executeToolCalls(
-        toolCalls: ToolCall[],
-        context: ExecutionContext
-    ): Promise<ToolResult[]> {
+    async executeToolCalls(toolCalls: ToolCall[], context: ExecutionContext): Promise<ToolResult[]> {
         const results: ToolResult[] = [];
         for (const toolCall of toolCalls) {
-            const result = await this.executeToolCall(toolCall, context);
-            results.push(result);
+            results.push(await this.executeToolCall(toolCall, context));
         }
         return results;
     }
@@ -156,19 +105,14 @@ export class ToolExecutor {
     }
 
     createToolCallSignature(toolCall: ToolCall): string {
-        const argsStr = toolCall.function.arguments || "{}";
         let args: any = {};
         try {
-            const parsed = JSON.parse(argsStr);
+            const parsed = JSON.parse(toolCall.function.arguments || "{}");
             args = parsed && typeof parsed === 'object' ? parsed : {};
-        } catch (e) {
+        } catch {
             args = {};
         }
-        const sortedArgs = args && typeof args === 'object' ? Object.keys(args).sort().reduce((acc, key) => {
-            acc[key] = args[key];
-            return acc;
-        }, {} as any) : {};
+        const sortedArgs = Object.keys(args).sort().reduce((acc: any, key) => { acc[key] = args[key]; return acc; }, {});
         return `${toolCall.function.name}:${JSON.stringify(sortedArgs)}`;
     }
 }
-

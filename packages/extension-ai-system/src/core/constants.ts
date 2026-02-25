@@ -12,12 +12,13 @@ export const CID_CHAT_PROVIDERS = "aiservice.chatProviders";
 export const CID_PROMPT_ENHANCERS = "aiservice.promptEnhancers";
 
 export const KEY_AI_CONFIG = "aiConfig";
+export const DEFAULT_AGENT_ROLE = "appsupport";
 
 export const AI_CONFIG_TEMPLATE = {
     "defaultProvider": "openai",
-    "providers": []
+    "providers": [],
+    "requireToolApproval": true
 };
 
 export const MAX_TOOL_ITERATIONS = 10;
 export const MAX_RECENT_TOOL_CALLS = 5;
-

@@ -1,4 +1,4 @@
-import { BaseProvider } from "./provider";
+import { BaseProvider } from "./base-provider";
 import type { ChatProvider } from "../core/types";
 
 export class OpenAIProvider extends BaseProvider {
@@ -9,4 +9,3 @@ export class OpenAIProvider extends BaseProvider {
                chatProvider.chatApiEndpoint.includes('v1/chat/completions');
     }
 }
-

@@ -1,14 +1,10 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { t } from '../../translation';
 
 @customElement('ai-empty-state')
 export class AIEmptyState extends LitElement {
-    @property({ type: String })
-    public message: string = t('NO_PROVIDER_CONFIGURED');
-
-    @property({ type: String })
-    public hint: string = t('CLICK_SETTINGS_TO_CONFIGURE');
+    @property({ type: String }) public message = 'No AI provider configured';
+    @property({ type: String }) public hint = 'Click the settings icon to configure an AI provider';
 
     render() {
         return html`
@@ -39,14 +35,13 @@ export class AIEmptyState extends LitElement {
             color: var(--wa-color-text-quiet);
         }
 
-        .empty-state p {
-            margin: 0.5rem 0;
-        }
-
-        .empty-state .hint {
-            font-size: 0.875rem;
-            opacity: 0.7;
-        }
+        .empty-state p { margin: 0.5rem 0; }
+        .hint { font-size: 0.875rem; opacity: 0.7; }
     `;
 }
 
+declare global {
+    interface HTMLElementTagNameMap {
+        'ai-empty-state': AIEmptyState;
+    }
+}

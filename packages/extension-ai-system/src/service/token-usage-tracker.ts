@@ -1,5 +1,5 @@
 import { persistenceService } from "@kispace-io/core";
-import type { TokenUsage, ProviderTokenUsage } from "@kispace-io/extension-ai-system/api";
+import type { TokenUsage, ProviderTokenUsage } from "../core/types";
 
 interface TokenUsageData {
     providers: Record<string, ProviderTokenUsage>;
@@ -9,34 +9,23 @@ interface TokenUsageData {
 
 const TOKEN_USAGE_KEY = "ai_token_usage";
 
+export const EMPTY_USAGE: ProviderTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, requestCount: 0 };
+
 export class TokenUsageTracker {
     private data: TokenUsageData | null = null;
     private loadPromise: Promise<TokenUsageData> | null = null;
 
     private async loadData(): Promise<TokenUsageData> {
-        if (this.data) {
-            return this.data;
-        }
-
-        if (this.loadPromise) {
-            return this.loadPromise;
-        }
+        if (this.data) return this.data;
+        if (this.loadPromise) return this.loadPromise;
 
         this.loadPromise = (async () => {
             const stored = await persistenceService.getObject(TOKEN_USAGE_KEY);
-            if (stored) {
-                this.data = stored as TokenUsageData;
-            } else {
-                this.data = {
-                    providers: {},
-                    total: {
-                        promptTokens: 0,
-                        completionTokens: 0,
-                        totalTokens: 0,
-                        requestCount: 0
-                    },
-                    lastUpdated: Date.now()
-                };
+            this.data = stored
+                ? (stored as TokenUsageData)
+                : { providers: {}, total: { ...EMPTY_USAGE }, lastUpdated: Date.now() };
+            if (!this.data) {
+                this.data = { providers: {}, total: { ...EMPTY_USAGE }, lastUpdated: Date.now() };
                 await this.saveData();
             }
             this.loadPromise = null;
@@ -47,28 +36,16 @@ export class TokenUsageTracker {
     }
 
     private async saveData(): Promise<void> {
-        if (this.data) {
-            this.data.lastUpdated = Date.now();
-            await persistenceService.persistObject(TOKEN_USAGE_KEY, this.data);
-        }
+        if (!this.data) return;
+        this.data.lastUpdated = Date.now();
+        await persistenceService.persistObject(TOKEN_USAGE_KEY, this.data);
     }
 
     async recordUsage(providerName: string, usage: TokenUsage): Promise<void> {
         await this.loadData();
+        if (!this.data) return;
 
-        if (!this.data) {
-            return;
-        }
-
-        if (!this.data.providers[providerName]) {
-            this.data.providers[providerName] = {
-                promptTokens: 0,
-                completionTokens: 0,
-                totalTokens: 0,
-                requestCount: 0
-            };
-        }
-
+        this.data.providers[providerName] ??= { ...EMPTY_USAGE };
         const provider = this.data.providers[providerName];
         provider.promptTokens += usage.promptTokens;
         provider.completionTokens += usage.completionTokens;
@@ -95,45 +72,28 @@ export class TokenUsageTracker {
 
     async getTotalUsage(): Promise<ProviderTokenUsage> {
         await this.loadData();
-        return this.data?.total || {
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-            requestCount: 0
-        };
+        return this.data?.total || { ...EMPTY_USAGE };
     }
 
     async reset(): Promise<void> {
-        this.data = {
-            providers: {},
-            total: {
-                promptTokens: 0,
-                completionTokens: 0,
-                totalTokens: 0,
-                requestCount: 0
-            },
-            lastUpdated: Date.now()
-        };
+        this.data = { providers: {}, total: { ...EMPTY_USAGE }, lastUpdated: Date.now() };
         await this.saveData();
     }
 
     async resetProvider(providerName: string): Promise<void> {
         await this.loadData();
-        if (!this.data) {
-            return;
-        }
+        if (!this.data) return;
 
         const provider = this.data.providers[providerName];
-        if (provider) {
-            this.data.total.promptTokens -= provider.promptTokens;
-            this.data.total.completionTokens -= provider.completionTokens;
-            this.data.total.totalTokens -= provider.totalTokens;
-            this.data.total.requestCount -= provider.requestCount;
-            delete this.data.providers[providerName];
-            await this.saveData();
-        }
+        if (!provider) return;
+
+        this.data.total.promptTokens -= provider.promptTokens;
+        this.data.total.completionTokens -= provider.completionTokens;
+        this.data.total.totalTokens -= provider.totalTokens;
+        this.data.total.requestCount -= provider.requestCount;
+        delete this.data.providers[providerName];
+        await this.saveData();
     }
 }
 
 export const tokenUsageTracker = new TokenUsageTracker();
-

@@ -22,10 +22,14 @@ export class LLMOCRExtractor implements IDocumentExtractor {
         const fileType = options?.fileType || fileName.split('.').pop()?.toLowerCase() || 'pdf';
         
         const providers = await aiService.getProviders();
-        const ocrProvider = providers.find(p => p.ocrApiEndpoint && p.name.toLowerCase().includes('mistral'));
-        
-        if (!ocrProvider || !ocrProvider.ocrApiEndpoint) {
-            throw new Error('Mistral OCR provider not configured. Please configure a provider with OCR endpoint in AI settings.');
+        const ocrProvider = providers.find(p => {
+            const endpoint = p.parameters?.['ocrApiEndpoint'] as string | undefined;
+            return endpoint && p.name.toLowerCase().includes('mistral');
+        });
+        const ocrEndpoint = ocrProvider?.parameters?.['ocrApiEndpoint'] as string | undefined;
+
+        if (!ocrProvider || !ocrEndpoint) {
+            throw new Error('Mistral OCR provider not configured. Please add ocrApiEndpoint to the provider parameters in AI settings.');
         }
 
         try {
@@ -33,14 +37,14 @@ export class LLMOCRExtractor implements IDocumentExtractor {
             const base64Content = await this.blobToBase64(fileBlob);
             const mimeType = this.getMimeType(fileType);
             
-            const response = await fetch(ocrProvider.ocrApiEndpoint, {
+            const response = await fetch(ocrEndpoint, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${ocrProvider.apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: ocrProvider.model || 'mistral-ocr-latest',
+                    model: (ocrProvider.parameters?.['ocrModel'] as string | undefined) || ocrProvider.model || 'mistral-ocr-latest',
                     document: {
                         type: 'document_url',
                         document_url: `data:${mimeType};base64,${base64Content}`

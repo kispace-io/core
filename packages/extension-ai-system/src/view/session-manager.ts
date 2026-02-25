@@ -1,12 +1,7 @@
-import type { ChatHistory, ChatMessage } from "@kispace-io/extension-ai-system/api";
+import { appSettings } from "@kispace-io/core";
+import type { ChatMessage } from "../core/types";
 
 export interface Session {
-    id: string;
-    history: ChatMessage[];
-    title: string;
-}
-
-export interface PersistedSession {
     id: string;
     history: ChatMessage[];
     title: string;
@@ -15,241 +10,113 @@ export interface PersistedSession {
 }
 
 export class SessionManager {
-    private sessions = new Map<string, ChatHistory>();
-    private sessionTitles = new Map<string, string>();
-    private sessionTimestamps = new Map<string, { createdAt: number; updatedAt: number }>();
-    private activeSessionId: string = '';
-    private archivedSessions = new Map<string, PersistedSession>();
-    private saveCallback?: () => Promise<void>;
+    private activeSession: Session | null = null;
+    private pastSessions: Session[] = [];
 
-    setSaveCallback(callback: () => Promise<void>): void {
-        this.saveCallback = callback;
-    }
+    async load(): Promise<void> {
+        const saved = await appSettings.get('aiChatSessions') as any;
+        if (!saved) return;
 
-    private async save(): Promise<void> {
-        if (this.saveCallback) {
-            await this.saveCallback();
+        if (saved.active && Array.isArray(saved.history)) {
+            this.activeSession = saved.active;
+        } else if (saved.activeSessionId && Array.isArray(saved.sessions)) {
+            this.activeSession = saved.sessions.find((s: Session) => s.id === saved.activeSessionId) || null;
+            this.pastSessions = saved.sessions.filter((s: Session) => s.id !== saved.activeSessionId);
+        } else if (Array.isArray(saved.all)) {
+            const [first, ...rest] = (saved.all as Session[]).sort((a, b) => b.updatedAt - a.updatedAt);
+            this.activeSession = first || null;
+            this.pastSessions = rest;
         }
     }
 
-    async loadSessions(): Promise<void> {
-        const { appSettings } = await import("@kispace-io/core");
-        const saved = await appSettings.get('aiChatSessions');
-        
-        if (saved && Array.isArray(saved.active)) {
-            for (const session of saved.active) {
-                if (session.id && session.history && Array.isArray(session.history)) {
-                    this.sessions.set(session.id, { history: session.history });
-                    this.sessionTitles.set(session.id, session.title || 'New Chat');
-                    this.sessionTimestamps.set(session.id, {
-                        createdAt: session.createdAt || Date.now(),
-                        updatedAt: session.updatedAt || Date.now()
-                    });
-                }
-            }
-            if (saved.active.length > 0 && saved.activeSessionId) {
-                if (this.sessions.has(saved.activeSessionId)) {
-                    this.activeSessionId = saved.activeSessionId;
-                } else {
-                    this.activeSessionId = saved.active[0].id;
-                }
-            }
-        }
+    async persist(): Promise<void> {
+        const all: Session[] = [];
+        if (this.activeSession) all.push(this.activeSession);
+        all.push(...this.pastSessions);
 
-        if (saved && Array.isArray(saved.archived)) {
-            for (const session of saved.archived) {
-                if (session.id && session.history && Array.isArray(session.history)) {
-                    this.archivedSessions.set(session.id, {
-                        id: session.id,
-                        history: session.history,
-                        title: session.title || 'New Chat',
-                        createdAt: session.createdAt || Date.now(),
-                        updatedAt: session.updatedAt || Date.now()
-                    });
-                }
-            }
-        }
-    }
-
-    async persistSessions(): Promise<void> {
-        const active: PersistedSession[] = Array.from(this.sessions.entries()).map(([id, history]) => {
-            const timestamps = this.sessionTimestamps.get(id) || { createdAt: Date.now(), updatedAt: Date.now() };
-            return {
-                id,
-                history: history.history,
-                title: this.sessionTitles.get(id) || 'New Chat',
-                createdAt: timestamps.createdAt,
-                updatedAt: timestamps.updatedAt
-            };
-        });
-
-        const archived = Array.from(this.archivedSessions.values());
-
-        const { appSettings } = await import("@kispace-io/core");
         await appSettings.set('aiChatSessions', {
-            active,
-            archived,
-            activeSessionId: this.activeSessionId
+            all,
+            activeSessionId: this.activeSession?.id || null
         });
     }
 
-    createSession(): string {
-        const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        this.sessions.set(sessionId, { history: [] });
-        this.sessionTitles.set(sessionId, 'New Chat');
-        this.sessionTimestamps.set(sessionId, { createdAt: Date.now(), updatedAt: Date.now() });
-        this.activeSessionId = sessionId;
-        this.save();
-        return sessionId;
-    }
-
-    async deleteSession(sessionId: string): Promise<boolean> {
-        if (this.sessions.size <= 1) {
-            return false;
-        }
-        
-        const session = this.sessions.get(sessionId);
-        const title = this.sessionTitles.get(sessionId);
-        const timestamps = this.sessionTimestamps.get(sessionId);
-        
-        if (session && title) {
-            this.archivedSessions.set(sessionId, {
-                id: sessionId,
-                history: session.history,
-                title,
-                createdAt: timestamps?.createdAt || Date.now(),
-                updatedAt: Date.now()
-            });
-        }
-        
-        this.sessions.delete(sessionId);
-        this.sessionTitles.delete(sessionId);
-        this.sessionTimestamps.delete(sessionId);
-        
-        if (this.activeSessionId === sessionId) {
-            const firstSession = Array.from(this.sessions.keys())[0];
-            this.activeSessionId = firstSession || '';
-        }
-        
-        await this.save();
-        return true;
-    }
-
-    async restoreSession(sessionId: string): Promise<boolean> {
-        const archived = this.archivedSessions.get(sessionId);
-        if (!archived) {
-            return false;
-        }
-
-        this.sessions.set(sessionId, { history: archived.history });
-        this.sessionTitles.set(sessionId, archived.title);
-        this.sessionTimestamps.set(sessionId, {
-            createdAt: archived.createdAt,
+    createSession(): Session {
+        const session: Session = {
+            id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            history: [],
+            title: 'New Chat',
+            createdAt: Date.now(),
             updatedAt: Date.now()
-        });
-        this.archivedSessions.delete(sessionId);
-        this.activeSessionId = sessionId;
-        await this.save();
-        return true;
-    }
-
-    async permanentlyDeleteSession(sessionId: string): Promise<boolean> {
-        if (this.sessions.has(sessionId)) {
-            return false;
+        };
+        if (this.activeSession) {
+            this.pastSessions.unshift(this.activeSession);
         }
-        
-        this.archivedSessions.delete(sessionId);
-        await this.save();
-        return true;
+        this.activeSession = session;
+        this.persist();
+        return session;
     }
 
-    getSession(sessionId: string): ChatHistory | undefined {
-        return this.sessions.get(sessionId);
-    }
-
-    setSession(sessionId: string, history: ChatHistory): void {
-        this.sessions.set(sessionId, history);
-    }
-
-    getActiveSession(): ChatHistory | undefined {
-        if (!this.activeSessionId) {
-            return undefined;
-        }
-        return this.sessions.get(this.activeSessionId);
-    }
-
-    setActiveSession(sessionId: string): void {
-        if (this.sessions.has(sessionId)) {
-            this.activeSessionId = sessionId;
-        }
+    getActiveSession(): Session | null {
+        return this.activeSession;
     }
 
     getActiveSessionId(): string {
-        return this.activeSessionId;
+        return this.activeSession?.id || '';
     }
 
-    getAllSessionIds(): string[] {
-        return Array.from(this.sessions.keys());
+    switchToSession(sessionId: string): boolean {
+        if (this.activeSession?.id === sessionId) return true;
+
+        const idx = this.pastSessions.findIndex(s => s.id === sessionId);
+        if (idx === -1) return false;
+
+        const [target] = this.pastSessions.splice(idx, 1);
+        if (!target) return false;
+
+        if (this.activeSession) this.pastSessions.unshift(this.activeSession);
+        this.activeSession = target;
+
+        this.persist();
+        return true;
     }
 
-    getAllSessions(): Session[] {
-        return Array.from(this.sessions.entries()).map(([id, history]) => ({
-            id,
-            history: history.history,
-            title: this.sessionTitles.get(id) || 'New Chat'
-        }));
+    getPastSessions(): Session[] {
+        return this.pastSessions;
     }
 
-    getSessionTitle(sessionId: string): string {
-        return this.sessionTitles.get(sessionId) || this.archivedSessions.get(sessionId)?.title || 'New Chat';
+    deletePastSession(sessionId: string): boolean {
+        const idx = this.pastSessions.findIndex(s => s.id === sessionId);
+        if (idx === -1) return false;
+        this.pastSessions.splice(idx, 1);
+        this.persist();
+        return true;
     }
 
-    setSessionTitle(sessionId: string, title: string): void {
-        if (this.sessions.has(sessionId)) {
-            this.sessionTitles.set(sessionId, title);
-            const timestamps = this.sessionTimestamps.get(sessionId);
-            if (timestamps) {
-                timestamps.updatedAt = Date.now();
-            }
-            this.save();
-        }
+    addMessage(message: ChatMessage): void {
+        if (!this.activeSession) return;
+        this.activeSession.history.push(message);
+        this.activeSession.updatedAt = Date.now();
+        this.persist();
+    }
+
+    setTitle(title: string): void {
+        if (!this.activeSession) return;
+        this.activeSession.title = title;
+        this.persist();
     }
 
     generateTitle(prompt: string): string {
         const trimmed = prompt.trim();
         if (!trimmed) return 'New Chat';
-        
-        const maxLength = 30;
-        if (trimmed.length <= maxLength) {
-            return trimmed;
+        return trimmed.length <= 30 ? trimmed : trimmed.substring(0, 30).trim() + '...';
+    }
+
+    deleteActiveAndSwitchToFirst(): void {
+        if (!this.activeSession) return;
+        this.activeSession = this.pastSessions.shift() || null;
+        if (!this.activeSession) {
+            this.createSession();
         }
-        
-        return trimmed.substring(0, maxLength).trim() + '...';
-    }
-
-    addMessage(sessionId: string, message: ChatMessage): void {
-        const session = this.sessions.get(sessionId);
-        if (session) {
-            session.history.push(message);
-            const timestamps = this.sessionTimestamps.get(sessionId);
-            if (timestamps) {
-                timestamps.updatedAt = Date.now();
-            }
-            this.save();
-        }
-    }
-
-    getSessionCount(): number {
-        return this.sessions.size;
-    }
-
-    getArchivedSessions(): PersistedSession[] {
-        return Array.from(this.archivedSessions.values())
-            .sort((a, b) => b.updatedAt - a.updatedAt);
-    }
-
-    getArchivedSessionCount(): number {
-        return this.archivedSessions.size;
+        this.persist();
     }
 }
-

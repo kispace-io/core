@@ -3,26 +3,8 @@ import { customElement, property } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { ChatMessage } from '../../core/types';
-import { t } from '../../translation';
-import './ai-agent-response-card';
-
-interface AgentResponseInfo {
-    role: string;
-    label: string;
-    icon: string;
-    status: 'streaming' | 'completed' | 'error';
-    message?: ChatMessage;
-    messageIndex?: number;
-}
-
-interface AgentResponseGroup {
-    id: string;
-    userMessageIndex: number;
-    userMessage: ChatMessage;
-    timestamp: Date;
-    agents: Map<string, AgentResponseInfo>;
-    messageIndices: Map<string, number>;
-}
+import type { AgentResponseGroup, AgentResponseInfo } from '../agent-group-manager';
+import './ai-chat-message';
 
 @customElement('ai-agent-response-group')
 export class AIAgentResponseGroup extends LitElement {
@@ -32,189 +14,165 @@ export class AIAgentResponseGroup extends LitElement {
     @property({ type: Function, attribute: false })
     public findStreamingMessage?: (role: string) => ChatMessage | undefined;
 
-    private handleAction(action: () => void | Promise<void>) {
-        const result = action();
-        if (result instanceof Promise) {
-            result.catch((err: any) => {
-                console.error('Action failed:', err);
-            });
+    private copyToClipboard(text: string) {
+        navigator.clipboard.writeText(text).catch(err => console.error('Failed to copy:', err));
+    }
+
+    private renderStatusIcon(status: AgentResponseInfo['status']) {
+        switch (status) {
+            case 'streaming': return html`<wa-icon name="spinner" class="spinning"></wa-icon>`;
+            case 'completed': return html`<wa-icon name="check-circle" class="status-success"></wa-icon>`;
+            case 'error': return html`<wa-icon name="exclamation-circle" class="status-error"></wa-icon>`;
         }
     }
 
-    render() {
-        if (!this.group) {
-            return html``;
+    private renderCard(agentInfo: AgentResponseInfo, message: ChatMessage | undefined) {
+        if (!message) {
+            return html`
+                <div class="agent-card status-${agentInfo.status}">
+                    <div class="agent-card-header">
+                        <wa-icon name="${agentInfo.icon}" label="${agentInfo.label}"></wa-icon>
+                        <span>${agentInfo.label}</span>
+                        ${this.renderStatusIcon(agentInfo.status)}
+                    </div>
+                    <div class="agent-card-content waiting">Waiting for response...</div>
+                </div>
+            `;
         }
+
+        return html`
+            <div class="agent-card status-${agentInfo.status}">
+                <div class="agent-card-header">
+                    <wa-icon name="${agentInfo.icon}" label="${agentInfo.label}"></wa-icon>
+                    <span>${agentInfo.label}</span>
+                    ${this.renderStatusIcon(agentInfo.status)}
+                    <div class="agent-card-actions">
+                        <wa-button variant="neutral" appearance="plain" size="small" title="Copy"
+                            @click="${() => this.copyToClipboard(message.content || '')}">
+                            <wa-icon name="copy" label="Copy"></wa-icon>
+                        </wa-button>
+                    </div>
+                </div>
+                <div class="agent-card-content">
+                    <ai-chat-message
+                        .message="${message}"
+                        .isStreaming="${agentInfo.status === 'streaming'}"
+                        .showHeader="${false}"
+                        .messageIndex="${agentInfo.messageIndex}">
+                    </ai-chat-message>
+                </div>
+            </div>
+        `;
+    }
+
+    render() {
+        if (!this.group) return html``;
 
         const agents = Array.from(this.group.agents.values());
         const completedCount = agents.filter(a => a.status === 'completed').length;
         const streamingCount = agents.filter(a => a.status === 'streaming').length;
         const errorCount = agents.filter(a => a.status === 'error').length;
-        const allCompleted = agents.length > 0 && completedCount + errorCount === agents.length;
-        const isSingleAgent = agents.length === 1;
-
-        const quickActions = agents
-            .filter(a => a.message && a.message.actions && a.message.actions.length > 0)
-            .flatMap(a => a.message!.actions!.map(action => ({ ...action, agentRole: a.role, agentLabel: a.label })))
-            .sort((a, b) => {
-                const aPriority = a.requiresAttention ? 1 : 0;
-                const bPriority = b.requiresAttention ? 1 : 0;
-                return bPriority - aPriority;
-            });
+        const allDone = agents.length > 0 && completedCount + errorCount === agents.length;
+        const isSingle = agents.length === 1;
 
         return html`
             <div class="agent-response-group">
-                ${when(!isSingleAgent, () => html`
-                    <div class="agent-group-header">
-                        <div class="agent-group-title">
-                            <wa-icon name="robot" label="${t('MULTIPLE_AGENTS')}"></wa-icon>
-                            <span>${t('MULTIPLE_AGENTS')}</span>
-                            ${when(!allCompleted, () => html`
-                                <span class="agent-status-badge">
-                                    ${when(streamingCount > 0, () => html`
-                                        <span class="status-streaming">${streamingCount} responding</span>
-                                    `)}
-                                    ${when(completedCount > 0, () => html`
-                                        <span class="status-completed">${completedCount}/${agents.length} completed</span>
-                                    `)}
-                                </span>
-                            `)}
-                            ${when(allCompleted, () => html`
-                                <span class="agent-status-badge status-all-completed">
-                                    All completed (${completedCount})
-                                </span>
-                            `)}
-                        </div>
+                ${when(!isSingle, () => html`
+                    <div class="group-header">
+                        <wa-icon name="robot" label="Multiple Agents"></wa-icon>
+                        <span>Multiple Agents</span>
+                        <span class="status-badge">
+                            ${when(streamingCount > 0, () => html`<span class="streaming">${streamingCount} responding</span>`)}
+                            ${when(allDone, () => html`<span class="done">All completed (${completedCount})</span>`)}
+                        </span>
                     </div>
                 `)}
-                <div class="agent-group-content">
-                    ${repeat(agents, (agentInfo) => agentInfo.role, (agentInfo) => {
-                        const message = agentInfo.message || 
-                            (agentInfo.status === 'streaming' && this.findStreamingMessage 
-                                ? this.findStreamingMessage(agentInfo.role) 
+                <div class="group-content">
+                    ${repeat(agents, a => a.role, (agentInfo) => {
+                        const message = agentInfo.message ||
+                            (agentInfo.status === 'streaming' && this.findStreamingMessage
+                                ? this.findStreamingMessage(agentInfo.role)
                                 : undefined);
-                        return html`
-                            <ai-agent-response-card
-                                .agentInfo="${agentInfo}"
-                                .message="${message}"
-                                .isStreaming="${agentInfo.status === 'streaming'}"
-                                .groupId="${this.group!.id}">
-                            </ai-agent-response-card>
-                        `;
+                        return this.renderCard(agentInfo, message);
                     })}
                 </div>
-                ${when(quickActions.length > 0 && allCompleted, () => html`
-                    <div class="quick-actions-bar">
-                        <div class="quick-actions-label">
-                            <wa-icon name="bolt" label="${t('QUICK_ACTIONS')}"></wa-icon>
-                            <span>${t('QUICK_ACTIONS')}</span>
-                        </div>
-                        <div class="quick-actions-buttons">
-                            ${repeat(quickActions, (action, index) => index.toString(), (action) => html`
-                                <wa-button
-                                    variant="${action.requiresAttention ? 'brand' : 'neutral'}"
-                                    appearance="${action.requiresAttention ? 'filled' : 'plain'}"
-                                    size="small"
-                                    title="${action.label}"
-                                    @click="${() => this.handleAction(action.action)}">
-                                    <wa-icon name="${action.icon}" label="${action.label}"></wa-icon>
-                                </wa-button>
-                            `)}
-                        </div>
-                    </div>
-                `)}
             </div>
         `;
     }
 
     static styles = css`
-        :host {
-            display: block;
-            width: 100%;
-            box-sizing: border-box;
-        }
+        :host { display: block; width: 100%; box-sizing: border-box; }
 
         .agent-response-group {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
             width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-            overflow: visible;
         }
 
-        .agent-group-header {
-            padding: 0.5rem 0.75rem;
-            background-color: var(--wa-color-surface-lowered);
-            border: solid var(--wa-border-width-s) var(--wa-color-surface-border);
-        }
-
-        .agent-group-title {
+        .group-header {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background-color: var(--wa-color-surface-lowered);
+            border: solid var(--wa-border-width-s) var(--wa-color-surface-border);
             font-weight: 500;
         }
 
-        .agent-status-badge {
+        .status-badge {
             display: flex;
             gap: 0.5rem;
             margin-left: auto;
             font-size: 0.875rem;
         }
 
-        .status-streaming {
-            color: var(--wa-color-brand-50);
-        }
+        .streaming { color: var(--wa-color-brand-50); }
+        .done { color: var(--wa-color-success-70); font-weight: 600; }
 
-        .status-completed {
-            color: var(--wa-color-success-60);
-        }
-
-        .status-all-completed {
-            color: var(--wa-color-success-70);
-            font-weight: 600;
-        }
-
-        .agent-group-content {
+        .group-content {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
             width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
         }
 
-        .quick-actions-bar {
+        .agent-card {
             display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            background-color: var(--wa-color-surface-lowered);
+            flex-direction: column;
             border: solid var(--wa-border-width-s) var(--wa-color-surface-border);
-            border-top: none;
+            background-color: var(--wa-color-surface-default);
         }
 
-        .quick-actions-label {
+        .agent-card.status-streaming { border-color: var(--wa-color-brand-border-quiet); }
+        .agent-card.status-completed { border-color: var(--wa-color-success-border-quiet); }
+        .agent-card.status-error { border-color: var(--wa-color-danger-border-quiet); }
+
+        .agent-card-header {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
+            gap: 0.375rem;
+            padding: 0.375rem 0.5rem;
+            border-bottom: solid var(--wa-border-width-s) var(--wa-color-surface-border);
+            background-color: var(--wa-color-surface-lowered);
             font-weight: 500;
-            color: var(--wa-color-text-quiet);
-            flex-shrink: 0;
+            font-size: 0.875rem;
         }
 
-        .quick-actions-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            margin-left: auto;
-        }
+        .agent-card-actions { margin-left: auto; display: flex; gap: 0.25rem; }
+        .agent-card-content { padding: 0.375rem; }
+        .waiting { padding: 1rem; text-align: center; color: var(--wa-color-text-quiet); }
+
+        .spinning { animation: spin 1s linear infinite; }
+        .status-success { color: var(--wa-color-success-60); }
+        .status-error { color: var(--wa-color-danger-60); }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     `;
 }
 
+declare global {
+    interface HTMLElementTagNameMap {
+        'ai-agent-response-group': AIAgentResponseGroup;
+    }
+}

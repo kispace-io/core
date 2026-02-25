@@ -1,4 +1,4 @@
-import { BaseProvider } from "./provider";
+import { BaseProvider } from "./base-provider";
 import type { ChatProvider } from "../core/types";
 
 export class OllamaProvider extends BaseProvider {
@@ -10,4 +10,3 @@ export class OllamaProvider extends BaseProvider {
                chatProvider.chatApiEndpoint.includes('localhost:11434');
     }
 }
-

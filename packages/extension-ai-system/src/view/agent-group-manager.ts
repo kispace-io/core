@@ -1,4 +1,4 @@
-import type { ChatMessage, UserAttentionRequest, AgentWorkflowOptions, AgentWorkflowResult } from "@kispace-io/extension-ai-system/api";
+import type { ChatMessage } from "../core/types";
 
 export interface AgentResponseInfo {
     role: string;
@@ -22,7 +22,6 @@ export interface AgentResponseGroup {
 export class AgentGroupManager {
     private groups = new Map<string, AgentResponseGroup>();
     private currentGroupId?: string;
-    private pausedWorkflows = new Map<string, { token: string; options: AgentWorkflowOptions; results: AgentWorkflowResult }>();
 
     createGroup(
         sessionId: string,
@@ -31,7 +30,7 @@ export class AgentGroupManager {
         roles: string[],
         getAgentMetadata: (role: string) => { label: string; icon: string }
     ): string {
-        const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
         this.currentGroupId = groupId;
 
         const group: AgentResponseGroup = {
@@ -46,12 +45,7 @@ export class AgentGroupManager {
 
         roles.forEach(role => {
             const { label, icon } = getAgentMetadata(role);
-            group.agents.set(role, {
-                role,
-                label,
-                icon,
-                status: 'streaming'
-            });
+            group.agents.set(role, { role, label, icon, status: 'streaming' });
         });
 
         this.groups.set(groupId, group);
@@ -62,84 +56,42 @@ export class AgentGroupManager {
         return this.groups.get(groupId);
     }
 
-    updateAgentStatus(groupId: string, role: string, status: 'streaming' | 'completed' | 'error', message?: ChatMessage, messageIndex?: number): void {
+    updateAgentStatus(groupId: string, role: string, status: AgentResponseInfo['status'], message?: ChatMessage, messageIndex?: number): void {
         const group = this.groups.get(groupId);
         if (!group) return;
-
         const agentInfo = group.agents.get(role);
-        if (agentInfo) {
-            agentInfo.status = status;
-            if (message) {
-                agentInfo.message = message;
-            }
-            if (messageIndex !== undefined) {
-                agentInfo.messageIndex = messageIndex;
-                group.messageIndices.set(role, messageIndex);
-            }
+        if (!agentInfo) return;
+        agentInfo.status = status;
+        if (message) agentInfo.message = message;
+        if (messageIndex !== undefined) {
+            agentInfo.messageIndex = messageIndex;
+            group.messageIndices.set(role, messageIndex);
         }
     }
 
     getGroupsForSession(sessionId: string): AgentResponseGroup[] {
-        return Array.from(this.groups.values())
-            .filter(g => g.sessionId === sessionId);
+        return Array.from(this.groups.values()).filter(g => g.sessionId === sessionId);
     }
 
     findGroupForUserMessage(sessionId: string, userMessageIndex: number, userMessage: ChatMessage): AgentResponseGroup | undefined {
-        return Array.from(this.groups.values())
-            .find(g => 
-                g.sessionId === sessionId && 
-                g.userMessageIndex === userMessageIndex && 
-                g.userMessage === userMessage
-            );
+        return Array.from(this.groups.values()).find(
+            g => g.sessionId === sessionId && g.userMessageIndex === userMessageIndex && g.userMessage === userMessage
+        );
     }
 
     findGroupForMessage(sessionId: string, messageRole: string, messageIndex: number): AgentResponseGroup | undefined {
-        return Array.from(this.groups.values())
-            .find(g => 
-                g.sessionId === sessionId && 
-                g.messageIndices.get(messageRole) === messageIndex
-            );
+        return Array.from(this.groups.values()).find(
+            g => g.sessionId === sessionId && g.messageIndices.get(messageRole) === messageIndex
+        );
     }
 
-    getCurrentGroupId(): string | undefined {
-        return this.currentGroupId;
-    }
-
-    setCurrentGroupId(groupId: string | undefined): void {
-        this.currentGroupId = groupId;
-    }
-
-    clearCurrentGroup(): void {
-        this.currentGroupId = undefined;
-    }
-
-    storePausedWorkflow(token: string, options: AgentWorkflowOptions, results: AgentWorkflowResult): void {
-        this.pausedWorkflows.set(token, { token, options, results });
-    }
-
-    getPausedWorkflow(token: string): { token: string; options: AgentWorkflowOptions; results: AgentWorkflowResult } | undefined {
-        return this.pausedWorkflows.get(token);
-    }
-
-    getAllPausedWorkflows(): { token: string; options: AgentWorkflowOptions; results: AgentWorkflowResult }[] {
-        return Array.from(this.pausedWorkflows.values());
-    }
-
-    clearPausedWorkflow(token: string): void {
-        this.pausedWorkflows.delete(token);
-    }
-
-    clearAllPausedWorkflows(): void {
-        this.pausedWorkflows.clear();
-    }
-
-    getAllGroups(): AgentResponseGroup[] {
-        return Array.from(this.groups.values());
-    }
+    getCurrentGroupId(): string | undefined { return this.currentGroupId; }
+    setCurrentGroupId(groupId: string | undefined): void { this.currentGroupId = groupId; }
+    clearCurrentGroup(): void { this.currentGroupId = undefined; }
+    getAllGroups(): AgentResponseGroup[] { return Array.from(this.groups.values()); }
 
     clearAll(): void {
         this.groups.clear();
         this.currentGroupId = undefined;
     }
 }
-

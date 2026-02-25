@@ -1,18 +1,23 @@
-import type { DependencyContext } from "@kispace-io/core";
-import type { ExecutionContext } from "@kispace-io/core";
-import type { AgentWorkflowOptions, AgentWorkflowResult, AgentContribution, ChatMessage, ChatProvider } from "@kispace-io/extension-ai-system/api";
+import { publish } from "@kispace-io/core";
+import type { AgentWorkflowOptions, AgentWorkflowResult, AgentContribution } from "../core/interfaces";
+import type { ChatMessage } from "../core/types";
+import { TOPIC_AGENT_WORKFLOW_STARTED, TOPIC_AGENT_WORKFLOW_COMPLETE, TOPIC_AGENT_WORKFLOW_ERROR } from "../core/constants";
 import { ParallelWorkflowStrategy } from "./parallel-workflow";
 import { SequentialWorkflowStrategy } from "./sequential-workflow";
 import { ConditionalWorkflowStrategy } from "./conditional-workflow";
-import type { IWorkflowStrategy } from "./workflow-strategy";
-import { TOPIC_AGENT_WORKFLOW_STARTED, TOPIC_AGENT_WORKFLOW_COMPLETE, TOPIC_AGENT_WORKFLOW_ERROR } from "@kispace-io/extension-ai-system/api";
-import { publish } from "@kispace-io/core";
+import { PipelineWorkflowStrategy } from "./pipeline-workflow";
+import { OrchestratedWorkflowStrategy } from "./orchestrated-workflow";
+import { ReviewWorkflowStrategy } from "./review-workflow";
+import type { IWorkflowStrategy, AgentExecutor } from "./workflow-strategy";
 
 export class WorkflowEngine {
     private strategies = new Map<string, IWorkflowStrategy>([
         ['parallel', new ParallelWorkflowStrategy()],
         ['sequential', new SequentialWorkflowStrategy()],
-        ['conditional', new ConditionalWorkflowStrategy()]
+        ['conditional', new ConditionalWorkflowStrategy()],
+        ['pipeline', new PipelineWorkflowStrategy()],
+        ['orchestrated', new OrchestratedWorkflowStrategy()],
+        ['review', new ReviewWorkflowStrategy()]
     ]);
 
     registerStrategy(name: string, strategy: IWorkflowStrategy): void {
@@ -22,21 +27,13 @@ export class WorkflowEngine {
     async execute(
         contributions: AgentContribution[],
         options: AgentWorkflowOptions,
-        executeAgent: (
-            contrib: AgentContribution,
-            messages: ChatMessage[],
-            sharedState: ExecutionContext,
-            chatConfig: ChatProvider,
-            options: AgentWorkflowOptions,
-            results: AgentWorkflowResult
-        ) => Promise<ChatMessage | null>
+        executeAgent: AgentExecutor
     ): Promise<AgentWorkflowResult> {
         const workflowId = `workflow-${Date.now()}-${Math.random()}`;
         const execution = options.execution || 'parallel';
-        const sharedState = options.sharedState || {};
         const results: AgentWorkflowResult = {
             messages: new Map<string, ChatMessage>(),
-            sharedState: { ...sharedState },
+            sharedState: { ...(options.sharedState || {}) },
             errors: new Map<string, Error>()
         };
 
@@ -44,12 +41,9 @@ export class WorkflowEngine {
 
         try {
             const strategy = this.strategies.get(execution);
-            if (!strategy) {
-                throw new Error(`Unknown workflow execution strategy: ${execution}`);
-            }
+            if (!strategy) throw new Error(`Unknown workflow execution strategy: ${execution}`);
 
             await strategy.execute(contributions, options, results, executeAgent);
-
             publish(TOPIC_AGENT_WORKFLOW_COMPLETE, { workflowId, results });
             return results;
         } catch (error) {
@@ -59,4 +53,3 @@ export class WorkflowEngine {
         }
     }
 }
-
