@@ -1,6 +1,6 @@
 {
   "name": "@kispace-io/extension-webmcp",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -21,7 +21,9 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build"
   }
