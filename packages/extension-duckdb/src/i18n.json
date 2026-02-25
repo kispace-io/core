@@ -1,0 +1,11 @@
+{
+  "namespace": "extensions",
+  "en": {
+    "EXT_DUCKDB_NAME": "DuckDB",
+    "EXT_DUCKDB_DESC": "In-browser SQL engine (DuckDB-WASM) for advanced queries, analytics, and Parquet/CSV/JSON."
+  },
+  "de": {
+    "EXT_DUCKDB_NAME": "DuckDB",
+    "EXT_DUCKDB_DESC": "SQL-Engine im Browser (DuckDB-WASM) für erweiterte Abfragen, Analysen und Parquet/CSV/JSON."
+  }
+}

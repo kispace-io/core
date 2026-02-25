@@ -35,6 +35,7 @@ import '@kispace-io/extension-ai-system';
 import '@kispace-io/extension-rag-system';
 import '@kispace-io/extension-howto-system';
 import '@kispace-io/extension-webmcp';
+import '@kispace-io/extension-duckdb';
 
 appLoaderService.registerApp(
   {
@@ -53,6 +54,7 @@ appLoaderService.registerApp(
       '@kispace-io/extension-memory-usage',
       '@kispace-io/extension-ai-system',
       '@kispace-io/extension-webmcp',
+      '@kispace-io/extension-duckdb',
     ],
   },
   { autoStart: true }
@@ -72,6 +74,7 @@ appLoaderService.registerApp({
     '@kispace-io/extension-memory-usage',
     '@kispace-io/extension-ai-system',
     '@kispace-io/extension-webmcp',
+    '@kispace-io/extension-duckdb',
   ],
   render: { tag: 'k-standard-layout', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
 });

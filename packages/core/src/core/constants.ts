@@ -15,6 +15,9 @@ export const PANEL_BOTTOM = "panel-bottom"
 
 export const COMMAND_SAVE = "command-save"
 
+/** Command id to run the active editor content with the appropriate language runner (e.g. Python, SQL). */
+export const RUN_ACTIVE_SCRIPT_ID = "editor.runActiveScript";
+
 export const HIDE_DOT_RESOURCE = false
 
 // Mouse button constants

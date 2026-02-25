@@ -304,7 +304,4 @@ class PythonPackageManagerService {
 }
 
 export const pythonPackageManagerService = new PythonPackageManagerService();
-
-export default (_context: any) => {
-    rootContext.put("pythonPackageManagerService", pythonPackageManagerService);
-};
+rootContext.put("pythonPackageManagerService", pythonPackageManagerService);

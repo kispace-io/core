@@ -14,3 +14,5 @@ extensionRegistry.registerExtension({
   icon: "file-pen",
   dependencies: ["@kispace-io/extension-python-runtime"],
 });
+
+export { MONACO_EDITOR_TOOLBAR_TARGET_PREFIX } from './monaco-toolbar-constants';

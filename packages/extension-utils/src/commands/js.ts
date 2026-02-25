@@ -1,4 +1,11 @@
-import { registerAll, workspaceService, toastError, toastInfo } from "@kispace-io/core";
+import {
+    registerAll,
+    commandRegistry,
+    workspaceService,
+    toastError,
+    toastInfo,
+    RUN_ACTIVE_SCRIPT_ID,
+} from "@kispace-io/core";
 import { getTextFileFromPath, readTextFile } from "../shared";
 
 async function getScriptUrl(params: { script?: string; code?: string }): Promise<string | null> {
@@ -39,6 +46,19 @@ function runWorker(url: string): Promise<unknown> {
     };
   });
 }
+
+commandRegistry.registerHandler(RUN_ACTIVE_SCRIPT_ID, {
+  ranking: 0,
+  canExecute: (ctx) => !!(ctx.activeEditor as { isLanguage?(lang: string): boolean })?.isLanguage?.("javascript"),
+  execute: (ctx) => {
+    const content = ctx.activeEditor?.getContent?.()?.trim();
+    if (!content) {
+      toastError("No content to run");
+      return;
+    }
+    commandRegistry.execute("js", commandRegistry.createExecutionContext({ code: content }));
+  },
+});
 
 registerAll({
   command: {

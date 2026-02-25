@@ -65,6 +65,12 @@ export interface EditorContentProvider {
     getLanguage(): string | null;
 
     /**
+     * Returns whether the editor content is in the given language (case-insensitive).
+     * Default implementation can use getLanguage() === lang.toLowerCase().
+     */
+    isLanguage?(lang: string): boolean;
+
+    /**
      * Gets the workspace path of the file being edited.
      * @returns The file path relative to the workspace, or null if not available.
      */
