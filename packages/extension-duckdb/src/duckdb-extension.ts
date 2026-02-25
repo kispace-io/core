@@ -14,7 +14,8 @@ export default function () {
         return;
       }
       try {
-        const result = await duckdbService.runQuery(content);
+        const db = await duckdbService.open();
+        const result = await db.runQuery(content);
         const n = result.rows.length;
         toastInfo(n === 0 ? 'Query returned no rows' : `Query returned ${n} row${n === 1 ? '' : 's'}`);
       } catch (err) {
