@@ -9,6 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const isExternal = (id: string): boolean => {
   if (id.startsWith('./') || id.startsWith('../')) return false;
   if (path.isAbsolute(id) && id.includes('/src/')) return false;
+  if (id === '@duckdb/duckdb-wasm' || id.startsWith('@duckdb/duckdb-wasm/')) return false;
   return true;
 };
 
