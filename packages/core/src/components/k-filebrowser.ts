@@ -402,12 +402,11 @@ export class KFileBrowser extends KPart {
         return html`
             <div class="tree" ${ref(this.treeRef)} style="--drop-files-text: '${t('DROP_FILES_HERE')}'">
                 ${when(!this.workspaceDir, () => html`
-                    <k-no-content message="${t('SELECT_WORKSPACE')}"></k-no-content>`, () => html`
-                `)}
+                    <k-no-content message="${t('SELECT_WORKSPACE')}"></k-no-content>`, () => when(this.root, () => html`
                 <wa-tree @wa-selection-change=${this.nobubble(this.onSelectionChanged)}
                          style="--indent-guide-width: 1px;">
                     ${this.root!.children.map(child => this.createTreeItems(child, true))}
-                </wa-tree>
+                </wa-tree>`, () => html``))}
             </div>
         `
     }

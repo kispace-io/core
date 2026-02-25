@@ -1,4 +1,4 @@
-import { File, workspaceService, promptDialog, confirmDialog, toastError, toastInfo, registerAll } from "@kispace-io/core";
+import { File, Directory, workspaceService, activeSelectionSignal, promptDialog, confirmDialog, toastError, toastInfo, registerAll } from "@kispace-io/core";
 
 registerAll({
   command: {
@@ -53,6 +53,17 @@ registerAll({
 
       if (extension && path && !path.endsWith(extension)) {
         path += extension;
+      }
+
+      if (path) {
+        const selection = activeSelectionSignal.get();
+        const dirPath =
+          selection instanceof Directory
+            ? selection.getWorkspacePath()
+            : selection instanceof File
+              ? selection.getParent()?.getWorkspacePath()
+              : undefined;
+        if (dirPath && !path.startsWith(dirPath + "/")) path = dirPath + "/" + path;
       }
 
       const workspaceDir = await workspaceService.getWorkspace();

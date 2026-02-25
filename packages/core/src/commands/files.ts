@@ -167,6 +167,29 @@ registerAll({
 
 registerAll({
     command: {
+        "id": "connect_opfs",
+        "name": "OPFS",
+        "description": "Connect to Origin Private File System (browser storage)",
+        "parameters": []
+    },
+    handler: {
+        execute: async () => {
+            try {
+                await workspaceService.connectFolder({ opfs: true });
+            } catch (err: any) {
+                toastError(err.message);
+            }
+        }
+    },
+    contribution: {
+        target: "filebrowser.connections",
+        label: "OPFS (Browser Storage)",
+        icon: "database"
+    }
+})
+
+registerAll({
+    command: {
         "id": "reload_workspace",
         "name": "Reload workspace folder",
         "description": "Reloads the active workspace folder",

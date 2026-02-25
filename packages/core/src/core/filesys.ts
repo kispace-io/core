@@ -33,7 +33,7 @@ export abstract class Resource {
         const workspace = typeof workspaceService?.getWorkspaceSync === 'function' ? workspaceService.getWorkspaceSync() : undefined
         if (workspace && root && 'isDirectChild' in workspace && typeof (workspace as any).isDirectChild === 'function' && (workspace as any).isDirectChild(root)) {
             const folderName = (workspace as any).getFolderNameForDirectory(root)
-            if (folderName && paths.length > 0) return folderName + '/' + paths.slice(1).join('/')
+            if (folderName && paths.length > 0) return paths.length > 1 ? folderName + '/' + paths.slice(1).join('/') : folderName
         }
         paths.shift()
         return paths.join("/");
@@ -239,7 +239,7 @@ export class FileSysFileHandleResource extends File {
         }
         
         await parent.listChildren(true);
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 }
 
@@ -374,14 +374,14 @@ export class FileSysDirHandleResource extends Directory {
             }
         } finally {
             if (workspaceChanged) {
-                publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+                publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
             }
         }
         return currentResource;
     }
 
     public touch() {
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 
     async delete(name?: string, recursive: boolean = true) {
@@ -403,7 +403,7 @@ export class FileSysDirHandleResource extends Directory {
             if (this.files) {
                 delete this.files[name]
             }
-            publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+            publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
         })
     }
 
@@ -440,7 +440,7 @@ export class FileSysDirHandleResource extends Directory {
         }
         
         await parent.listChildren(true);
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 }
 
@@ -750,25 +750,101 @@ rootContext.put("workspaceService", workspaceService);
 workspaceService.registerContribution({
     type: 'filesystem',
     name: 'Local File System',
-    
+
     canHandle(input: any): boolean {
         return input && 'kind' in input && input.kind === 'directory';
     },
-    
+
     async connect(input: FileSystemDirectoryHandle): Promise<Directory> {
         return new FileSysDirHandleResource(input);
     },
-    
+
     async restore(data: any): Promise<Directory | undefined> {
         if (data && 'kind' in data && data.kind === 'directory') {
             return new FileSysDirHandleResource(data, undefined);
         }
         return undefined;
     },
-    
+
     async persist(workspace: Directory): Promise<any> {
         if (workspace instanceof FileSysDirHandleResource) {
             return workspace.getHandle();
+        }
+        return null;
+    }
+});
+
+async function getOPFSRoot(): Promise<FileSystemDirectoryHandle> {
+    if (typeof navigator === 'undefined' || !navigator.storage?.getDirectory) {
+        throw new Error('OPFS is not available in this environment');
+    }
+    return await navigator.storage.getDirectory();
+}
+
+const OPFS_DISPLAY_NAME = 'OPFS';
+
+class OPFSRootDirectory extends Directory {
+    constructor(private readonly inner: Directory) {
+        super();
+    }
+
+    getName(): string {
+        return OPFS_DISPLAY_NAME;
+    }
+
+    getParent(): Directory | undefined {
+        return this.inner.getParent();
+    }
+
+    async listChildren(forceRefresh: boolean): Promise<Resource[]> {
+        return this.inner.listChildren(forceRefresh);
+    }
+
+    async getResource(path: string, options?: GetResourceOptions): Promise<Resource | null> {
+        return this.inner.getResource(path, options);
+    }
+
+    touch(): void {
+        this.inner.touch();
+    }
+
+    async delete(name?: string, recursive?: boolean): Promise<void> {
+        return this.inner.delete(name, recursive);
+    }
+
+    async copyTo(targetPath: string): Promise<void> {
+        return this.inner.copyTo(targetPath);
+    }
+
+    async rename(newName: string): Promise<void> {
+        return this.inner.rename(newName);
+    }
+}
+
+workspaceService.registerContribution({
+    type: 'opfs',
+    name: 'OPFS (Browser Storage)',
+
+    canHandle(input: any): boolean {
+        return input && typeof input === 'object' && input.opfs === true;
+    },
+
+    async connect(_input: { opfs: true }): Promise<Directory> {
+        const root = await getOPFSRoot();
+        return new OPFSRootDirectory(new FileSysDirHandleResource(root));
+    },
+
+    async restore(data: any): Promise<Directory | undefined> {
+        if (data && typeof data === 'object' && data.opfs === true) {
+            const root = await getOPFSRoot();
+            return new OPFSRootDirectory(new FileSysDirHandleResource(root));
+        }
+        return undefined;
+    },
+
+    async persist(workspace: Directory): Promise<any> {
+        if (workspace instanceof OPFSRootDirectory) {
+            return { opfs: true };
         }
         return null;
     }
