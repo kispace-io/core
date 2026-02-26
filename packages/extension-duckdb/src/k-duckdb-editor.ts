@@ -269,27 +269,28 @@ export class KDuckDBEditor extends KPart implements EditorContentProvider {
   }
 
   private async deleteSelectedDatabase(): Promise<void> {
-    if (this.selectedDbName === null) {
+    const name = this.selectedDbName;
+    const label = name === null ? "In-memory" : name;
+    const ok = await confirmDialog(`Delete database "${label}"?`);
+    if (!ok) return;
+    if (name === null) {
       if (this.db) {
         void this.db.close();
         this.db = null;
       }
-      toastInfo("In-memory database cleared. A new one will be created on next run.");
-      this.requestUpdate();
-      return;
+    } else {
+      try {
+        await duckdbService.delete(name);
+        if (this.db?.name === name) this.db = null;
+        this.selectedDbName = null;
+        await this.refreshDatabaseList();
+      } catch (err) {
+        toastError(err instanceof Error ? err.message : String(err));
+        return;
+      }
     }
-    const name = this.selectedDbName;
-    const ok = await confirmDialog(`Delete database "${name}"? This cannot be undone.`);
-    if (!ok) return;
-    try {
-      await duckdbService.delete(name);
-      if (this.db?.name === name) this.db = null;
-      this.selectedDbName = null;
-      await this.refreshDatabaseList();
-      if (this.availableDatabases.length > 0) this.selectedDbName = this.availableDatabases[0];
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : String(err));
-    }
+    this.requestUpdate();
+    this.updateToolbar();
   }
 
   protected renderToolbar() {
@@ -330,17 +331,18 @@ export class KDuckDBEditor extends KPart implements EditorContentProvider {
         @click=${() => this.runQuery(true)}
         title="Run selection only"
       >
-        <wa-icon name="code" label="Run selection"></wa-icon>
+        <wa-icon name="i-cursor" label="Run selection"></wa-icon>
+        ${this.running ? "Running…" : "Run selection"}
       </wa-button>
       <wa-button
         size="small"
         appearance="plain"
         ?disabled=${this.running}
         @click=${() => this.runQuery(false)}
-        title="Run SQL (selection or full content)"
+        title="Run all SQL"
       >
         <wa-icon name="play" label="Run"></wa-icon>
-        ${this.running ? "Running…" : "Run"}
+        ${this.running ? "Running…" : "Run all"}
       </wa-button>
     `;
   }
