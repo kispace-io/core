@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@kispace-io/core": "*",
+    "@kispace-io/extension-monaco-editor": "*",
     "pip-requirements-js": "^1.0.2",
     "pyodide": "^0.27.7"
   },

@@ -12,7 +12,6 @@ extensionRegistry.registerExtension({
   description: t('EXT_MONACO_DESC'),
   loader: () => import("./monaco-editor-extension"),
   icon: "file-pen",
-  dependencies: ["@kispace-io/extension-python-runtime"],
 });
 
 export { MONACO_EDITOR_TOOLBAR_TARGET_PREFIX } from './monaco-toolbar-constants';

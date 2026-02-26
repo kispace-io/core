@@ -1,7 +1,6 @@
 // Re-export framework services for app usage
 export { appLoaderService } from '../core/apploader';
 export { commandRegistry, CommandStack, registerAll, CommandRegistry, TOPIC_COMMAND_REGISTERED } from '../core/commandregistry';
-export { RUN_ACTIVE_SCRIPT_ID } from '../core/constants';
 export { contributionRegistry, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry';
 export { extensionRegistry } from '../core/extensionregistry';
 export { workspaceService, File, StringFile, Directory, FileContentType, WorkspaceService, TOPIC_WORKSPACE_CHANGED, TOPIC_WORKSPACE_CONNECTED, CompositeDirectory, FileSysDirHandleResource } from '../core/filesys';

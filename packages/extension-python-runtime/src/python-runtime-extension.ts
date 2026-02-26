@@ -3,52 +3,21 @@ import {
     registerAll,
     commandRegistry,
     workspaceService,
-    activeEditorSignal,
-    RUN_ACTIVE_SCRIPT_ID,
     toastInfo,
     toastError,
+    editorRegistry,
+    File,
+    type EditorInput,
 } from "@kispace-io/core";
-import type { CommandContribution } from "@kispace-io/core";
+import { html } from "lit";
 
 type EditorWithLanguage = { isLanguage?(lang: string): boolean };
 import { PyEnv } from "./pyservice";
-import { getOrCreatePyEnvForEditor, parsePackagesFromContent } from "./editor-python-run";
+import { parsePackagesFromContent } from "./editor-python-run";
 import { pythonPackageManagerService } from "./package-manager";
 
 export { PyEnv } from "./pyservice";
 export { pythonPackageManagerService } from "./package-manager";
-
-const TOOLBAR_MONACO_EDITOR = "toolbar:monaco-editor";
-
-function isPythonEditorActive(): boolean {
-    const ed = activeEditorSignal.get() as EditorWithLanguage | undefined;
-    return !!ed?.isLanguage?.("python");
-}
-
-commandRegistry.registerHandler(RUN_ACTIVE_SCRIPT_ID, {
-    ranking: 0,
-    canExecute: (ctx) => !!(ctx.activeEditor as EditorWithLanguage)?.isLanguage?.("python"),
-    execute: async (ctx) => {
-        const ed = ctx.activeEditor;
-        if (!ed) {
-            toastError("No active editor");
-            return;
-        }
-        const content = (ed as { getContent?: () => string })?.getContent?.()?.trim();
-        if (!content) {
-            toastError("No content to run");
-            return;
-        }
-        try {
-            const env = await getOrCreatePyEnvForEditor(ed);
-            const packages = parsePackagesFromContent(content);
-            if (packages.length > 0) await env.loadPackages(packages);
-            await env.execCode(content);
-        } catch (err) {
-            toastError(err instanceof Error ? err.message : String(err));
-        }
-    },
-});
 
 registerAll({
     command: {
@@ -80,29 +49,44 @@ registerAll({
     handler: {
         canExecute: (ctx) => !!(ctx.activeEditor as EditorWithLanguage)?.isLanguage?.("python"),
         execute: async (ctx) => {
-            const ed = ctx.activeEditor as { getContent?: () => string } | undefined;
+            const ed = ctx.activeEditor as { getContent?: () => string; getPyEnv?: () => PyEnv | undefined } | undefined;
             if (!ed) {
                 toastError("No active editor");
                 return;
             }
             const content = ed?.getContent?.() ?? "";
             const packages = parsePackagesFromContent(content);
-            try {
-                const pyenv = await getOrCreatePyEnvForEditor(ed);
-                pythonPackageManagerService.showPackageManager({
-                    packages,
-                    pyenv,
-                });
-            } catch (err) {
-                toastError(err instanceof Error ? err.message : String(err));
-            }
+            const pyenv = ed.getPyEnv?.();
+            pythonPackageManagerService.showPackageManager({
+                packages,
+                pyenv,
+            });
         },
     },
-    contribution: {
-        target: TOOLBAR_MONACO_EDITOR,
-        command: "python.openEditorPackageManager",
-        icon: "box",
-        label: "Packages",
-        disabled: () => !isPythonEditorActive(),
-    } as CommandContribution,
+});
+
+editorRegistry.registerEditorInputHandler({
+    lazyInit: async () => {
+        await import("./k-python-editor");
+    },
+    canHandle: (input: unknown) =>
+        input instanceof File && input.getName().toLowerCase().endsWith(".py"),
+    ranking: 1000,
+    handle: async (input: File) => {
+        const editorInput: EditorInput = {
+            title: input.getName(),
+            data: input,
+            key: input.getName(),
+            editorId: "python-editor",
+            icon: "python",
+            noOverflow: false,
+            state: {},
+            widgetFactory: () => null as any,
+        };
+
+        editorInput.widgetFactory = () =>
+            html`<k-python-editor .input=${editorInput}></k-python-editor>`;
+
+        return editorInput;
+    },
 });
