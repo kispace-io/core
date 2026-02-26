@@ -70,7 +70,7 @@ async function createConnection(path: string | null): Promise<{
       path,
       accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
     });
-    logger.info(`DuckDB-WASM opened: ${path}`);
+    logger.info(`DuckDB-WASM opened: ${path} (read-write)`);
   }
   const conn = await db.connect();
   logger.info('DuckDB-WASM initialized');

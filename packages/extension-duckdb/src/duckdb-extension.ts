@@ -1,26 +1,29 @@
-import { rootContext, commandRegistry, RUN_ACTIVE_SCRIPT_ID, toastInfo, toastError } from '@kispace-io/core';
+import { rootContext, editorRegistry, File, type EditorInput } from '@kispace-io/core';
+import { html } from 'lit';
 import { duckdbService } from './duckdb-service';
+import './k-duckdb-editor';
 
 export default function () {
   rootContext.put('duckdbService', duckdbService);
 
-  commandRegistry.registerHandler(RUN_ACTIVE_SCRIPT_ID, {
-    ranking: 0,
-    canExecute: (ctx) => !!(ctx.activeEditor as { isLanguage?(lang: string): boolean })?.isLanguage?.('sql'),
-    execute: async (ctx) => {
-      const content = ctx.activeEditor?.getContent?.()?.trim();
-      if (!content) {
-        toastError('No SQL to run');
-        return;
-      }
-      try {
-        const db = await duckdbService.open();
-        const result = await db.runQuery(content);
-        const n = result.rows.length;
-        toastInfo(n === 0 ? 'Query returned no rows' : `Query returned ${n} row${n === 1 ? '' : 's'}`);
-      } catch (err) {
-        toastError(err instanceof Error ? err.message : String(err));
-      }
+  editorRegistry.registerEditorInputHandler({
+    canHandle: (input: unknown) =>
+      input instanceof File && input.getName().toLowerCase().endsWith('.sql'),
+    ranking: 1000,
+    handle: async (input: File) => {
+      const editorInput: EditorInput = {
+        title: input.getName(),
+        data: input,
+        key: input.getName(),
+        editorId: 'duckdb-editor',
+        icon: 'database',
+        noOverflow: false,
+        state: {},
+        widgetFactory: () => null as any,
+      };
+      editorInput.widgetFactory = () =>
+        html`<k-duckdb-editor .input=${editorInput}></k-duckdb-editor>`;
+      return editorInput;
     },
   });
 }

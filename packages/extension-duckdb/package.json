@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@kispace-io/core": "*",
+    "@kispace-io/extension-monaco-editor": "*",
     "@duckdb/duckdb-wasm": "^1.33.1-dev18.0"
   },
   "devDependencies": {
