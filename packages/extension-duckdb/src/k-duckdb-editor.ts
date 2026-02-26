@@ -5,7 +5,7 @@ import { createRef, ref } from "lit/directives/ref.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { EditorInput, EditorContentProvider, toastError, toastInfo, promptDialog, confirmDialog, activePartSignal } from "@kispace-io/core";
 import { KMonacoWidget } from "@kispace-io/extension-monaco-editor";
-import { duckdbService, type DuckDBDatabase, type DuckDBQueryResult } from "./duckdb-service";
+import { duckdbService, duckdbExtensionManagerService, type DuckDBDatabase, type DuckDBQueryResult } from "./api";
 
 const MAX_TAB_LABEL = 28;
 const DB_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
@@ -323,6 +323,19 @@ export class KDuckDBEditor extends KPart implements EditorContentProvider {
         @click=${() => this.deleteSelectedDatabase()}
       >
         <wa-icon name="trash" label="Delete"></wa-icon>
+      </wa-button>
+      <wa-button
+        size="small"
+        appearance="plain"
+        title="Manage DuckDB extensions"
+        @click=${() =>
+          duckdbExtensionManagerService.showExtensionManager({
+            db: this.db,
+            databaseLabel: this.selectedDbName === null ? "In-memory" : this.selectedDbName,
+          })}
+      >
+        <wa-icon name="puzzle-piece" label="Extensions"></wa-icon>
+        Extensions
       </wa-button>
       <wa-button
         size="small"

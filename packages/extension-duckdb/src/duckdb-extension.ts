@@ -2,6 +2,7 @@ import { rootContext, editorRegistry, File, type EditorInput } from '@kispace-io
 import { html } from 'lit';
 import { duckdbService } from './duckdb-service';
 import './k-duckdb-editor';
+import './duckdb-extension-manager';
 
 export default function () {
   rootContext.put('duckdbService', duckdbService);
