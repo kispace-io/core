@@ -144,7 +144,7 @@ export class KDuckDBEditor extends KPart implements EditorContentProvider {
 
     try {
       const dbName = this.selectedDbName ?? undefined;
-      if (!this.db || (this.db.name !== dbName ?? null)) {
+      if (!this.db || this.db.name !== (dbName ?? null)) {
         if (this.db) {
           void this.db.close();
           this.db = null;
