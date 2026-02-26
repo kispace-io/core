@@ -16,3 +16,4 @@ extensionRegistry.registerExtension({
 });
 
 export { MONACO_EDITOR_TOOLBAR_TARGET_PREFIX } from './monaco-toolbar-constants';
+export { KMonacoWidget } from './k-monaco-widget';

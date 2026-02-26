@@ -3,6 +3,9 @@ import { EditorInput, editorRegistry, contributionRegistry, RUN_ACTIVE_SCRIPT_ID
 import { File } from "@kispace-io/core";
 import {CID_PROMPT_ENHANCERS, type PromptEnhancer, type PromptEnhancerContribution} from "@kispace-io/extension-ai-system/api";
 import type {ExecutionContext} from "@kispace-io/core";
+
+import "./k-monaco-widget";
+
 import PYTHON_PROMPT from "./py-programming-prompt.txt?raw";
 import JAVASCRIPT_PROMPT from "./js-programming-prompt.txt?raw";
 
