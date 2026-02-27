@@ -223,6 +223,18 @@ class EditorRegistry {
             return
         }
 
+        await this.openTab({
+            name: editorInput.key,
+            editorId: editorInput.editorId,
+            label: editorInput.title,
+            icon: editorInput.icon,
+            closable: true,
+            noOverflow: editorInput.noOverflow,
+            component: editorInput.widgetFactory
+        } as TabContribution) 
+    }
+
+    async openTab(tabContribution: TabContribution) {
         const editorArea = this.getEditorArea();
         
         if (!editorArea) {
@@ -232,20 +244,12 @@ class EditorRegistry {
 
         this.setupEventListeners(editorArea);
 
-        if (editorArea.has(editorInput.key)) {
-            editorArea.activate(editorInput.key)
+        if (editorArea.has(tabContribution.name)) {
+            editorArea.activate(tabContribution.name)
             return
         }
 
-        editorArea.open({
-            name: editorInput.key,
-            editorId: editorInput.editorId,
-            label: editorInput.title,
-            icon: editorInput.icon,
-            closable: true,
-            noOverflow: editorInput.noOverflow,
-            component: editorInput.widgetFactory
-        } as TabContribution)
+        editorArea.open(tabContribution)
     }
 
     getFileIcon(fileNameOrType: string): string {
