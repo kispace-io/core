@@ -1,4 +1,4 @@
-import {customElement, state} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {css, html, nothing} from "lit";
 import {KContainer} from "./k-container";
 import {contributionRegistry, ContributionChangeEvent, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry";
@@ -30,6 +30,9 @@ import {appLoaderService} from "../core/apploader";
  */
 @customElement('k-tabs')
 export class KTabs extends KContainer {
+    @property({reflect: true})
+    placement: "top" | "bottom" | "start" | "end" = "top";
+
     /** Tab contributions for this container */
     @state()
     private contributions: TabContribution[] = [];
@@ -50,7 +53,6 @@ export class KTabs extends KContainer {
         if (!this.containerId) {
             throw new Error("k-tabs requires an 'id' attribute to function");
         }
-
         this.loadAndResolveContributions();
     }
 
@@ -295,7 +297,8 @@ export class KTabs extends KContainer {
      * Loads tab contributions from the registry.
      */
     private loadAndResolveContributions(): void {
-        this.contributions = contributionRegistry.getContributions(this.containerId!) as TabContribution[];
+        if (!this.containerId) return;
+        this.contributions = contributionRegistry.getContributions(this.containerId) as TabContribution[];
         this.requestUpdate();
     }
 
@@ -432,7 +435,7 @@ export class KTabs extends KContainer {
         const currentApp = appLoaderService.getCurrentApp();
         
         return html`
-            <wa-tab-group ${ref(this.tabGroup)}>
+            <wa-tab-group ${ref(this.tabGroup)} placement=${this.placement}>
                 ${when(
                     this.contributions.length === 0,
                     () => html`
@@ -467,14 +470,18 @@ export class KTabs extends KContainer {
                                 `)}
                             </wa-tab>
                             <wa-tab-panel name="${c.name}">
-                                <k-toolbar id="toolbar:${c.editorId ?? c.name}" 
-                                           class="tab-toolbar"
-                                           ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-toolbar>
+                                ${when(c.toolbar !== false, () => html`
+                                    <k-toolbar id="toolbar:${c.editorId ?? c.name}"
+                                               class="tab-toolbar"
+                                               ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-toolbar>
+                                `)}
                                 <wa-scroller class="tab-content" orientation="vertical">
                                     ${c.component ? c.component(c.name) : nothing}
                                 </wa-scroller>
-                                <k-contextmenu id="contextmenu:${c.name}"
-                                               ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-contextmenu>
+                                ${when(c.contextMenu !== false, () => html`
+                                    <k-contextmenu id="contextmenu:${c.name}"
+                                                   ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-contextmenu>
+                                `)}
                             </wa-tab-panel>
                         `
                     )

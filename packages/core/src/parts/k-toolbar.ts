@@ -19,6 +19,15 @@ export class KToolbar extends KElement {
     @property()
     private position: "start" | "center" | "end" = "start";
 
+    @property({reflect: true})
+    orientation: "horizontal" | "vertical" = "horizontal";
+
+    @property({reflect: true})
+    align: "start" | "center" | "end" = "start";
+
+    @property({reflect: true})
+    size: "small" | "medium" | "large" = "small";
+
     @property({type: Boolean, attribute: 'is-editor'})
     private isEditor: boolean = false;
 
@@ -94,6 +103,10 @@ export class KToolbar extends KElement {
         this.contributions = [...wildcard, ...categoryMatches, ...specific];
     }
 
+    private isToolbarItem(contribution: Contribution): boolean {
+        return "command" in contribution || "html" in contribution;
+    }
+
     contributionCreator(contribution: Contribution) {
         if ("command" in contribution) {
             const commandContribution = contribution as CommandContribution
@@ -102,37 +115,42 @@ export class KToolbar extends KElement {
                 <wa-button @click=${() => this.executeCommand(commandContribution.command, commandContribution.params || {})}
                            title=${commandContribution.label}
                            ?disabled="${(commandContribution.disabled as Signal.Computed<boolean>)?.get()}"
-                           appearance="plain" size="small">
+                           appearance="plain" size=${this.size}>
                     <wa-icon name=${commandContribution.icon} label="${commandContribution.label}"></wa-icon>
                     ${showLabel ? commandContribution.label : ''}
                 </wa-button>
             `
-        } else if ("html" in contribution) {
+        }
+        if ("html" in contribution) {
             const contents = (contribution as HTMLContribution).html
             if (contents instanceof Function) {
                 return contents()
             }
             return unsafeHTML(contents)
-        } else {
-            return html`<span>unknown contribution type: ${typeof contribution}</span>`
         }
+        return html`<span>unknown contribution type: ${typeof contribution}</span>`
     }
 
     render() {
         const partContent = this.partToolbarRenderer ? this.partToolbarRenderer() : 
                            (this.partToolbarContent ? this.partToolbarContent : '');
-        
+        const flexDir = this.orientation === "vertical" ? "column" : "row";
+        const alignMap = { start: "flex-start", center: "center", end: "flex-end" } as const;
         return html`
-            <div class="toolbar-items" style=${styleMap({"justify-content": this.position})}>
+            <div class="toolbar-items" style=${styleMap({
+                "flex-direction": flexDir,
+                "align-items": alignMap[this.align],
+                "justify-content": this.position
+            })}>
                 <slot name="start">
-                    ${this.contributions.filter(c => c.slot === "start").map(this.contributionCreator.bind(this))}
+                    ${this.contributions.filter(c => c.slot === "start" && this.isToolbarItem(c)).map(this.contributionCreator.bind(this))}
                 </slot>
                 ${partContent}
-                ${this.contributions.filter(c => c.slot === undefined).map(this.contributionCreator.bind(this))}
+                ${this.contributions.filter(c => c.slot === undefined && this.isToolbarItem(c)).map(this.contributionCreator.bind(this))}
                 <slot>
                 </slot>
                 <slot name="end">
-                    ${this.contributions.filter(c => c.slot === "end").map(this.contributionCreator.bind(this))}
+                    ${this.contributions.filter(c => c.slot === "end" && this.isToolbarItem(c)).map(this.contributionCreator.bind(this))}
                 </slot>
             </div>
         `;
@@ -142,6 +160,10 @@ export class KToolbar extends KElement {
         :host {
             display: flex;
             flex-direction: row;
+        }
+
+        :host([orientation="vertical"]) {
+            flex-direction: column;
         }
 
         .toolbar-items {

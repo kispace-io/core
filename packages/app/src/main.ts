@@ -1,6 +1,6 @@
 import 'pace-js/themes/blue/pace-theme-minimal.css';
 import Pace from 'pace-js';
-import { appLoaderService, applyAppHostConfig, type RenderDescriptor } from '@kispace-io/core';
+import { appLoaderService, applyAppHostConfig, commandRegistry, EDITOR_AREA_MAIN, TOOLBAR_MAIN_RIGHT, TOOLBAR_MAIN, type RenderDescriptor, TOOLBAR_MAIN_CENTER, TOOLBAR_BOTTOM, TOOLBAR_BOTTOM_CENTER, TOOLBAR_BOTTOM_END } from '@kispace-io/core';
 import appPkg from '../package.json';
 
 Pace.start();
@@ -37,44 +37,6 @@ import '@kispace-io/extension-howto-system';
 import '@kispace-io/extension-webmcp';
 import '@kispace-io/extension-duckdb';
 
-appLoaderService.registerApp(
-  {
-    id: 'dev-standard-app',
-    name: 'Default App',
-    version: '0.0.0',
-    description: 'Default app!space application',
-    extensions: [
-      '@kispace-io/extension-utils',
-      '@kispace-io/extension-command-palette',
-      '@kispace-io/extension-command-shell',
-      '@kispace-io/extension-md-editor',
-      '@kispace-io/extension-monaco-editor',
-      '@kispace-io/extension-media-viewer',
-      '@kispace-io/extension-settings-tree',
-      '@kispace-io/extension-memory-usage',
-      '@kispace-io/extension-ai-system',
-      '@kispace-io/extension-webmcp',
-      '@kispace-io/extension-duckdb',
-    ],
-  },
-  { autoStart: true }
-);
 
-appLoaderService.registerApp({
-  id: 'dev-standard-app-2',
-  name: 'Default App 2',
-  version: '0.0.0',
-  description: 'Default app!space application 2',
-  extensions: [
-    '@kispace-io/extension-utils',
-    '@kispace-io/extension-md-editor',
-    '@kispace-io/extension-monaco-editor',
-    '@kispace-io/extension-media-viewer',
-    '@kispace-io/extension-settings-tree',
-    '@kispace-io/extension-memory-usage',
-    '@kispace-io/extension-ai-system',
-    '@kispace-io/extension-webmcp',
-    '@kispace-io/extension-duckdb',
-  ],
-  render: { tag: 'k-standard-layout', attributes: { 'show-bottom-panel': 'true' } } satisfies RenderDescriptor,
-});
+import './default-app';
+import './dashboard-app';
