@@ -190,6 +190,29 @@ registerAll({
 
 registerAll({
     command: {
+        "id": "connect_indexeddb",
+        "name": "IndexedDB",
+        "description": "Connect to IndexedDB-backed workspace (browser storage)",
+        "parameters": []
+    },
+    handler: {
+        execute: async () => {
+            try {
+                await workspaceService.connectFolder({ indexeddb: true });
+            } catch (err: any) {
+                toastError(err.message);
+            }
+        }
+    },
+    contribution: {
+        target: "filebrowser.connections",
+        label: "IndexedDB (Browser Storage)",
+        icon: "database"
+    }
+})
+
+registerAll({
+    command: {
         "id": "reload_workspace",
         "name": "Reload workspace folder",
         "description": "Reloads the active workspace folder",
