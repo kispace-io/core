@@ -343,6 +343,43 @@ export class WorkspaceService {
         return this.folders.map(f => ({ name: f.directory.getName(), type: f.type }));
     }
 
+    async getFolderInfoForDirectory(directory: Directory): Promise<{ name: string; type: string; backendName: string } | undefined> {
+        await this.initPromise;
+        const folder = this.folders.find(f => f.directory === directory);
+        if (!folder) {
+            return undefined;
+        }
+        const name =
+            (folder.data && typeof folder.data === 'object' && (folder.data as any).name) ||
+            folder.directory.getName();
+        const contribution = this.contributions.get(folder.type);
+        const backendName = contribution?.name ?? folder.type;
+        return { name, type: folder.type, backendName };
+    }
+
+    /**
+     * Update persisted metadata for a workspace root directory.
+     * Currently used to keep display names of roots (e.g. IndexedDB) in sync
+     * with their in-memory Directory instances.
+     */
+    async updateFolderName(directory: Directory, name: string): Promise<void> {
+        await this.initPromise;
+        const folder = this.folders.find(f => f.directory === directory);
+        if (!folder) {
+            return;
+        }
+        if (folder.data && typeof folder.data === 'object') {
+            folder.data = { ...(folder.data as any), name };
+        } else {
+            folder.data = { name };
+        }
+        await this.persistFolders();
+        const composite = this.buildComposite();
+        this.workspace = Promise.resolve(composite);
+        this._currentWorkspace = composite ?? undefined;
+        publish(TOPIC_WORKSPACE_CONNECTED, composite);
+    }
+
     async connectFolder(input: any): Promise<Directory> {
         await this.initPromise;
         const contribution = Array.from(this.contributions.values()).find(c => c.canHandle(input));

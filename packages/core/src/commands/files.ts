@@ -193,12 +193,19 @@ registerAll({
         "id": "connect_indexeddb",
         "name": "IndexedDB",
         "description": "Connect to IndexedDB-backed workspace (browser storage)",
-        "parameters": []
+        "parameters": [
+            {
+                "name": "name",
+                "description": "Optional display name for this IndexedDB workspace root",
+                "required": false
+            }
+        ]
     },
     handler: {
-        execute: async () => {
+        execute: async (context: ExecutionContext) => {
+            const nameParam = context.params?.["name"];
             try {
-                await workspaceService.connectFolder({ indexeddb: true });
+                await workspaceService.connectFolder({ indexeddb: true, name: nameParam });
             } catch (err: any) {
                 toastError(err.message);
             }

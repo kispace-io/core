@@ -149,6 +149,21 @@ export class KFileBrowser extends KPart {
             children: []
         };
 
+        if (resource instanceof Directory && !resource.getParent()) {
+            // Root workspace directory: attach workspace metadata (name) so the
+            // tree renderer can show a small backend tag without knowing about
+            // concrete backend types.
+            try {
+                const info = await workspaceService.getFolderInfoForDirectory(resource);
+                if (info?.backendName) {
+                    (node as any).workspaceTag = info.backendName;
+                }
+            } catch (e) {
+                // Fail silently; tag is purely cosmetic.
+                console.warn('Failed to get workspace info for directory', e);
+            }
+        }
+
         if (resource instanceof Directory && loadChildren) {
             for (const childResource of await resource.listChildren(forceRefreshChildren)) {
                 if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
@@ -174,6 +189,7 @@ export class KFileBrowser extends KPart {
         const icon = isFile
             ? editorRegistry.getFileIcon(resource.getName())
             : (node.icon || "folder-open");
+        const workspaceTag = (node as any).workspaceTag as string | undefined;
 
         return html`
             <wa-tree-item 
@@ -184,7 +200,13 @@ export class KFileBrowser extends KPart {
                 .model=${node} 
                 ?expanded=${expanded}
                 ?lazy=${isLazy}>
-                <span><wa-icon name=${icon} label="${node.leaf ? t('FILE') : t('FOLDER')}"></wa-icon> ${node.label}</span>
+                <span class="tree-label">
+                    <wa-icon name=${icon} label="${node.leaf ? t('FILE') : t('FOLDER')}"></wa-icon>
+                    <span class="tree-label-text">${node.label}</span>
+                    ${!node.leaf && workspaceTag
+                        ? html`<span class="workspace-tag">${workspaceTag}</span>`
+                        : null}
+                </span>
                 ${node.children.map(child => this.createTreeItems(child, false))}
             </wa-tree-item>`
     }
@@ -442,6 +464,28 @@ export class KFileBrowser extends KPart {
             pointer-events: none;
             z-index: 1000;
             opacity: 0.3;
+        }
+
+        .tree-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .tree-label-text {
+            white-space: nowrap;
+        }
+
+        .workspace-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 0.35rem;
+            border-radius: var(--wa-border-radius-pill, 999px);
+            font-size: 0.7rem;
+            line-height: 1.4;
+            background-color: var(--wa-color-neutral-20);
+            color: var(--wa-color-neutral-100);
+            opacity: 0.8;
         }
         
         wa-tree-item.drop-target {

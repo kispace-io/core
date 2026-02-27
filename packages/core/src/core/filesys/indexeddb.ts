@@ -43,6 +43,30 @@ async function getWorkspaceIDB(): Promise<IDBDatabase> {
     return idbWorkspacePromise;
 }
 
+async function getNextIndexedDBName(): Promise<string> {
+    const baseName = 'IndexedDB';
+    const folders = await workspaceService.getFolders();
+    const existingNames = new Set(
+        folders
+            .filter(f => f.type === 'indexeddb')
+            .map(f => f.name)
+    );
+
+    if (!existingNames.has(baseName)) {
+        return baseName;
+    }
+
+    let index = 1;
+    // Find the smallest n such that "IndexedDB (n)" is unused
+    // to keep names stable and predictable.
+    // This is O(k) in number of existing IndexedDB roots, which is small.
+    // We avoid gaps intentionally (e.g. after deleting "(1)") to keep UX simple.
+    while (existingNames.has(`${baseName} (${index})`)) {
+        index += 1;
+    }
+    return `${baseName} (${index})`;
+}
+
 function normalizePath(path: string): string {
     if (!path) return '';
     return path.split('/').filter(Boolean).join('/');
@@ -479,14 +503,15 @@ export class IDBDirectoryResource extends Directory {
 }
 
 export class IDBRootDirectory extends IDBDirectoryResource {
-    private static readonly DISPLAY_NAME = 'IndexedDB';
+    private readonly displayName: string;
 
-    constructor() {
+    constructor(displayName: string) {
         super('');
+        this.displayName = displayName || 'IndexedDB';
     }
 
     getName(): string {
-        return IDBRootDirectory.DISPLAY_NAME;
+        return this.displayName;
     }
 
     getParent(): Directory | undefined {
@@ -494,35 +519,46 @@ export class IDBRootDirectory extends IDBDirectoryResource {
     }
 
     async rename(_newName: string): Promise<void> {
-        throw new Error('Rename not supported on workspace root');
+        const name = String(_newName ?? '').trim();
+        if (!name || name === this.displayName) {
+            return;
+        }
+        // Update the in-memory display name and persist the change via workspaceService.
+        (this as any).displayName = name;
+        await workspaceService.updateFolderName(this, name);
     }
 }
 
 // Register IndexedDB workspace contribution
 workspaceService.registerContribution({
     type: 'indexeddb',
-    name: 'IndexedDB (Browser Storage)',
+    name: 'IndexedDB',
 
     canHandle(input: any): boolean {
         return input && typeof input === 'object' && input.indexeddb === true;
     },
 
-    async connect(_input: { indexeddb: true }): Promise<Directory> {
+    async connect(input: { indexeddb: true; name?: string }): Promise<Directory> {
         await getWorkspaceIDB();
-        return new IDBRootDirectory();
+        const explicitName = input.name && String(input.name).trim();
+        const name = explicitName && explicitName.length > 0
+            ? explicitName
+            : await getNextIndexedDBName();
+        return new IDBRootDirectory(name);
     },
 
     async restore(data: any): Promise<Directory | undefined> {
         if (data && typeof data === 'object' && data.indexeddb === true) {
             await getWorkspaceIDB();
-            return new IDBRootDirectory();
+            const name = (data.name && String(data.name).trim()) || 'IndexedDB';
+            return new IDBRootDirectory(name);
         }
         return undefined;
     },
 
     async persist(workspace: Directory): Promise<any> {
         if (workspace instanceof IDBRootDirectory) {
-            return { indexeddb: true };
+            return { indexeddb: true, name: workspace.getName() };
         }
         return null;
     }

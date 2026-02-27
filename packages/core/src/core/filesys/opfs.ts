@@ -57,7 +57,7 @@ export class OPFSRootDirectory extends Directory {
 // Register OPFS workspace contribution
 workspaceService.registerContribution({
     type: 'opfs',
-    name: 'OPFS (Browser Storage)',
+    name: 'OPFS',
 
     canHandle(input: any): boolean {
         return input && typeof input === 'object' && input.opfs === true;
