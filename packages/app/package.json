@@ -27,11 +27,11 @@
     "@kispace-io/extension-python-runtime": "*",
     "@kispace-io/extension-rag-system": "*",
     "@kispace-io/extension-settings-tree": "*",
+    "@kispace-io/extension-utils": "*",
     "@kispace-io/extension-webdav": "*",
     "@kispace-io/extension-webllm": "*",
-    "@kispace-io/extension-utils": "*",
-    "pace-js": "^1.2.4",
-    "@kispace-io/extension-webmcp": "*"
+    "@kispace-io/extension-webmcp": "*",
+    "pace-js": "^1.2.4"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
