@@ -84,7 +84,7 @@ export class KFileBrowser extends KPart {
     protected renderToolbar() {
         return html`
             <k-command icon="folder-open" title="${t('CONNECT_WORKSPACE')}" dropdown="filebrowser.connections"></k-command>
-            <k-command cmd="reload_workspace" icon="repeat" title="${t('RELOAD_WORKSPACE')}"></k-command>
+            <k-command cmd="refresh_resource" icon="repeat" title="${t('REFRESH_RESOURCE')}"></k-command>
             <k-command cmd="touch" icon="plus" title="${t('CREATE_NEW')}" dropdown="filebrowser.create"></k-command>
         `;
     }

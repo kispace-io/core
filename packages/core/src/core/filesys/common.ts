@@ -198,7 +198,9 @@ export class CompositeDirectory extends Directory {
     }
 
     touch(): void {
-        // no-op at composite level
+        for (const dir of this.entriesByName.values()) {
+            dir.touch();
+        }
     }
 
     async delete(_name?: string, _recursive?: boolean): Promise<void> {

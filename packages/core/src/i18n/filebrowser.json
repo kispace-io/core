@@ -2,7 +2,7 @@
     "namespace": "filebrowser",
     "en": {
         "CONNECT_WORKSPACE": "Connect Workspace...",
-        "RELOAD_WORKSPACE": "Reload workspace folder",
+        "REFRESH_RESOURCE": "Refresh resource",
         "CREATE_NEW": "Create new...",
         "OPEN": "Open",
         "FILE": "File",
@@ -13,7 +13,7 @@
     },
     "de": {
         "CONNECT_WORKSPACE": "Arbeitsbereich verbinden...",
-        "RELOAD_WORKSPACE": "Arbeitsbereich-Ordner neu laden",
+        "REFRESH_RESOURCE": "Ressource aktualisieren",
         "CREATE_NEW": "Neu erstellen...",
         "OPEN": "Öffnen",
         "FILE": "Datei",

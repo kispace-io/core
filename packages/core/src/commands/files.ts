@@ -220,13 +220,18 @@ registerAll({
 
 registerAll({
     command: {
-        "id": "reload_workspace",
-        "name": "Reload workspace folder",
-        "description": "Reloads the active workspace folder",
+        "id": "refresh_resource",
+        "name": "Refresh resource",
+        "description": "Refreshes the connected folder of the selected resource, or the whole workspace if nothing is selected",
         "parameters": []
     },
     handler: {
-        execute: async _context => {
+        execute: async () => {
+            const selection = activeSelectionSignal.get()
+            if (selection) {
+                selection.getWorkspace().touch()
+                return
+            }
             const workspace = await workspaceService.getWorkspace()
             if (!workspace) {
                 toastError("No workspace selected.")
