@@ -7,7 +7,7 @@ import {
     workspaceService,
 } from "./common";
 
-const OPFS_DISPLAY_NAME = 'OPFS';
+const OPFS_DISPLAY_NAME = '.opfs';
 
 async function getOPFSRoot(): Promise<FileSystemDirectoryHandle> {
     if (typeof navigator === 'undefined' || !navigator.storage?.getDirectory) {
@@ -57,7 +57,7 @@ export class OPFSRootDirectory extends Directory {
 // Register OPFS workspace contribution
 workspaceService.registerContribution({
     type: 'opfs',
-    name: 'OPFS',
+    name: 'opfs',
 
     canHandle(input: any): boolean {
         return input && typeof input === 'object' && input.opfs === true;

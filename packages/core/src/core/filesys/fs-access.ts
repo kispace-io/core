@@ -312,7 +312,7 @@ export class FileSysDirHandleResource extends Directory {
 // Register default filesystem contribution
 workspaceService.registerContribution({
     type: 'filesystem',
-    name: 'Local FS',
+    name: 'fs',
 
     canHandle(input: any): boolean {
         return input && 'kind' in input && input.kind === 'directory';

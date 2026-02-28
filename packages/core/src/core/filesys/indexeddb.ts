@@ -532,7 +532,7 @@ export class IDBRootDirectory extends IDBDirectoryResource {
 // Register IndexedDB workspace contribution
 workspaceService.registerContribution({
     type: 'indexeddb',
-    name: 'IndexedDB',
+    name: 'idb',
 
     canHandle(input: any): boolean {
         return input && typeof input === 'object' && input.indexeddb === true;

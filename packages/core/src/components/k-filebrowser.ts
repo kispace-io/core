@@ -204,7 +204,7 @@ export class KFileBrowser extends KPart {
                     <wa-icon name=${icon} label="${node.leaf ? t('FILE') : t('FOLDER')}"></wa-icon>
                     <span class="tree-label-text">${node.label}</span>
                     ${!node.leaf && workspaceTag
-                        ? html`<span class="workspace-tag">${workspaceTag}</span>`
+                        ? html`<wa-badge appearance="outlined" variant="neutral" style="font-size: var(--wa-font-size-xs);">${workspaceTag}</wa-badge>`
                         : null}
                 </span>
                 ${node.children.map(child => this.createTreeItems(child, false))}
@@ -476,18 +476,6 @@ export class KFileBrowser extends KPart {
             white-space: nowrap;
         }
 
-        .workspace-tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 0 0.35rem;
-            border-radius: var(--wa-border-radius-pill, 999px);
-            font-size: 0.7rem;
-            line-height: 1.4;
-            background-color: var(--wa-color-neutral-20);
-            color: var(--wa-color-neutral-100);
-            opacity: 0.8;
-        }
-        
         wa-tree-item.drop-target {
             background-color: var(--wa-color-brand-fill-loud);
             color: var(--wa-color-brand-on-loud);
