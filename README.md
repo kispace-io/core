@@ -9,7 +9,30 @@ A modular web framework for building IDE-like applications with a plugin archite
 ---
 ## Used by
 
-**geo!space (WebGIS):** [https://geo.kispace.de](https://geo.kispace.de)
+Downstream domain-specific apps:
+
+**geo!space** — geospatial workflows (WebGIS): [https://geo.kispace.de](https://geo.kispace.de)
+
+**neuro!space** — neuroimaging workflows: [https://neuro.kispace.de](https://neuro.kispace.de)
+
+---
+
+## Screenshots
+
+**IDE layout (dark)**  
+![IDE layout, dark theme](docs/screenshots/ide-dark.png)
+
+**Dashboard (dark)**  
+![Dashboard, dark theme](docs/screenshots/dashboard-dark.png)
+
+**Dashboard (light)**  
+![Dashboard, light theme](docs/screenshots/dashboard-lite.png)
+
+**Extensions**  
+![Extensions](docs/screenshots/extensions.png)
+
+**Notebook with Python**  
+![Notebook with Python](docs/screenshots/notebook-python.png)
 
 ---
 
@@ -129,6 +152,42 @@ appLoaderService.registerApp({
 - **Vite** — Build and dev server
 
 Other extensions add: Pyodide, WebLLM, RxDB, Xenova transformers, etc.
+
+---
+
+## Comparison with other frameworks
+
+For those comparing frameworks, here is how Appspace lines up with Angular, React, and Vue on common dimensions.
+
+| Dimension | **Appspace** | **Angular** | **React** | **Vue** |
+| --------- | ------------ | ----------- | --------- | ------- |
+| **Paradigm** | App framework for IDE-like and dashboard-like apps; declarative contributions (tabs, toolbars, commands) | Full framework; components + services + modules | Library; components + hooks | Progressive framework; SFCs + composition API |
+| **Component tech** | Lit web components (`k-*` custom elements) | Angular components (decorators/templates) | JSX/TSX components | Single-File Components (`.vue`) or JSX |
+| **Templating** | Lit `html` tagged templates | HTML-like templates + directives | JSX | HTML-like template or JSX |
+| **TypeScript** | First-class; strict, declarations published | First-class; full TS support | Supported (TS + React types) | First-class; full TS in SFC and script |
+| **State management** | `@lit-labs/signals` in core; `watchSignal()`; signals for app state (active part, editor, selection, tasks) | RxJS + services; optional NgRx/Akita | useState/useReducer; ecosystem (Redux, Zustand, Jotai) | reactivity (ref, reactive); Pinia optional |
+| **Routing / Navigation** | No URL router; contribution targets and slots (IDE: sidebars/editor/panel; dashboard: custom shell + views) | Angular Router (URL-based, lazy loading) | React Router (community); URL-based | Vue Router (official); URL-based |
+| **Forms** | No built-in form framework; ad-hoc with WebAwesome/Lit | Reactive Forms / Template-driven forms | Uncontrolled/controlled components; Formik, React Hook Form | v-model + validation; VeeValidate, etc. |
+| **HTTP / Data** | No built-in HTTP client; fetch or extensions (e.g. GitHub, ESM.sh) | HttpClient; interceptors | fetch / axios; TanStack Query common | fetch / axios; TanStack Query common |
+| **i18n** | Built-in: `i18n` / `i18nLazy`, namespaces, `SYSTEM_LANGUAGE_BUNDLES`, `currentLanguageSignal` | @angular/localize; build-time or runtime | react-i18next, react-intl | vue-i18n (official) |
+| **Testing** | Vitest (unit tests in core) | Jasmine/Karma or Jest; Angular Testing Library | Jest + React Testing Library; Vitest | Jest/Vitest + Vue Test Utils |
+| **Build / Bundling** | Vite 7; core as library (ES, multiple entries); app as Vite SPA | Angular CLI (esbuild/webpack) | Vite, Create React App, Next.js, etc. | Vite (default), Vue CLI, Nuxt |
+| **Runtime footprint** | **Browser-native** tech stack (Lit, standard DOM, Web APIs); **very lightweight** runtime; no heavy framework runtime layer | Full framework runtime; larger baseline | Small library; ecosystem can add weight | Small core; ecosystem can add weight |
+| **CLI** | None (npm scripts: dev, build, build:app, test) | Angular CLI (generate, build, serve) | Create React App, Vite templates | Vue CLI, create-vue; Nuxt CLI |
+| **SSR** | Client-only; no app-level SSR | Angular Universal | Next.js, Remix, etc. | Nuxt, Vite SSR |
+| **Styling / Theming** | WebAwesome themes (theme classes, palettes); CSS in components | Encapsulated CSS; Angular Material theming | CSS Modules, styled-components, Tailwind | Scoped CSS; Vuetify/Quasar theming |
+| **Dependency injection** | Built-in: `rootContext`, `uiContext`; services (appLoader, commandRegistry, workspace, settings, etc.) | Built-in hierarchical injector | Context API or external (Inversify, etc.) | provide/inject (composition API) |
+| **Plugin / Extension model** | Core feature: extensions (per-app), contribution + command registries; loaders; enable/disable at runtime; **marketplace**: install external extensions from catalog URLs (e.g. appspace-marketplace) | NgModules; lazy-loaded feature modules | No standard; plugin patterns ad-hoc | Plugins (use()); Nuxt modules |
+| **Commands / shortcuts** | Built-in: command registry, keybindings, command palette | No built-in; custom or libs | No built-in; custom or libs | No built-in; custom or libs |
+| **Layouts / App modes** | Flexible: `k-standard-layout` (IDE) or custom render (e.g. dashboard shell with nav + tabs); same contributions | App shell + router-outlet | App shell + router; layout is component tree | App shell + router; layout is component tree |
+| **Primary use case** | IDE-like apps and dashboard-like apps (tabs, workspace, editors, views, AI, extensions) | Enterprise SPAs, large teams | SPAs, dashboards, content apps | SPAs, progressive enhancement |
+| **License** | EPL-2.0 | MIT | MIT | MIT |
+
+### Summary
+
+- **Where Appspace aligns**: TypeScript, components, state (signals), i18n, testing (Vitest), Vite build, theming (via WebAwesome), DI, strong typing; **browser-native stack** (Lit, standard DOM, Web APIs) and **lightweight runtime footprint**.
+- **Where Appspace differs by design**: No URL routing (IDE-style navigation); no built-in forms/HTTP; no CLI; client-only (no SSR); focus on IDE-like experiences and extensions rather than content-focused SPAs.
+- **Unique to Appspace**: Focus on **browser-native, lightweight runtime**; contribution targets (sidebars, toolbars, editor area), command registry + keybindings, extension registry with enable/disable at runtime; **extension marketplace** — install external extensions from catalog URLs (e.g. [appspace-marketplace](https://github.com/kispace-io/appspace-marketplace)); workspace/service layer; flexible layouts (IDE with `k-standard-layout` or custom dashboard shell with nav + views); first-class IDE UX (tabs, resizable layout, file browser, Monaco) and dashboard-style views.
 
 ---
 
