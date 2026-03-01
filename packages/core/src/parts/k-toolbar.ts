@@ -14,6 +14,33 @@ import {Signal} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {subscribe} from "../core/events";
 
+const RESIZE_DEBOUNCE_MS = 150;
+
+type ToolbarSlotName = 'start' | undefined | 'end';
+
+function renderButtonGroup(
+    slotName: ToolbarSlotName,
+    orientation: 'horizontal' | 'vertical',
+    contributions: Contribution[],
+    isToolbarItem: (c: Contribution) => boolean,
+    contributionCreator: (c: Contribution) => unknown
+) {
+    const slot = slotName ?? 'default';
+    const label = `Toolbar ${slot}`;
+    const items = contributions.filter(c => c.slot === slotName && isToolbarItem(c));
+    const slotHtml = slotName === 'start'
+        ? html`<slot name="start"></slot>`
+        : slotName === 'end'
+            ? html`<slot name="end"></slot>`
+            : html`<slot></slot>`;
+    return html`
+        <wa-button-group orientation=${orientation} label=${label}>
+            ${slotHtml}
+            ${items.map(contributionCreator)}
+        </wa-button-group>
+    `;
+}
+
 @customElement('k-toolbar')
 export class KToolbar extends KElement {
     @property()
@@ -39,6 +66,61 @@ export class KToolbar extends KElement {
 
     @state()
     private contributions: Contribution[] = [];
+
+    @state()
+    private compact = false;
+
+    private resizeObserver: ResizeObserver | null = null;
+    private resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+    private overflowCheckScheduled = false;
+
+    private updateCompactFromSpace() {
+        const toolbarItems = this.shadowRoot?.querySelector('.toolbar-items') as HTMLElement | null;
+        if (!toolbarItems) return;
+        const trimmed = toolbarItems.scrollWidth > toolbarItems.clientWidth;
+        if (this.compact !== trimmed) {
+            this.compact = trimmed;
+            this.requestUpdate();
+        }
+    }
+
+    private scheduleOverflowCheck() {
+        if (this.overflowCheckScheduled) return;
+        this.overflowCheckScheduled = true;
+        requestAnimationFrame(() => {
+            this.overflowCheckScheduled = false;
+            this.updateCompactFromSpace();
+        });
+    }
+
+    private onResize = () => {
+        if (this.resizeDebounceTimer !== null) clearTimeout(this.resizeDebounceTimer);
+        this.resizeDebounceTimer = setTimeout(() => {
+            this.resizeDebounceTimer = null;
+            this.updateCompactFromSpace();
+        }, RESIZE_DEBOUNCE_MS);
+    };
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.resizeObserver = new ResizeObserver(this.onResize);
+        this.resizeObserver.observe(this);
+    }
+
+    disconnectedCallback() {
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = null;
+        if (this.resizeDebounceTimer !== null) {
+            clearTimeout(this.resizeDebounceTimer);
+            this.resizeDebounceTimer = null;
+        }
+        super.disconnectedCallback();
+    }
+
+    updated(changedProperties: Map<string, unknown>) {
+        super.updated?.(changedProperties);
+        if (!this.compact) this.scheduleOverflowCheck();
+    }
 
     protected doBeforeUI() {
         const id = this.getAttribute("id");
@@ -109,8 +191,8 @@ export class KToolbar extends KElement {
 
     contributionCreator(contribution: Contribution) {
         if ("command" in contribution) {
-            const commandContribution = contribution as CommandContribution
-            const showLabel = !!commandContribution.showLabel
+            const commandContribution = contribution as CommandContribution;
+            const showLabel = !this.compact && !!commandContribution.showLabel;
             return html`
                 <wa-button @click=${() => this.executeCommand(commandContribution.command, commandContribution.params || {})}
                            title=${commandContribution.label}
@@ -119,7 +201,7 @@ export class KToolbar extends KElement {
                     <wa-icon name=${commandContribution.icon} label="${commandContribution.label}"></wa-icon>
                     ${showLabel ? commandContribution.label : ''}
                 </wa-button>
-            `
+            `;
         }
         if ("html" in contribution) {
             const contents = (contribution as HTMLContribution).html
@@ -132,26 +214,22 @@ export class KToolbar extends KElement {
     }
 
     render() {
-        const partContent = this.partToolbarRenderer ? this.partToolbarRenderer() : 
-                           (this.partToolbarContent ? this.partToolbarContent : '');
+        const partContent = this.partToolbarRenderer ? this.partToolbarRenderer() :
+            (this.partToolbarContent ? this.partToolbarContent : '');
         const flexDir = this.orientation === "vertical" ? "column" : "row";
         const alignMap = { start: "flex-start", center: "center", end: "flex-end" } as const;
+        const bindCreator = this.contributionCreator.bind(this);
+        const bindIsItem = this.isToolbarItem.bind(this);
         return html`
             <div class="toolbar-items" style=${styleMap({
                 "flex-direction": flexDir,
                 "align-items": alignMap[this.align],
                 "justify-content": this.position
             })}>
-                <slot name="start">
-                    ${this.contributions.filter(c => c.slot === "start" && this.isToolbarItem(c)).map(this.contributionCreator.bind(this))}
-                </slot>
+                ${renderButtonGroup('start', this.orientation, this.contributions, bindIsItem, bindCreator)}
                 ${partContent}
-                ${this.contributions.filter(c => c.slot === undefined && this.isToolbarItem(c)).map(this.contributionCreator.bind(this))}
-                <slot>
-                </slot>
-                <slot name="end">
-                    ${this.contributions.filter(c => c.slot === "end" && this.isToolbarItem(c)).map(this.contributionCreator.bind(this))}
-                </slot>
+                ${renderButtonGroup(undefined, this.orientation, this.contributions, bindIsItem, bindCreator)}
+                ${renderButtonGroup('end', this.orientation, this.contributions, bindIsItem, bindCreator)}
             </div>
         `;
     }
@@ -160,6 +238,7 @@ export class KToolbar extends KElement {
         :host {
             display: flex;
             flex-direction: row;
+            --wa-form-control-padding-inline: var(--wa-space-2xs);
         }
 
         :host([orientation="vertical"]) {
@@ -169,6 +248,7 @@ export class KToolbar extends KElement {
         .toolbar-items {
             display: flex;
             flex: 1;
+            gap: var(--wa-space-2xs);
         }
     `
 }
