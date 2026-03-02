@@ -15,7 +15,6 @@ import { subscribe } from "../core/events";
 import { createRef, ref } from "lit/directives/ref.js";
 import { HIDE_DOT_RESOURCE } from "../core/constants";
 
-import { commandRegistry } from "../core/commandregistry";
 import { TreeNode, treeNodeComparator } from "../core/tree-utils";
 import { activeSelectionSignal } from "../core/appstate";
 import { confirmDialog } from "../dialogs";
@@ -76,11 +75,7 @@ export class KFileBrowser extends KPart {
 
     private async initializeWorkspace() {
         const workspaceDir = await workspaceService.getWorkspace()
-        if (workspaceDir) {
-            await this.loadWorkspace(workspaceDir!)
-        } else {
-            commandRegistry.execute("help")
-        }
+        await this.loadWorkspace(workspaceDir ?? undefined)
     }
 
     protected renderToolbar() {

@@ -250,7 +250,11 @@ export class WorkspaceService {
     }
 
     constructor() {
-        this.initPromise = this.loadPersistedWorkspace();
+        let resolveInit!: () => void;
+        this.initPromise = new Promise<void>((resolve) => {
+            resolveInit = resolve;
+        });
+        this.loadPersistedWorkspace(resolveInit);
     }
 
     registerContribution(contribution: WorkspaceContribution): void {
@@ -264,54 +268,59 @@ export class WorkspaceService {
 
     private static readonly DEFAULT_INDEXEDDB_FOLDER_NAME = 'My Folder';
 
-    private async loadPersistedWorkspace(): Promise<void> {
-        const raw = await persistenceService.getObject(LEGACY_WORKSPACE_KEY) as PersistedWorkspaceData | null;
-        if (!raw) {
-            this.workspace = Promise.resolve(undefined);
-            this._currentWorkspace = undefined;
-        }
-
-        if (raw?.folders && Array.isArray(raw.folders) && raw.folders.length > 0) {
-            const normalized = raw.folders.map((f: { type: string; data: any }) => ({ type: f.type, data: f.data }));
-            await this.resolveFolders(normalized);
-            const composite = this.buildComposite();
-            this.workspace = Promise.resolve(composite);
-            this._currentWorkspace = composite ?? undefined;
-            if (composite) {
-                publish(TOPIC_WORKSPACE_CONNECTED, composite);
+    private async loadPersistedWorkspace(resolveInit: () => void): Promise<void> {
+        try {
+            const raw = await persistenceService.getObject(LEGACY_WORKSPACE_KEY) as PersistedWorkspaceData | null;
+            if (!raw) {
+                this.workspace = Promise.resolve(undefined);
+                this._currentWorkspace = undefined;
             }
-            return;
-        }
 
-        if (raw && raw.type && raw.data !== undefined) {
-            const contribution = this.contributions.get(raw.type);
-            if (contribution?.restore) {
-                try {
-                    const dir = await contribution.restore!(raw.data);
-                    if (dir) {
-                        this.folders = [{ type: raw.type, data: raw.data, directory: dir }];
-                        const comp = this.buildComposite();
-                        this.workspace = Promise.resolve(comp);
-                        this._currentWorkspace = comp ?? undefined;
-                        this.currentType = raw.type;
-                        await this.persistFolders();
-                        publish(TOPIC_WORKSPACE_CONNECTED, comp);
+            if (raw?.folders && Array.isArray(raw.folders) && raw.folders.length > 0) {
+                const normalized = raw.folders.map((f: { type: string; data: any }) => ({ type: f.type, data: f.data }));
+                await this.resolveFolders(normalized);
+                const composite = this.buildComposite();
+                this.workspace = Promise.resolve(composite);
+                this._currentWorkspace = composite ?? undefined;
+                if (composite) {
+                    publish(TOPIC_WORKSPACE_CONNECTED, composite);
+                }
+                resolveInit();
+                return;
+            }
+
+            if (raw && raw.type && raw.data !== undefined) {
+                const contribution = this.contributions.get(raw.type);
+                if (contribution?.restore) {
+                    try {
+                        const dir = await contribution.restore!(raw.data);
+                        if (dir) {
+                            this.folders = [{ type: raw.type, data: raw.data, directory: dir }];
+                            const comp = this.buildComposite();
+                            this.workspace = Promise.resolve(comp);
+                            this._currentWorkspace = comp ?? undefined;
+                            this.currentType = raw.type;
+                            await this.persistFolders();
+                            publish(TOPIC_WORKSPACE_CONNECTED, comp);
+                        }
+                    } catch (error) {
+                        console.error('Failed to restore legacy workspace:', error);
                     }
-                } catch (error) {
-                    console.error('Failed to restore legacy workspace:', error);
                 }
             }
-        }
-        if (!this.workspace) {
-            this.workspace = Promise.resolve(undefined);
-            this._currentWorkspace = undefined;
-        }
+            if (!this.workspace) {
+                this.workspace = Promise.resolve(undefined);
+                this._currentWorkspace = undefined;
+            }
 
-        if (this.folders.length === 0) {
-            try {
-                await this.connectFolder({ indexeddb: true, name: WorkspaceService.DEFAULT_INDEXEDDB_FOLDER_NAME });
-            } catch (e) {
-                console.warn('Failed to connect default IndexedDB folder', e);
+            resolveInit();
+        } finally {
+            if (this.folders.length === 0) {
+                try {
+                    await this.connectFolder({ indexeddb: true, name: WorkspaceService.DEFAULT_INDEXEDDB_FOLDER_NAME });
+                } catch (e) {
+                    console.warn('Failed to connect default IndexedDB folder', e);
+                }
             }
         }
     }
