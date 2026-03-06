@@ -33,15 +33,26 @@ fi
 
 echo "Incrementing $VERSION_PART version"
 
-# Fetch latest tags from remote
-echo "Fetching latest tags..."
-git fetch --tags
-
-# Get the latest tag (with or without 'v' prefix)
-LATEST_TAG=$(git tag --sort=-v:refname | head -1)
+# Get latest version tag: try GitHub API first (works when git ls-remote gets no refs e.g. auth), then git ls-remote
+echo "Fetching latest tags from remote..."
+LATEST_TAG=""
+if command -v gh &>/dev/null; then
+  REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)
+  if [ -n "$REPO" ]; then
+    LATEST_TAG=$(gh api "/repos/$REPO/git/refs/tags" --paginate -q '.[].ref' 2>/dev/null | sed 's|^refs/tags/||' | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+    [ -n "$LATEST_TAG" ] && echo "  (via GitHub: $REPO)"
+  fi
+fi
+if [ -z "$LATEST_TAG" ]; then
+  LATEST_TAG=$(git ls-remote --refs origin refs/tags/ 2>/dev/null | sed 's|.*refs/tags/||' | sed 's|\^{}$||' | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+fi
+if [ -n "$LATEST_TAG" ]; then
+  git fetch origin tag "$LATEST_TAG" 2>/dev/null || true
+fi
 
 if [ -z "$LATEST_TAG" ]; then
-    echo "No tags found. Starting with version 0.1.0"
+    echo "No version tags found on origin or GitHub. Starting with version 0.1.0"
+    echo "  (Ensure origin points to the repo with releases: git remote -v)"
     NEXT_VERSION="0.1.0"
 else
     echo "Latest tag: $LATEST_TAG"
@@ -99,16 +110,24 @@ echo ""
 SUMMARY=""
 if [ -n "$OPENAI_API_KEY" ] && [ -n "$CHANGES" ]; then
     echo "Generating AI summary of changes..."
-    
-    # Escape the changes for JSON
-    CHANGES_ESCAPED=$(echo "$CHANGES" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-    PROMPT="Summarize the following git commits at an abstract level for end users. Focus on features, fixes, and improvements without technical implementation details. Keep it concise:\\n\\n$CHANGES_ESCAPED"
-    
-    # Call OpenAI API and parse response
+    PAYLOAD_FILE=$(mktemp)
+    trap "rm -f $PAYLOAD_FILE" EXIT
+    # Build JSON in Python to avoid "Argument list too long" when CHANGES is large
+    python3 - "$PAYLOAD_FILE" "$LATEST_TAG" << 'PYEOF'
+import json, subprocess, sys
+payload_path = sys.argv[1]
+tag = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] else None
+cmd = ['git', 'log', tag + '..HEAD', '--oneline', '--no-decorate', '--stat'] if tag else ['git', 'log', '--oneline', '--no-decorate', '--stat']
+out = subprocess.run(cmd, capture_output=True, text=True)
+content = (out.stdout or '')[:12000]
+prompt = "Summarize the following git commits at an abstract level for end users. Focus on features, fixes, and improvements without technical implementation details. Keep it concise:\n\n" + content
+with open(payload_path, 'w') as f:
+    json.dump({"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.7, "max_tokens": 500}, f)
+PYEOF
     API_RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $OPENAI_API_KEY" \
-        -d "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}],\"temperature\":0.7,\"max_tokens\":500}")
+        -d @"$PAYLOAD_FILE")
     
     # Extract content using python if available, otherwise fallback to grep/sed
     if command -v python3 &> /dev/null; then
