@@ -39,6 +39,7 @@ export default defineConfig({
         'externals/lit': path.resolve(__dirname, 'src/externals/lit.ts'),
         'externals/third-party': path.resolve(__dirname, 'src/externals/third-party.ts'),
         'core/events': path.resolve(__dirname, 'src/core/events.ts'),
+        'vite-plugin-resolve-deps': path.resolve(__dirname, 'src/vite-plugin-resolve-deps.ts'),
       },
       formats: ['es'],
       fileName: (format, entryName) => `${entryName}.js`,
