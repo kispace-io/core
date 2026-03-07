@@ -24,6 +24,23 @@ import { marketplaceRegistry } from "./marketplaceregistry";
 
 const logger = createLogger('AppLoader');
 
+/** Layout reference: layout id string, or id + props to parameterize the layout (e.g. show-bottom-panel). */
+export type LayoutDescriptor = string | { id: string; props?: Record<string, string | boolean> };
+
+function getLayoutIdFromApp(app: AppDefinition | undefined): string {
+    if (!app) return 'standard';
+    const l = app.layout ?? app.layoutId;
+    return typeof l === 'object' ? l.id : (l ?? 'standard');
+}
+
+function propsToAttributes(props: Record<string, string | boolean>): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(props)) {
+        out[k] = typeof v === 'boolean' ? (v ? 'true' : 'false') : v;
+    }
+    return out;
+}
+
 /**
  * Extracts error message from an error object.
  */
@@ -172,9 +189,13 @@ export interface AppDefinition {
     releaseHistory?: ReleaseHistory | (() => ReleaseHistory | Promise<ReleaseHistory>);
 
     /**
-     * Id of a layout registered to the system.layouts contribution slot.
-     * The app root is always the chosen layout's component. Defaults to 'standard' when omitted.
+     * Layout: id (string) or { id, props } to parameterize the layout.
+     * App root is the chosen layout's component. Props are merged as attributes when rendering (e.g. show-bottom-panel).
+     * Defaults to 'standard' when omitted.
      */
+    layout?: LayoutDescriptor;
+
+    /** @deprecated Use layout (string or { id, props }) instead. */
     layoutId?: string;
 
     /**
@@ -515,7 +536,7 @@ class AppLoaderService {
             throw new Error('No app loaded. Call loadApp() first.');
         }
 
-        const layoutId = this.preferredLayoutId ?? this.currentApp.layoutId ?? 'standard';
+        const layoutId = this.preferredLayoutId ?? getLayoutIdFromApp(this.currentApp);
         const layouts = contributionRegistry.getContributions<LayoutContribution>(SYSTEM_LAYOUTS);
         let layout = layouts.find((c) => c.id === layoutId);
         if (!layout) {
@@ -527,12 +548,25 @@ class AppLoaderService {
         }
 
         const r = layout.component;
+        let effectiveAttributes: Record<string, string> = {};
+        if (r && typeof r === 'object' && 'tag' in r && r.attributes) {
+            effectiveAttributes = { ...r.attributes };
+        }
+        const appLayout = this.currentApp?.layout;
+        if (typeof appLayout === 'object' && appLayout.id === layoutId && appLayout.props) {
+            Object.assign(effectiveAttributes, propsToAttributes(appLayout.props));
+        }
+
         container.innerHTML = '';
         if (typeof r === 'string') {
-            container.appendChild(document.createElement(r));
+            const el = document.createElement(r);
+            for (const [key, value] of Object.entries(effectiveAttributes)) {
+                el.setAttribute(key, value);
+            }
+            container.appendChild(el);
         } else if (r && typeof r === 'object' && 'tag' in r) {
             const el = document.createElement(r.tag);
-            for (const [key, value] of Object.entries(r.attributes ?? {})) {
+            for (const [key, value] of Object.entries(effectiveAttributes)) {
                 el.setAttribute(key, value);
             }
             container.appendChild(el);
@@ -600,7 +634,7 @@ class AppLoaderService {
     }
 
     getCurrentLayoutId(): string {
-        return this.preferredLayoutId ?? this.currentApp?.layoutId ?? 'standard';
+        return this.preferredLayoutId ?? getLayoutIdFromApp(this.currentApp);
     }
 
     async getPreferredLayoutId(): Promise<string | undefined> {

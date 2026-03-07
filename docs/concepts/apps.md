@@ -11,7 +11,7 @@ An **app** is the top-level unit of the framework. You define it with an `AppDef
 | `description` | No | Short description. |
 | `extensions` | No | List of extension ids (e.g. `@eclipse-lyra/extension-command-palette`) to enable when the app loads. |
 | `contributions` | No | App-level contributions (UI and/or extensions). |
-| `layoutId` | No | Id of a layout registered to the `system.layouts` slot. The app root is the chosen layout's component. Defaults to `'standard'` (IDE layout). |
+| `layout` | No | **LayoutDescriptor**: layout id (string) or `{ id, props? }` to parameterize the layout. The app root is the chosen layout's component. Props are merged as attributes when rendering (e.g. `show-bottom-panel`). Defaults to `'standard'`. |
 | `initialize` | No | Called after extensions and contributions are registered. |
 | `dispose` | No | Called when the app is unloaded. |
 | `releaseHistory` | No | Static array or callback for release history (used by version-info). |
@@ -38,7 +38,19 @@ import { appLoaderService } from '@eclipse-lyra/core';
 appLoaderService.registerApp(
   {
     extensions: ['@eclipse-lyra/extension-command-palette', '@eclipse-lyra/extension-settings-tree'],
-    layoutId: 'standard',
+    layout: 'standard',
+  },
+  { autoStart: true, hostConfig: true }
+);
+```
+
+With layout props (e.g. show bottom panel by default):
+
+```ts
+appLoaderService.registerApp(
+  {
+    extensions: [/* ... */],
+    layout: { id: 'standard', props: { 'show-bottom-panel': true } },
   },
   { autoStart: true, hostConfig: true }
 );
@@ -60,7 +72,7 @@ appLoaderService.registerApp(
   {
     marketplaceCatalogUrls: (appPkg as any).marketplace?.catalogUrls,
     extensions: [/* ... */],
-    layoutId: 'standard',
+    layout: 'standard',
   },
   { autoStart: true, hostConfig: true }
 );

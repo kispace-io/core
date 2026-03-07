@@ -61,6 +61,9 @@ export class LyraLayoutSwitcher extends LyraElement {
                             value="${layout.id}"
                             type="checkbox"
                             ?checked=${layout.id === this.currentLayoutId}>
+                            ${layout.icon
+                                ? html`<wa-icon slot="icon" name="${layout.icon}" label="${layout.name}"></wa-icon>`
+                                : ''}
                             ${layout.name}
                         </wa-dropdown-item>
                     `

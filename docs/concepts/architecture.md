@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Applications (packages/app, or custom apps)                 │
-│  – AppDefinition: extensions, optional layoutId              │
+│  – AppDefinition: extensions, optional layout (id or { id, props }) │
 │  – Layouts registered via LayoutContribution (system.layouts)│
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -49,7 +49,7 @@
 
 ## Main concepts
 
-- **Apps** — Register via `AppDefinition`: `name`, `version`, `extensions[]`, optional `layoutId`, `contributions`, `initialize` / `dispose`. The app root is the chosen layout's component.
+- **Apps** — Register via `AppDefinition`: `name`, `version`, `extensions[]`, optional `layout` (id or `{ id, props }`), `contributions`, `initialize` / `dispose`. The app root is the chosen layout's component.
 - **Layouts** — Registered via `LayoutContribution` (slot `system.layouts`): `id`, `name`, `component`, optional `onShow`. Core provides the standard (IDE) layout; apps can add layouts (e.g. dashboard). Users switch via the toolbar layout switcher.
 - **Extensions** — Register with `extensionRegistry`; provide a loader that runs when the extension is enabled. Register commands, contributions, editors.
 - **Contributions** — Declarative UI: tabs (sidebars, editor area), toolbar buttons, HTML blocks. Targets include `SIDEBAR_MAIN`, `SIDEBAR_AUXILIARY`, `TOOLBAR_MAIN_RIGHT`, `TOOLBAR_BOTTOM_END`, `SYSTEM_LAYOUTS`, etc.

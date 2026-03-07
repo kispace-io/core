@@ -53,7 +53,7 @@ Downstream domain-specific apps:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Applications (packages/app, or custom apps)                 │
-│  – AppDefinition: extensions, optional layoutId              │
+│  – AppDefinition: extensions, optional layout (id or { id, props }) │
 │  – Layouts registered via LayoutContribution (system.layouts)│
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -97,7 +97,7 @@ Downstream domain-specific apps:
 
 ### Main concepts
 
-- **Apps** — One or more apps register via `AppDefinition`: `name`, `version`, `extensions[]`, optional `layoutId`, `contributions`, `initialize` / `dispose`. The app root is always the chosen layout's component.
+- **Apps** — One or more apps register via `AppDefinition`: `name`, `version`, `extensions[]`, optional `layout` (id string or `{ id, props }` to parameterize), `contributions`, `initialize` / `dispose`. The app root is always the chosen layout's component.
 - **Layouts** — Registered via `LayoutContribution` (slot `system.layouts`): `id`, `name`, `component` (Lit template), optional `onShow`. Core registers the standard (IDE) layout; apps can register additional layouts (e.g. dashboard). Users switch layout via the toolbar layout switcher.
 - **Extensions** — Register with `extensionRegistry`; provide a loader that runs when the extension is enabled. Register commands, contributions, editors, services.
 - **Contributions** — Declarative UI: tabs (sidebars, editor area), toolbar buttons, HTML blocks. Targets include `SIDEBAR_MAIN`, `SIDEBAR_AUXILIARY`, `TOOLBAR_MAIN_RIGHT`, `TOOLBAR_BOTTOM_END`, etc.
@@ -143,7 +143,7 @@ import { appLoaderService } from '@eclipse-lyra/core';
 
 appLoaderService.registerApp({
   extensions: ['@eclipse-lyra/extension-command-palette', '@eclipse-lyra/extension-settings-tree', '@eclipse-lyra/extension-ai-system'],
-  layoutId: 'standard',
+  layout: 'standard',
 }, { autoStart: true, hostConfig: true });
 ```
 

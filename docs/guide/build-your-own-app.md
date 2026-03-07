@@ -28,11 +28,13 @@ appLoaderService.registerApp(
       '@eclipse-lyra/extension-settings-tree',
       '@eclipse-lyra/extension-ai-system',
     ],
-    layoutId: 'standard',
+    layout: 'standard',
   },
   { autoStart: true, hostConfig: true }
 );
 ```
+
+Use `layout: { id: 'standard', props: { 'show-bottom-panel': true } }` to parameterize the layout (props are applied as attributes when rendering).
 
 To add another layout (e.g. dashboard), register a **LayoutContribution** to the `SYSTEM_LAYOUTS` slot (`id`, `name`, `component`, optional `onShow`). Users switch between layouts via the toolbar layout switcher.
 

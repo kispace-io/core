@@ -48,6 +48,8 @@ export interface IconContribution extends Contribution {
 export interface LayoutContribution extends Contribution {
     id: string;
     name: string;
+    /** Optional icon name (e.g. Font Awesome) for the layout switcher. */
+    icon?: string;
     component: string | { tag: string; attributes?: Record<string, string> } | (() => TemplateResult);
     onShow?: () => void | Promise<void>;
 }

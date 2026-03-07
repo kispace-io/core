@@ -127,6 +127,7 @@ contributionRegistry.registerContribution(SYSTEM_LAYOUTS, {
     id: "dashboard",
     name: "Dashboard",
     label: "Dashboard",
+    icon: "table-cells",
     component: dashboardShellTemplate,
     onShow() {
         requestAnimationFrame(() => {
