@@ -36,26 +36,27 @@ appLoaderService.registerApp(
 ```
 
 - **autoStart** — If `true`, the app loader starts after registration (loads extensions and renders).
-- **defaultAppId** — App to load when no app is specified (e.g. via URL).
+- **defaultAppName** — App name to load when no app is specified (e.g. via URL).
 - **container** — DOM element to render into (default: `document.body`).
 
-## App host config
+## Package info and marketplace
 
-If your app uses the marketplace or needs to expose package info, call `applyAppHostConfig` before registering apps:
+Add **`dependencies`** and **`marketplaceCatalogUrls`** to your app definition to show resolved dependency versions in About and to register marketplace catalog URLs. Use **`hostConfig: true`** in `registerApp` options so the framework fills name, version, and dependencies from the build-time plugin when available:
 
 ```ts
-import { applyAppHostConfig } from '@eclipse-lyra/core';
+import { appLoaderService } from '@eclipse-lyra/core';
 import appPkg from '../package.json';
 
-applyAppHostConfig({
-  packageInfo: {
-    name: appPkg.name,
+appLoaderService.registerApp(
+  {
+    id: 'my-app',
+    name: 'My App',
     version: appPkg.version,
-    dependencies: appPkg.dependencies,
-    devDependencies: appPkg.devDependencies,
+    marketplaceCatalogUrls: (appPkg as any).marketplace?.catalogUrls,
+    extensions: [/* ... */],
   },
-  marketplaceCatalogUrls: (appPkg as any).marketplace?.catalogUrls,
-});
+  { autoStart: true, hostConfig: true }
+);
 ```
 
 See [Build your own app](/guide/build-your-own-app).

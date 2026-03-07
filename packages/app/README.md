@@ -5,4 +5,9 @@ Template application built on Appspace. Use this package as a starting point for
 - **Run dev server**: From repo root, `npm run dev` (or from this directory, `npm run dev`).
 - **Build**: From repo root, `npm run build:app` (or from this directory, `npm run build`). Output is in `dist/`.
 
-To create your own app, copy this package, adjust `src/main.ts` (register your app, choose extensions, call `applyAppHostConfig` with your package info), and add your own dependencies as needed.
+To create your own app, copy this package, adjust `src/main.ts` (register your app, choose extensions), and add your own dependencies as needed.
+
+**Resolved package info in About:** To show actual installed dependency versions (instead of specifiers like `*` or `^1.0.0`) in the version-info / About UI:
+
+1. In `vite.config.ts`, add `import { resolveDepVersionsPlugin } from '@eclipse-lyra/core/vite-plugin-resolve-deps'` and include `resolveDepVersionsPlugin()` in the `plugins` array.
+2. When calling `appLoaderService.registerApp()`, pass `{ hostConfig: true }` in the options. The framework will merge build-injected name, version, and dependencies into the app. Add `marketplaceCatalogUrls` on the app definition (e.g. from package.json) if you use the marketplace.

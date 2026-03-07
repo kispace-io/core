@@ -13,7 +13,7 @@ contributionRegistry.registerContribution(DIALOG_CONTRIBUTION_TARGET, {
     buttons: [CLOSE_BUTTON],
     component: (state?: any) => {
         const apps: AppDefinition[] = state?.apps || [];
-        const currentAppId: string | undefined = state?.currentAppId;
+        const currentAppName: string | undefined = state?.currentAppName;
         const selectApp = state?.selectApp as (app: AppDefinition) => void;
 
         return html`
@@ -22,14 +22,13 @@ contributionRegistry.registerContribution(DIALOG_CONTRIBUTION_TARGET, {
                     ${apps.map(app => html`
                         <wa-card 
                             style="cursor: pointer;"
-                            variant=${app.id === currentAppId ? 'brand' : 'neutral'}
+                            variant=${app.name === currentAppName ? 'brand' : 'neutral'}
                             @click=${() => selectApp(app)}>
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--wa-space-xs);">
                                 <span style="font-weight: 600;">${app.name}</span>
                                 ${app.version ? html`<wa-badge variant="neutral">v${app.version}</wa-badge>` : ''}
                             </div>
                             ${app.description ? html`<p style="margin: 0; font-size: 0.875rem; line-height: 1.4;">${app.description}</p>` : ''}
-                            <div style="font-size: 0.75rem; color: var(--wa-color-neutral-foreground-quiet); font-family: monospace; margin-top: var(--wa-space-xs);">ID: ${app.id}</div>
                         </wa-card>
                     `)}
                 </div>
@@ -49,16 +48,17 @@ const showAppSwitcherDialog = async (): Promise<void> => {
 
     const state = {
         apps,
-        currentAppId: currentApp?.id,
+        currentAppName: currentApp?.name,
         selectApp: async (app: AppDefinition) => {
-            if (app.id === currentApp?.id) {
+            if (app.name === currentApp?.name) {
                 state.close?.();
                 return;
             }
-
+            const name = app.name;
+            if (!name) return;
             try {
-                await appLoaderService.setPreferredAppId(app.id);
-                await appLoaderService.loadApp(app.id, document.body);
+                await appLoaderService.setPreferredAppId(name);
+                await appLoaderService.loadApp(name, document.body);
             } catch (error) {
                 console.error('Failed to switch app:', error);
             } finally {

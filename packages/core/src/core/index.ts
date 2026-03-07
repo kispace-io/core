@@ -18,7 +18,6 @@ import './settingsservice';
 
 // 2. Registries and task service (contribution first – others depend on it)
 import './contributionregistry';
-import './packageinfoservice';
 import './taskservice';
 
 // 3. i18n and ESM

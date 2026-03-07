@@ -12,9 +12,8 @@ Use **`packages/app`** as a template: copy it or add a new workspace package.
 
 3. **Entry point**  
    In your app entry (e.g. `main.ts`):
-   - Call `applyAppHostConfig({ packageInfo, marketplaceCatalogUrls })` if you use the marketplace.
    - Import the extensions you need (side-effect imports so they register).
-   - Call `appLoaderService.registerApp(appDefinition, { autoStart: true })`.
+   - Call `appLoaderService.registerApp(appDefinition, { autoStart: true, hostConfig: true })`. Add `marketplaceCatalogUrls` and optionally `dependencies` to the app definition if you use the marketplace or want to show dependency versions in About.
 
 4. **App definition**  
    Minimal example:

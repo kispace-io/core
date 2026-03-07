@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import mkcert from 'vite-plugin-mkcert';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
+import { resolveDepVersionsPlugin } from '@eclipse-lyra/core/vite-plugin-resolve-deps';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -53,6 +54,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    resolveDepVersionsPlugin(),
     mkcert(),
     crossOriginIsolation(),
     {

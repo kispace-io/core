@@ -1,10 +1,9 @@
 import { registerAll } from "../core/commandregistry";
-import { html, render } from "lit";
+import { html, render, type TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { marked } from "marked";
 import { toastError } from "../core/toast";
 import { appLoaderService, type ReleaseEntry } from "../core/apploader";
-import { packageInfoService } from "../core/packageinfoservice";
 
 registerAll({
     command: {
@@ -21,8 +20,22 @@ registerAll({
                 return;
             }
 
-            const hasPackages = packageInfoService.hasPackages();
-            const packagesTree = packageInfoService.renderTree();
+            const deps = app.dependencies ?? {};
+            const hasPackages = Object.keys(deps).length > 0;
+            const packagesTree: TemplateResult = hasPackages
+                ? html`
+                    <wa-tree style="--indent-guide-width: 1px;">
+                        <wa-tree-item expanded>
+                            <span>${app.name ?? ''}</span>
+                            ${Object.entries(deps).map(([name, version]) => html`
+                                <wa-tree-item>
+                                    <span>${name} <small>${version}</small></span>
+                                </wa-tree-item>
+                            `)}
+                        </wa-tree-item>
+                    </wa-tree>
+                `
+                : html``;
 
             let dialogContainer: HTMLElement | null = null;
             const getDialogContainer = (): HTMLElement => {
@@ -61,8 +74,9 @@ registerAll({
                 }
             }
 
-            const isDev = app.version === '0.0.0';
-            const currentIndex = releases.length > 0 ? releases.findIndex(r => r.tag_name === app.version) : -1;
+            const appVersion = app.version ?? '0.0.0';
+            const isDev = appVersion === '0.0.0';
+            const currentIndex = releases.length > 0 ? releases.findIndex(r => r.tag_name === appVersion) : -1;
             const startIndex = currentIndex >= 0 ? currentIndex : 0;
             let currentReleaseIndex = startIndex;
 
@@ -72,7 +86,7 @@ registerAll({
                 }
 
                 const release = releases[index];
-                const isCurrentVersion = release.tag_name === app.version;
+                const isCurrentVersion = release.tag_name === appVersion;
 
                 let message = `**Version:** ${release.tag_name}`;
                 if (isCurrentVersion) {
@@ -84,7 +98,7 @@ registerAll({
                 message += `**Released:** ${publishDate}\n\n`;
 
                 if (!isCurrentVersion) {
-                    const cleanCurrent = app.version.replace(/^v/, '');
+                    const cleanCurrent = appVersion.replace(/^v/, '');
                     const cleanRelease = release.tag_name.replace(/^v/, '');
                     const currentParts = cleanCurrent.split('.').map(Number);
                     const releaseParts = cleanRelease.split('.').map(Number);
@@ -126,7 +140,7 @@ registerAll({
 
                 const template = html`
                     <wa-dialog 
-                        label="About ${app.name} - ${app.version}"
+                        label="About ${app.name ?? ''} - ${app.version ?? '0.0.0'}"
                         open 
                         light-dismiss
                         style="--width: 600px;"
@@ -144,7 +158,7 @@ registerAll({
                                 margin-left: 0.5rem;
                             }
                         </style>
-                        <small>${app.description}</small>
+                        <small>${app.description ?? ''}</small>
                         <div class="dialog-content">
                             <wa-tab-group>
                                 ${releases.length > 0 ? html`

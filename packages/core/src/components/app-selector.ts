@@ -30,9 +30,11 @@ export class LyraAppSelector extends LyraElement {
     }
 
     private async selectApp(app: AppDefinition) {
+        const name = app.name;
+        if (!name) return;
         try {
-            await appLoaderService.setPreferredAppId(app.id);
-            await appLoaderService.loadApp(app.id, document.body);
+            await appLoaderService.setPreferredAppId(name);
+            await appLoaderService.loadApp(name, document.body);
         } catch (err) {
             this.error = err instanceof Error ? err.message : 'Failed to load app';
         }
@@ -93,7 +95,6 @@ export class LyraAppSelector extends LyraElement {
                                 ${app.version ? html`<span class="app-version">v${app.version}</span>` : ''}
                             </div>
                             ${app.description ? html`<p class="app-description">${app.description}</p>` : ''}
-                            <div class="app-id">ID: ${app.id}</div>
                         </div>
                     `)}
                 </div>
@@ -198,13 +199,6 @@ export class LyraAppSelector extends LyraElement {
             margin: 0 0 0.75rem 0;
             color: var(--wa-color-neutral-foreground-base);
             line-height: 1.5;
-        }
-
-        .app-id {
-            font-size: 0.75rem;
-            color: var(--wa-color-neutral-foreground-quiet);
-            font-family: monospace;
-            margin-top: auto;
         }
 
         .empty-icon,

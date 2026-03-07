@@ -42,15 +42,11 @@ export {
     toastWarning
 } from '../core/toast';
 export { taskService } from '../core/taskservice';
-export { applyAppHostConfig } from '../core/app-host-config';
-export type { AppHostConfig } from '../core/app-host-config';
 export { publish, subscribe, unsubscribe } from '../core/events';
 export { configureFramework, getFrameworkConfig } from '../core/config';
 export { treeNodeComparator } from '../core/tree-utils';
 export type { TreeContribution, TreeNode } from '../core/tree-utils';
 export { watchSignal } from '../core/signals';
-export { packageInfoService } from '../core/packageinfoservice';
-export type { PackageInfo } from '../core/packageinfoservice';
 export { persistenceService } from '../core/persistenceservice';
 export { esmShService } from '../core/esmsh-service';
 export type { EsmShSource, EsmShOptions } from '../core/esmsh-service';

@@ -18,6 +18,7 @@ import {createLogger} from "./logger";
 import {extensionRegistry, Extension} from "./extensionregistry";
 import {contributionRegistry, Contribution} from "./contributionregistry";
 import {appSettings} from "./settingsservice";
+import { marketplaceRegistry } from "./marketplaceregistry";
 
 
 const logger = createLogger('AppLoader');
@@ -122,17 +123,17 @@ export interface RenderDescriptor {
  * Applications implement this interface to integrate with the framework.
  */
 export interface AppDefinition {
-    /** Unique application identifier */
-    id: string;
-    
-    /** Human-readable application name */
-    name: string;
-    
-    /** Application version */
-    version: string;
-    
-    /** Optional application description */
+    /** Application name (from package.json). Unique key; set by hostConfig resolution when omitted. */
+    name?: string;
+
+    /** Application version. Set by hostConfig resolution from package.json when omitted. */
+    version?: string;
+
+    /** Application description. Set by hostConfig resolution from package.json when omitted. */
     description?: string;
+
+    /** Optional URL path segment for routing (e.g. "geospace"). When absent, name is used for lookup. */
+    path?: string;
     
     /**
      * Custom application metadata (optional).
@@ -183,17 +184,20 @@ export interface AppDefinition {
      * Called when the app is being unloaded, before extensions are disabled.
      */
     dispose?: () => void | Promise<void>;
+
+    /** Resolved dependency versions (e.g. from build plugin). Shown in About / version info. */
+    dependencies?: Record<string, string>;
+
+    /** Marketplace catalog URLs for this app. Registered when the app is registered. */
+    marketplaceCatalogUrls?: string[];
 }
 
 /**
  * Options for registering an application with the apploader.
  */
 export interface RegisterAppOptions {
-    /** 
-     * Default app ID to load if no app URL parameter is provided.
-     * If not specified, the first registered app will be loaded.
-     */
-    defaultAppId?: string;
+    /** Default app name to load if no app URL parameter is provided. If not specified, the first registered app is loaded. */
+    defaultAppName?: string;
     
     /** 
      * Whether to automatically start the apploader after registration.
@@ -207,6 +211,11 @@ export interface RegisterAppOptions {
      * Defaults to document.body.
      */
     container?: HTMLElement;
+
+    /**
+     * When true, fill name, version, description, dependencies, marketplaceCatalogUrls from __RESOLVED_PACKAGE_INFO__ only when not already set on the app.
+     */
+    hostConfig?: boolean;
 }
 
 /**
@@ -222,10 +231,10 @@ class AppLoaderService {
     private apps: Map<string, AppDefinition> = new Map();
     private currentApp?: AppDefinition;
     private started: boolean = false;
-    private defaultAppId?: string;
+    private defaultAppName?: string;
     private container: HTMLElement = document.body;
     private systemRequiredExtensions: Set<string> = new Set();
-    private static readonly PREFERRED_APP_KEY = 'preferredAppId';
+    private static readonly PREFERRED_APP_KEY = 'preferredAppName';
     
     /**
      * Register an application with the framework.
@@ -235,15 +244,29 @@ class AppLoaderService {
      * @param options - Optional configuration for registration and auto-starting
      */
     registerApp(app: AppDefinition, options?: RegisterAppOptions): void {
-        if (this.apps.has(app.id)) {
-            logger.warn(`App '${app.id}' is already registered. Overwriting.`);
+        if (options?.hostConfig === true && typeof __RESOLVED_PACKAGE_INFO__ !== 'undefined') {
+            const resolved = __RESOLVED_PACKAGE_INFO__;
+            if (app.name === undefined) app.name = resolved.name;
+            if (app.version === undefined) app.version = resolved.version;
+            if (app.description === undefined) app.description = resolved.description;
+            if (app.dependencies === undefined) app.dependencies = resolved.dependencies;
+            if (app.marketplaceCatalogUrls === undefined) app.marketplaceCatalogUrls = resolved.marketplaceCatalogUrls;
         }
-        
-        this.apps.set(app.id, app);
-        logger.info(`Registered app: ${app.name} (${app.id}) v${app.version}`);
-        
-        if (options?.defaultAppId) {
-            this.defaultAppId = options.defaultAppId;
+        app.name = app.name ?? 'app';
+        app.version = app.version ?? '0.0.0';
+
+        if (this.apps.has(app.name)) {
+            logger.warn(`App '${app.name}' is already registered. Overwriting.`);
+        }
+        if (app.marketplaceCatalogUrls?.length) {
+            app.marketplaceCatalogUrls.forEach((url) => marketplaceRegistry.addCatalogUrl(url).catch(() => {}));
+        }
+
+        this.apps.set(app.name, app);
+        logger.info(`Registered app: ${app.name} v${app.version}`);
+
+        if (options?.defaultAppName) {
+            this.defaultAppName = options.defaultAppName;
         }
         
         if (options?.container) {
@@ -279,11 +302,10 @@ class AppLoaderService {
             
             const app = module.default as AppDefinition;
             
-            if (!app.id || !app.name || !app.version) {
-                throw new Error(`Module at ${url} does not export a valid AppDefinition`);
+            if (!app.name || !app.version) {
+                throw new Error(`Module at ${url} does not export a valid AppDefinition (name and version required)`);
             }
-            
-            logger.info(`Successfully loaded app definition from URL: ${app.name} (${app.id})`);
+            logger.info(`Successfully loaded app definition from URL: ${app.name}`);
             return app;
         } catch (error) {
             logger.error(`Failed to load app from URL ${url}: ${getErrorMessage(error)}`);
@@ -294,7 +316,7 @@ class AppLoaderService {
     /**
      * Start the application loader.
      * Checks URL parameters for app=URL, loads that extension or app if found.
-     * URL parameter has higher precedence than defaultAppId.
+     * URL parameter has higher precedence than defaultAppName.
      * Then loads the default app or first registered app.
      * This method is idempotent - calling it multiple times only starts once.
      */
@@ -338,7 +360,8 @@ class AppLoaderService {
                     try {
                         const app = await this.loadAppFromUrl(appUrl);
                         this.registerApp(app);
-                        await this.loadApp(app.id, this.container);
+                        if (!app.name) throw new Error('App from URL has no name after registration');
+                        await this.loadApp(app.name, this.container);
                         logger.info(`Successfully loaded app from URL: ${appUrl}`);
                         return;
                     } catch (appError) {
@@ -366,16 +389,25 @@ class AppLoaderService {
     }
 
     /**
-     * Load and initialize an application.
-     * 
-     * @param appId - Application identifier (must be already registered)
-     * @param container - Optional DOM element to render into (if provided, auto-renders after loading)
-     * @returns Promise that resolves when app is initialized and rendered
+     * Resolve a path/URL segment to an app name (map key). Matches app.path, app.name, or name ending with /segment.
      */
-    async loadApp(appId: string, container?: HTMLElement): Promise<void> {
-        const app = this.apps.get(appId);
+    private findAppNameBySegment(segment: string): string | undefined {
+        if (this.apps.has(segment)) return segment;
+        for (const app of this.apps.values()) {
+            if (app.path === segment || (app.name && app.name.endsWith('/' + segment))) return app.name ?? undefined;
+        }
+        return undefined;
+    }
+
+    /**
+     * Load and initialize an application.
+     * @param appName - Application name (must be already registered)
+     * @param container - Optional DOM element to render into (if provided, auto-renders after loading)
+     */
+    async loadApp(appName: string, container?: HTMLElement): Promise<void> {
+        const app = this.apps.get(appName);
         if (!app) {
-            throw new Error(`App '${appId}' not found. Make sure it's registered.`);
+            throw new Error(`App '${appName}' not found. Make sure it's registered.`);
         }
         
         logger.info(`Loading app: ${app.name}...`);
@@ -452,15 +484,14 @@ class AppLoaderService {
         }
         
         // Dispatch event for components to react to app changes
-        window.dispatchEvent(new CustomEvent('app-loaded', { detail: { appId: app.id } }));
+        window.dispatchEvent(new CustomEvent('app-loaded', { detail: { appName: app.name } }));
     }
     
     /**
      * Updates document title and favicon from app metadata
      */
     private updateDocumentMetadata(app: AppDefinition): void {
-        // Set document title
-        document.title = app.name;
+        document.title = app.name ?? '';
         
         // Set favicon if provided in metadata
         if (app.metadata?.favicon) {
@@ -543,10 +574,10 @@ class AppLoaderService {
         
         try {
             await appSettings.set(AppLoaderService.PREFERRED_APP_KEY, appId);
-            this.defaultAppId = appId;
+            this.defaultAppName = appId;
             logger.info(`Set preferred app to: ${appId}`);
         } catch (error) {
-            logger.error(`Failed to persist preferred app ID: ${getErrorMessage(error)}`);
+            logger.error(`Failed to persist preferred app: ${getErrorMessage(error)}`);
             throw error;
         }
     }
@@ -554,11 +585,11 @@ class AppLoaderService {
     /**
      * Select which app to load based on priority:
      * 1. appId URL parameter (?appId=...)
-     * 2. App ID from current page URL path (/geospace)
-     * 3. App ID extracted from app URL parameter (?app=...)
+     * 2. App from current page URL path (/geospace)
+     * 3. App from app URL parameter (?app=...)
      * 4. App registered by extension
-     * 5. Preferred app ID from settings
-     * 6. Default app ID
+     * 5. Preferred app from settings
+     * 6. Default app
      * 7. First registered app
      */
     private async selectAppToLoad(options: {
@@ -568,59 +599,62 @@ class AppLoaderService {
         appsBeforeExtension: number;
     }): Promise<string | undefined> {
         const { appIdFromUrl, appIdFromPath, appIdFromAppUrl, appsBeforeExtension } = options;
-        
+
         if (appIdFromUrl) {
-            if (this.apps.has(appIdFromUrl)) {
-                logger.info(`Loading app specified by URL parameter 'appId': ${appIdFromUrl}`);
-                return appIdFromUrl;
+            const name = this.findAppNameBySegment(appIdFromUrl) ?? appIdFromUrl;
+            if (this.apps.has(name)) {
+                logger.info(`Loading app specified by URL parameter 'appId': ${name}`);
+                return name;
             }
-            logger.warn(`App ID '${appIdFromUrl}' from URL parameter not found`);
+            logger.warn(`App '${appIdFromUrl}' from URL parameter not found`);
         }
-        
+
         if (appIdFromPath) {
-            if (this.apps.has(appIdFromPath)) {
+            const name = this.findAppNameBySegment(appIdFromPath);
+            if (name) {
                 logger.info(`Loading app from URL path: ${appIdFromPath}`);
-                return appIdFromPath;
+                return name;
             }
-            logger.debug(`App ID '${appIdFromPath}' from URL path not found, continuing search`);
+            logger.debug(`App for path '${appIdFromPath}' not found, continuing search`);
         }
-        
+
         if (appIdFromAppUrl) {
-            if (this.apps.has(appIdFromAppUrl)) {
-                logger.info(`Loading app using ID extracted from app URL path: ${appIdFromAppUrl}`);
-                return appIdFromAppUrl;
+            const name = this.findAppNameBySegment(appIdFromAppUrl) ?? appIdFromAppUrl;
+            if (this.apps.has(name)) {
+                logger.info(`Loading app using segment from app URL path: ${name}`);
+                return name;
             }
         }
-        
+
         if (this.apps.size > appsBeforeExtension) {
             const newlyRegisteredApps = Array.from(this.apps.values()).slice(appsBeforeExtension);
             if (newlyRegisteredApps.length > 0) {
                 const app = newlyRegisteredApps[0];
-                logger.info(`Loading app registered by extension: ${app.name} (${app.id})`);
-                return app.id;
+                logger.info(`Loading app registered by extension: ${app.name}`);
+                return app.name;
             }
         }
-        
-        const preferredAppId = await this.getPreferredAppId();
-        if (preferredAppId && this.apps.has(preferredAppId)) {
-            logger.info(`Loading preferred app from settings: ${preferredAppId}`);
-            return preferredAppId;
+
+        const preferred = await this.getPreferredAppId();
+        if (preferred && this.apps.has(preferred)) {
+            logger.info(`Loading preferred app from settings: ${preferred}`);
+            return preferred;
         }
-        
-        if (this.defaultAppId) {
-            if (this.apps.has(this.defaultAppId)) {
-                return this.defaultAppId;
-            }
-            logger.warn(`Default app '${this.defaultAppId}' not found`);
+
+        if (this.defaultAppName && this.apps.has(this.defaultAppName)) {
+            return this.defaultAppName;
         }
-        
+        if (this.defaultAppName) {
+            logger.warn(`Default app '${this.defaultAppName}' not found`);
+        }
+
         const registeredApps = this.getRegisteredApps();
         if (registeredApps.length > 0) {
             const app = registeredApps[0];
-            logger.info(`Loading first registered app: ${app.name} (${app.id})`);
-            return app.id;
+            logger.info(`Loading first registered app: ${app.name}`);
+            return app.name;
         }
-        
+
         return undefined;
     }
 }

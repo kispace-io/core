@@ -2,10 +2,6 @@ import { appLoaderService } from "@eclipse-lyra/core";
 
 appLoaderService.registerApp(
     {
-      id: 'dev-standard-app',
-      name: 'Default App',
-      version: '0.0.0',
-      description: 'Default app!space application',
       extensions: [
         '@eclipse-lyra/extension-utils',
         '@eclipse-lyra/extension-command-palette',
@@ -20,5 +16,5 @@ appLoaderService.registerApp(
         '@eclipse-lyra/extension-duckdb',
       ],
     },
-    { autoStart: true }
+    { autoStart: true, hostConfig: true }
   );

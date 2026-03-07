@@ -132,9 +132,8 @@ npm run build:app    # build the default app (depends on core)
 
 1. Use **`packages/app`** as a template: copy it or add a new workspace package.
 2. In your app entry (e.g. `main.ts`):
-   - Call `applyAppHostConfig({ packageInfo, marketplaceCatalogUrls })` if you use marketplace.
    - Import the extensions you need (`@eclipse-lyra/extension-*`).
-   - Call `appLoaderService.registerApp(appDefinition, { autoStart: true })`.
+   - Call `appLoaderService.registerApp(appDefinition, { autoStart: true, hostConfig: true })`. Add `marketplaceCatalogUrls` to the app definition if you use the marketplace.
 3. **App definition** — Minimal example (no Lit in app):
 
 ```ts

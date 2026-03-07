@@ -51,7 +51,14 @@
     "./core/events": {
       "types": "./dist/core/events.d.ts",
       "import": "./dist/core/events.js"
+    },
+    "./vite-plugin-resolve-deps": {
+      "types": "./src/vite-plugin-resolve-deps.ts",
+      "import": "./src/vite-plugin-resolve-deps.ts"
     }
+  },
+  "peerDependencies": {
+    "vite": ">=5"
   },
   "files": [
     "dist",
