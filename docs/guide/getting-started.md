@@ -25,13 +25,26 @@ npm run build:app    # build the default app (depends on core)
 
 The app output is in `packages/app/dist/`.
 
-## Project layout
+## Create a new app
+
+To scaffold a new Eclipse Lyra app (monorepo with app + example extension) without cloning this repo:
+
+```bash
+npm create @eclipse-lyra/app my-app
+cd my-app
+npm run dev
+```
+
+See [Build your own app](/guide/build-your-own-app) for details and for customizing or building from the monorepo.
+
+## Project layout (this repo)
 
 | Path | Role |
 |------|------|
 | `packages/core` (`@eclipse-lyra/core`) | Platform: registries, services, UI parts. Import this in apps and extensions. |
 | `packages/extension-*` | One package per extension (e.g. command palette, Monaco editor, settings). |
-| `packages/app` | Default app: defines the app and imports extensions. Use as a template for your own app. |
+| `packages/app` | Default app in this repo: defines the app and imports extensions. Use as reference when working in the monorepo. |
+| `packages/create-app` | Scaffolder: `npm create @eclipse-lyra/app` generates a new app elsewhere. |
 | Root | Scripts: `dev`, `build`, `build:app`, `test`, `docs:dev`, `docs:build`. |
 
 Next: [Build your own app](/guide/build-your-own-app) or [Concepts: Architecture](/concepts/architecture).

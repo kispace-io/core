@@ -3,7 +3,8 @@
 | Package | Role |
 |---------|------|
 | **@eclipse-lyra/core** | Platform: registries (extensions, contributions, commands), services (workspace, settings, dialogs, tasks, events), UI parts and widgets. Import this in apps and extensions. |
-| **@eclipse-lyra/app** | Default app: defines the app and imports extensions. Use as a template for your own app. |
+| **@eclipse-lyra/create-app** | Scaffolder: run `npm create @eclipse-lyra/app` to generate a new app (monorepo with app + example extension). |
+| **@eclipse-lyra/app** | Default app in this repo: defines the app and imports extensions. Use as reference when working in the monorepo. |
 | **@eclipse-lyra/extension-ai-system** | AI integration (chat, prompts, context). |
 | **@eclipse-lyra/extension-command-palette** | Command palette UI. |
 | **@eclipse-lyra/extension-settings-tree** | Settings tree UI. |

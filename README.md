@@ -17,6 +17,8 @@ Eclipse Lyra provides a TypeScript- and Lit-based web framework for building ext
 
 **Docs:** [https://app.kispace.de/docs/](https://app.kispace.de/docs/)
 
+**DeepWiki Docs**: [talk to the code](https://deepwiki.com/eclipse-lyra/core)
+
 ---
 ## Used by
 
@@ -133,24 +135,15 @@ npm run build:app    # build the default app (depends on core)
 
 ### Create your own app
 
-1. Use **`packages/app`** as a template: copy it or add a new workspace package.
-2. In your app entry (e.g. `main.ts`):
-   - Import the extensions you need (`@eclipse-lyra/extension-*`).
-   - Call `appLoaderService.registerApp(appDefinition, { autoStart: true, hostConfig: true })`. Add `marketplaceCatalogUrls` to the app definition if you use the marketplace.
-3. **App definition** — Minimal example (default layout is `standard`, i.e. IDE):
+Use the official scaffolder to create a new Eclipse Lyra app (monorepo with app + example extension):
 
-```ts
-import { appLoaderService } from '@eclipse-lyra/core';
-
-appLoaderService.registerApp({
-  extensions: ['@eclipse-lyra/extension-command-palette', '@eclipse-lyra/extension-settings-tree', '@eclipse-lyra/extension-ai-system'],
-  layout: 'standard',
-}, { autoStart: true, hostConfig: true });
+```bash
+npm create @eclipse-lyra/app my-app
+cd my-app
+npm run dev
 ```
 
-To add another layout (e.g. dashboard), register a `LayoutContribution` to the `system.layouts` slot (id, name, component, optional onShow). Users switch between layouts via the toolbar layout switcher.
-
-4. Add the app package to the root `package.json` workspaces and run `npm run dev` from the app package or via root scripts.
+This creates a project with **`packages/app`** (the Lyra app) and **`packages/example-extension`** (a sample extension that adds a view to the left sidebar). Customize the app in `packages/app/src/main.ts` (extensions list, logo) and use the example extension as a reference for adding your own extensions.
 
 ---
 
@@ -159,10 +152,9 @@ To add another layout (e.g. dashboard), register a `LayoutContribution` to the `
 - **Lit** — Web components (core and extensions)
 - **TypeScript** — Typed API
 - **WebAwesome** — UI primitives
-- **Monaco** — Code editor (extension)
 - **Vite** — Build and dev server
 
-Other extensions add: Pyodide, WebLLM, RxDB, Xenova transformers, etc.
+Other extensions add: Monaco editor, Pyodide, WebLLM, WebMCP, RxDB, Xenova transformers, etc.
 
 ---
 
@@ -184,7 +176,7 @@ For those comparing frameworks, here is how Eclipse Lyra lines up with Angular, 
 | **Testing** | Vitest (unit tests in core) | Jasmine/Karma or Jest; Angular Testing Library | Jest + React Testing Library; Vitest | Jest/Vitest + Vue Test Utils |
 | **Build / Bundling** | Vite 7; core as library (ES, multiple entries); app as Vite SPA | Angular CLI (esbuild/webpack) | Vite, Create React App, Next.js, etc. | Vite (default), Vue CLI, Nuxt |
 | **Runtime footprint** | **Browser-native** tech stack (Lit, standard DOM, Web APIs); **very lightweight** runtime; no heavy framework runtime layer | Full framework runtime; larger baseline | Small library; ecosystem can add weight | Small core; ecosystem can add weight |
-| **CLI** | None (npm scripts: dev, build, build:app, test) | Angular CLI (generate, build, serve) | Create React App, Vite templates | Vue CLI, create-vue; Nuxt CLI |
+| **CLI** | `npm create @eclipse-lyra/app` (scaffold new app); npm scripts: dev, build, build:app, test | Angular CLI (generate, build, serve) | Create React App, Vite templates | Vue CLI, create-vue; Nuxt CLI |
 | **SSR** | Client-only; no app-level SSR | Angular Universal | Next.js, Remix, etc. | Nuxt, Vite SSR |
 | **Styling / Theming** | WebAwesome themes (theme classes, palettes); CSS in components | Encapsulated CSS; Angular Material theming | CSS Modules, styled-components, Tailwind | Scoped CSS; Vuetify/Quasar theming |
 | **Dependency injection** | Built-in: `rootContext`, `uiContext`; services (appLoader, commandRegistry, workspace, settings, etc.) | Built-in hierarchical injector | Context API or external (Inversify, etc.) | provide/inject (composition API) |
@@ -197,7 +189,7 @@ For those comparing frameworks, here is how Eclipse Lyra lines up with Angular, 
 ### Summary
 
 - **Where Eclipse Lyra aligns**: TypeScript, components, state (signals), i18n, testing (Vitest), Vite build, theming (via WebAwesome), DI, strong typing; **browser-native stack** (Lit, standard DOM, Web APIs) and **lightweight runtime footprint**.
-- **Where Eclipse Lyra differs by design**: No URL routing (IDE-style navigation); no built-in forms/HTTP; no CLI; client-only (no SSR); focus on IDE-like experiences and extensions rather than content-focused SPAs.
+- **Where Eclipse Lyra differs by design**: No URL routing (IDE-style navigation); no built-in forms/HTTP; client-only (no SSR); focus on IDE-like experiences and extensions rather than content-focused SPAs.
 - **Unique to Eclipse Lyra**: Focus on **browser-native, lightweight runtime**; contribution targets (sidebars, toolbars, editor area), command registry + keybindings, extension registry with enable/disable at runtime; **extension marketplace** — install external extensions from catalog URLs; workspace/service layer; **layout contributions** (slot `system.layouts`) with preferred layout and toolbar layout switcher (IDE vs dashboard or custom shells); first-class IDE UX (tabs, resizable layout, file browser, Monaco) and dashboard-style views.
 
 ---

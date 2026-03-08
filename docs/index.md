@@ -19,4 +19,4 @@ Source and issue tracker: [github.com/eclipse-lyra/core](https://github.com/ecli
 
 - [Getting started](/guide/getting-started) — run the default app and build for production.
 - [Concepts](/concepts/architecture) — apps, extensions, contributions, and commands.
-- [Build your own app](/guide/build-your-own-app) — use the default app as a template.
+- [Build your own app](/guide/build-your-own-app) — scaffold with `npm create @eclipse-lyra/app` or set up manually in the monorepo.

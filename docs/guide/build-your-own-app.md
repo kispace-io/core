@@ -1,8 +1,25 @@
 # Build your own app
 
-Use **`packages/app`** as a template: copy it or add a new workspace package.
+## Recommended: scaffold with create-app
 
-## Steps
+The easiest way to start is to scaffold a new app with the official CLI. You get a monorepo with an app package and an example extension.
+
+```bash
+npm create @eclipse-lyra/app my-app
+cd my-app
+npm run dev
+```
+
+This creates a project with:
+
+- **`packages/app`** — The Lyra app (entry point, extension list, logo). Edit `packages/app/src/main.ts` to add or remove extensions and customize the toolbar.
+- **`packages/example-extension`** — A sample extension that adds a view to the left sidebar (same tab bar as the Workspace / file browser). Use it as a reference for your own extensions.
+
+From the new project root: `npm run dev` starts the app, `npm run build` builds it, `npm run preview` previews the production build. See the generated `README.md` in the project for a short overview.
+
+## Alternative: manual setup in the monorepo
+
+If you prefer to work inside the Eclipse Lyra repo or copy the default app by hand:
 
 1. **Create or copy the app package**  
    Add a new package under `packages/` (e.g. `packages/my-app`) or duplicate `packages/app`. Ensure the root `package.json` `workspaces` includes `packages/*`.
