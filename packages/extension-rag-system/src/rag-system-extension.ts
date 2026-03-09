@@ -367,6 +367,7 @@ export default function ragSystemExtension(context: any) {
 
     // Register context menu entry for indexing documents
     contributionRegistry.registerContribution('contextmenu:filebrowser', {
+        name: 'contextmenu.filebrowser.indexDocument',
         command: 'rag-system.index-file',
         icon: 'database',
         label: 'Index Document',

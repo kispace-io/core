@@ -1,7 +1,8 @@
-import {Signal} from "@lit-labs/signals";
-import {TemplateResult} from "lit";
-import {publish} from "./events";
-import {rootContext} from "./di";
+import { Signal } from "@lit-labs/signals";
+import { TemplateResult } from "lit";
+import { publish } from "./events";
+import { rootContext } from "./di";
+import { contributionTargetMappingRegistry } from "./contribution-mapping";
 
 export const TOPIC_CONTRIBUTEIONS_CHANGED = "events/contributionregistry/contributionsChanged"
 
@@ -11,6 +12,8 @@ export interface ContributionChangeEvent {
 }
 
 export interface Contribution {
+    /** Optional globally unique, namespaced contribution name (e.g. "view.filebrowser"). */
+    name?: string;
     target?: string;
     label: string;
     icon?: string;
@@ -58,7 +61,7 @@ class ContributionRegistry {
     private contributions: Map<string, Contribution[]> = new Map();
 
     registerContribution<T extends Contribution>(target: string, contribution: T) {
-        const targetSlot = this.getContributions(target)!
+        const targetSlot = this.getOrCreateSlot(target);
         if ("command" in contribution) {
             const cmd = contribution as unknown as CommandContribution
             if (cmd.disabled instanceof Function) {
@@ -66,14 +69,47 @@ class ContributionRegistry {
             }
         }
         targetSlot.push(contribution);
-        publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target, contributions: targetSlot } as ContributionChangeEvent)
+        publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target, contributions: targetSlot } as ContributionChangeEvent);
+
+        const effectiveTargets = contributionTargetMappingRegistry.getEffectiveTargets(target, contribution);
+        for (const effectiveTarget of effectiveTargets) {
+            if (effectiveTarget === target) continue;
+            const contributionsForSlot = this.getContributions(effectiveTarget);
+            publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target: effectiveTarget, contributions: contributionsForSlot } as ContributionChangeEvent);
+        }
     }
 
+    /**
+     * Returns all contributions whose *effective* targets include the given slot.
+     *
+     * Note: This currently scans all registered contributions and resolves
+     * remaps on each call (O(N) in number of contributions). This is acceptable
+     * for typical Lyra apps (dozens/hundreds of contributions and few slots),
+     * but if contribution counts grow significantly we may want to introduce a
+     * cached index of effective targets per slot to keep lookups O(1).
+     */
     getContributions<T extends Contribution>(target: string): T[] {
-        if (!this.contributions.has(target)) {
-            this.contributions.set(target, [])
+        const results: T[] = [];
+        for (const [originalTarget, list] of this.contributions.entries()) {
+            const typedList = list as T[];
+            for (const contribution of typedList) {
+                const effectiveTargets = contributionTargetMappingRegistry.getEffectiveTargets(originalTarget, contribution);
+                if (effectiveTargets.includes(target)) {
+                    results.push(contribution);
+                }
+            }
         }
-        return this.contributions.get(target)! as T[]
+        if (results.length === 0) {
+            this.getOrCreateSlot(target);
+        }
+        return results;
+    }
+
+    private getOrCreateSlot(target: string): Contribution[] {
+        if (!this.contributions.has(target)) {
+            this.contributions.set(target, []);
+        }
+        return this.contributions.get(target)!;
     }
 }
 

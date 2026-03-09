@@ -105,6 +105,7 @@ Downstream domain-specific apps:
 - **Extensions** — Register with `extensionRegistry`; provide a loader that runs when the extension is enabled. Register commands, contributions, editors, services.
 - **Contributions** — Declarative UI: tabs (sidebars, editor area), toolbar buttons, HTML blocks. Targets include `SIDEBAR_MAIN`, `SIDEBAR_AUXILIARY`, `TOOLBAR_MAIN_RIGHT`, `TOOLBAR_BOTTOM_END`, etc.
 - **Commands** — Id + handlers (with optional `canExecute`). Toolbar/menus reference commands; AI and command palette can execute them.
+- **Contribution remapping (per app)** — Apps can opt into a mapping layer (via `AppDefinition.remaps`) that **decouples where a contribution is defined from where it is rendered**. This allows downstream apps to move or hide platform and extension UI (e.g. moving the AI view from the right sidebar to the left, or disabling it entirely) without forking core or the extension. See the docs under `docs/concepts/contributions.md` for detailed usage.
 
 ---
 

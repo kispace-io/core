@@ -51,4 +51,10 @@ export { persistenceService } from '../core/persistenceservice';
 export { esmShService } from '../core/esmsh-service';
 export type { EsmShSource, EsmShOptions } from '../core/esmsh-service';
 export { i18nLazy, i18n, SYSTEM_LANGUAGE_BUNDLES } from '../core/i18n';
+export {
+    contributionTargetMappingRegistry,
+    overrideContributionTargets,
+    applyConfigNameRemaps,
+    listContributionNameRemaps
+} from '../core/contribution-mapping';
 

@@ -28,8 +28,8 @@ import '@eclipse-lyra/extension-webmcp';
 
 import './dashboard-layout';
 
+import { TOOLBAR_MAIN, appLoaderService, contributionRegistry, type HTMLContribution } from "@eclipse-lyra/core";
 import { html } from "@eclipse-lyra/core/externals/lit";
-import { appLoaderService, contributionRegistry, type HTMLContribution, TOOLBAR_MAIN } from "@eclipse-lyra/core";
 
 contributionRegistry.registerContribution(TOOLBAR_MAIN, {
   label: "Eclipse Lyra",
@@ -54,19 +54,19 @@ contributionRegistry.registerContribution(TOOLBAR_MAIN, {
 
 appLoaderService.registerApp(
     {
-      extensions: [
-        '@eclipse-lyra/extension-utils',
-        '@eclipse-lyra/extension-command-palette',
-        '@eclipse-lyra/extension-command-shell',
-        '@eclipse-lyra/extension-md-editor',
-        '@eclipse-lyra/extension-monaco-editor',
-        '@eclipse-lyra/extension-media-viewer',
-        '@eclipse-lyra/extension-settings-tree',
-        '@eclipse-lyra/extension-memory-usage',
-        '@eclipse-lyra/extension-ai-system',
-        '@eclipse-lyra/extension-webmcp',
-        '@eclipse-lyra/extension-duckdb',
-      ],
+  extensions: [
+    '@eclipse-lyra/extension-utils',
+    '@eclipse-lyra/extension-command-palette',
+    '@eclipse-lyra/extension-command-shell',
+    '@eclipse-lyra/extension-md-editor',
+    '@eclipse-lyra/extension-monaco-editor',
+    '@eclipse-lyra/extension-media-viewer',
+    '@eclipse-lyra/extension-settings-tree',
+    '@eclipse-lyra/extension-memory-usage',
+    '@eclipse-lyra/extension-ai-system',
+    '@eclipse-lyra/extension-webmcp',
+    '@eclipse-lyra/extension-duckdb',
+  ],
     },
     { autoStart: true, hostConfig: true }
   );

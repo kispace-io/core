@@ -208,6 +208,7 @@ registerAll({
     },
     contribution: {
         target: "filebrowser.connections",
+        name: "filebrowser.connections.webdav",
         label: "WebDAV / Cloud Storage",
         icon: "cloud"
     }

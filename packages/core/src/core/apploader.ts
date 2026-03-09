@@ -12,14 +12,16 @@
  * - App Loader: Bridge between framework and application
  */
 
-import {render, TemplateResult, html} from "lit";
-import {rootContext} from "./di";
-import {createLogger} from "./logger";
-import {extensionRegistry, Extension} from "./extensionregistry";
-import {contributionRegistry, Contribution, LayoutContribution} from "./contributionregistry";
-import {SYSTEM_LAYOUTS} from "./constants";
-import {appSettings} from "./settingsservice";
+import { render, TemplateResult, html } from "lit";
+import { rootContext } from "./di";
+import { createLogger } from "./logger";
+import { extensionRegistry, Extension } from "./extensionregistry";
+import { contributionRegistry, Contribution, LayoutContribution, TOPIC_CONTRIBUTEIONS_CHANGED } from "./contributionregistry";
+import { SYSTEM_LAYOUTS } from "./constants";
+import { appSettings } from "./settingsservice";
 import { marketplaceRegistry } from "./marketplaceregistry";
+import { contributionTargetMappingRegistry, type ContributionNameRemap } from "./contribution-mapping";
+import { publish } from "./events";
 
 
 const logger = createLogger('AppLoader');
@@ -209,6 +211,12 @@ export interface AppDefinition {
 
     /** Marketplace catalog URLs for this app. Registered when the app is registered. */
     marketplaceCatalogUrls?: string[];
+
+    /**
+     * Optional contribution remaps for this application.
+     * Allows apps to declaratively remap contributions to different targets.
+     */
+    remaps?: ContributionNameRemap[];
 }
 
 /**
@@ -451,6 +459,19 @@ class AppLoaderService {
             }
         }
         
+        // Apply app-level contribution remaps before registering contributions
+        contributionTargetMappingRegistry.applyAppNameRemaps(app.remaps);
+        if (app.remaps?.length) {
+            const remappedTargets = new Set<string>();
+            for (const r of app.remaps) {
+                for (const t of r.targets) remappedTargets.add(t);
+            }
+            for (const target of remappedTargets) {
+                const contributions = contributionRegistry.getContributions(target);
+                publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target, contributions });
+            }
+        }
+
         // Register app contributions
         if (app.contributions) {
             logger.info('Registering app contributions...');
