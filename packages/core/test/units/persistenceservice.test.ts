@@ -24,10 +24,20 @@ describe('PersistenceService', () => {
     expect(await service.getObject(key)).toEqual(value);
   });
 
-  it('persists and retrieves null', async () => {
-    const key = 'test-null';
+  it('persistObject with null removes the entry', async () => {
+    const key = 'test-delete-null';
+    await service.persistObject(key, { data: 1 });
+    expect(await service.getObject(key)).toEqual({ data: 1 });
     await service.persistObject(key, null);
-    expect(await service.getObject(key)).toBeNull();
+    expect(await service.getObject(key)).toBeUndefined();
+  });
+
+  it('persistObject with undefined removes the entry', async () => {
+    const key = 'test-delete-undefined';
+    await service.persistObject(key, 'value');
+    expect(await service.getObject(key)).toBe('value');
+    await service.persistObject(key, undefined);
+    expect(await service.getObject(key)).toBeUndefined();
   });
 
   it('overwrites existing key', async () => {

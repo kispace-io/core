@@ -2,20 +2,12 @@ import { customElement, property, state } from "lit/decorators.js";
 import { LyraPart } from "@eclipse-lyra/core";
 import { css, html } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
-import { styleMap } from "lit/directives/style-map.js";
-import { EditorInput, EditorContentProvider, toastError, toastInfo, promptDialog, confirmDialog, activePartSignal } from "@eclipse-lyra/core";
+import { EditorInput, EditorContentProvider, toastError, toastInfo, promptDialog, confirmDialog, activePartSignal, publish } from "@eclipse-lyra/core";
 import { LyraMonacoWidget } from "@eclipse-lyra/extension-monaco-editor";
-import { duckdbService, duckdbExtensionManagerService, type DuckDBDatabase, type DuckDBQueryResult } from "./api";
+import { duckdbService, duckdbExtensionManagerService, type DuckDBDatabase } from "./api";
 
 const MAX_TAB_LABEL = 28;
 const DB_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
-
-interface ResultTab {
-  id: string;
-  label: string;
-  sql: string;
-  result: DuckDBQueryResult | { error: string };
-}
 
 function truncateLabel(sql: string): string {
   const oneLine = sql.replace(/\s+/g, " ").trim();
@@ -38,12 +30,6 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
   private initialUri: string | undefined = undefined;
 
   @state()
-  private resultTabs: ResultTab[] = [];
-
-  @state()
-  private activeResultId: string | null = null;
-
-  @state()
   private running = false;
 
   @state()
@@ -53,8 +39,6 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
   private selectedDbName: string | null = null;
 
   private widgetRef = createRef<LyraMonacoWidget>();
-  private tabGroupRef = createRef<HTMLElement & { active: string }>();
-  private tabIdCounter = 0;
   private db: DuckDBDatabase | null = null;
 
   protected async doInitUI() {
@@ -132,10 +116,7 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
     if (this.running) return;
 
     this.running = true;
-    const id = `result-${++this.tabIdCounter}`;
     const label = truncateLabel(sql);
-    this.resultTabs = [...this.resultTabs, { id, label, sql, result: { columns: [], rows: [] } }];
-    this.activeResultId = id;
     this.requestUpdate();
     this.updateToolbar();
 
@@ -152,18 +133,16 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
         this.db = await duckdbService.open(dbName);
       }
       const result = await this.db.runQuery(sql);
-      this.resultTabs = this.resultTabs.map((t) =>
-        t.id === id ? { ...t, result } : t
-      );
+      publish('dataview/publish', {
+        title: label,
+        data: { columns: result.columns, rows: result.rows },
+        source: 'duckdb',
+      });
     } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
-      this.resultTabs = this.resultTabs.map((t) =>
-        t.id === id ? { ...t, result: { error } } : t
-      );
+      toastError(err instanceof Error ? err.message : String(err));
     } finally {
       window.clearTimeout(timeoutId);
       this.running = false;
-      this.activeResultId = id;
       this.requestUpdate();
       this.updateToolbar();
     }
@@ -175,53 +154,6 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
       this.requestUpdate();
       this.updateToolbar();
     }
-  }
-
-  private closeTab(id: string): void {
-    const idx = this.resultTabs.findIndex((t) => t.id === id);
-    if (idx < 0) return;
-    const next = this.resultTabs.filter((t) => t.id !== id);
-    this.resultTabs = next;
-    if (this.activeResultId === id) {
-      const prevIdx = Math.min(idx, next.length - 1);
-      this.activeResultId = next[prevIdx]?.id ?? null;
-    }
-    this.requestUpdate();
-    this.updateToolbar();
-  }
-
-  private renderResultPanel(tab: ResultTab) {
-    if ("error" in tab.result) {
-      return html`
-        <div class="result-error">
-          <pre>${tab.result.error}</pre>
-        </div>
-      `;
-    }
-    const { columns, rows } = tab.result;
-    if (columns.length === 0 && rows.length === 0) {
-      return html`<div class="result-empty">Query returned no rows.</div>`;
-    }
-    return html`
-      <div class="result-table-wrap">
-        <table class="result-table">
-          <thead>
-            <tr>
-              ${columns.map((col) => html`<th>${col}</th>`)}
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(
-              (row) => html`
-                <tr>
-                  ${row.map((cell) => html`<td>${String(cell ?? "")}</td>`)}
-                </tr>
-              `
-            )}
-          </tbody>
-        </table>
-      </div>
-    `;
   }
 
   private onDatabaseChange(e: Event) {
@@ -360,76 +292,22 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
     `;
   }
 
-  protected updated(changedProperties: Map<string, unknown>) {
-    super.updated(changedProperties);
-    if (changedProperties.has("resultTabs") || changedProperties.has("running")) {
-      this.updateToolbar();
-    }
-    const activeId = this.activeResultId ?? this.resultTabs[0]?.id ?? "";
-    if (activeId && this.tabGroupRef.value && this.tabGroupRef.value.active !== activeId) {
-      this.tabGroupRef.value.active = activeId;
-    }
-  }
-
   render() {
     if (this.initialContent === undefined) {
       return html`<div class="editor-placeholder"></div>`;
     }
 
-    const hasResults = this.resultTabs.length > 0;
-    const activeId = this.activeResultId ?? this.resultTabs[0]?.id ?? "";
-
     return html`
-      <wa-split-panel
-        class="editor-split"
-        orientation="vertical"
-        position="60"
-      >
-        <div slot="start" class="editor-area">
-          <lyra-monaco-widget
-            .value=${this.initialContent}
-            .uri=${this.initialUri}
-            .language=${"sql"}
-            .readOnly=${this.readOnly}
-            @content-change=${this._onContentChange}
-            ${ref(this.widgetRef)}
-          ></lyra-monaco-widget>
-        </div>
-        <div slot="end" class="results-area">
-          ${hasResults
-            ? html`
-                <wa-tab-group
-                  class="result-tabs"
-                  .active=${activeId}
-                  ${ref(this.tabGroupRef)}
-                  @wa-tab-show=${(e: CustomEvent<{ name: string }>) => {
-                    this.activeResultId = e.detail?.name ?? null;
-                  }}
-                >
-                  ${this.resultTabs.flatMap((tab) => [
-                    html`<wa-tab panel="${tab.id}">${tab.label}</wa-tab>`,
-                    html`<wa-button
-                      slot="nav"
-                      tabindex="-1"
-                      appearance="plain"
-                      size="small"
-                      class="tab-close"
-                      title="Close tab"
-                      @click=${() => this.closeTab(tab.id)}
-                    >
-                      <wa-icon name="xmark" label="Close"></wa-icon>
-                    </wa-button>`,
-                    html`<wa-tab-panel name="${tab.id}">${this.renderResultPanel(tab)}</wa-tab-panel>`,
-                  ])}
-                </wa-tab-group>
-              `
-            : html`
-                <div class="results-empty">
-                  Run a query to see results in a new tab.
-                </div>
-              `}
-        </div>
-      </wa-split-panel>
+      <div class="editor-area">
+        <lyra-monaco-widget
+          .value=${this.initialContent}
+          .uri=${this.initialUri}
+          .language=${"sql"}
+          .readOnly=${this.readOnly}
+          @content-change=${this._onContentChange}
+          ${ref(this.widgetRef)}
+        ></lyra-monaco-widget>
+      </div>
     `;
   }
 
@@ -444,19 +322,15 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
     .db-select {
       max-width: 10rem;
     }
-    .editor-split {
+    .editor-area {
       flex: 1;
       min-height: 0;
       height: 100%;
-    }
-    .editor-area,
-    .results-area {
-      height: 100%;
-      min-height: 0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
+    .editor-area lyra-monaco-widget,
     .editor-area monaco-widget {
       flex: 1;
       min-height: 0;
@@ -464,66 +338,6 @@ export class LyraDuckDBEditor extends LyraPart implements EditorContentProvider 
     .editor-placeholder {
       flex: 1;
       min-height: 0;
-    }
-    .result-tabs {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    .result-tabs::part(body) {
-      flex: 1;
-      min-height: 0;
-      overflow: auto;
-    }
-    .result-tabs .tab-close {
-      margin-left: -0.25rem;
-      padding: 0.2rem;
-    }
-    .results-empty {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--wa-color-neutral-500, #6b7280);
-      font-size: 0.875rem;
-    }
-    .result-table-wrap {
-      overflow: auto;
-      padding: 0.75rem;
-    }
-    .result-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8125rem;
-    }
-    .result-table th,
-    .result-table td {
-      padding: 0.35rem 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid var(--wa-color-neutral-200, #e5e7eb);
-    }
-    .result-table th {
-      font-weight: 600;
-      background: var(--wa-color-neutral-100, #f3f4f6);
-    }
-    .result-table tbody tr:hover {
-      background: var(--wa-color-neutral-50, #f9fafb);
-    }
-    .result-error {
-      padding: 0.75rem;
-      color: var(--wa-color-red-60, #dc2626);
-      font-family: ui-monospace, monospace;
-      font-size: 0.8125rem;
-    }
-    .result-error pre {
-      margin: 0;
-      white-space: pre-wrap;
-    }
-    .result-empty {
-      padding: 0.75rem;
-      color: var(--wa-color-neutral-500, #6b7280);
-      font-size: 0.875rem;
     }
   `;
 }

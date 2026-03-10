@@ -21,11 +21,19 @@ function getDB(): Promise<IDBDatabase> {
 }
 
 export class PersistenceService {
+  /**
+   * Persists a value under the given key. When value is null or undefined,
+   * the entry for that key is removed (delete semantics).
+   */
   async persistObject(key: string, value: unknown): Promise<void> {
     const db = await getDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
-      const req = tx.objectStore(STORE_NAME).put(value, key);
+      const store = tx.objectStore(STORE_NAME);
+      const req =
+        value === null || value === undefined
+          ? store.delete(key)
+          : store.put(value, key);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });

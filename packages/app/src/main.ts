@@ -13,6 +13,7 @@ import '@eclipse-lyra/extension-utils';
 import '@eclipse-lyra/extension-ai-system';
 import '@eclipse-lyra/extension-command-palette';
 import '@eclipse-lyra/extension-command-shell';
+import '@eclipse-lyra/extension-dataviewer';
 import '@eclipse-lyra/extension-duckdb';
 import '@eclipse-lyra/extension-github-service';
 import '@eclipse-lyra/extension-howto-system';
@@ -65,6 +66,7 @@ appLoaderService.registerApp(
     '@eclipse-lyra/extension-memory-usage',
     '@eclipse-lyra/extension-ai-system',
     '@eclipse-lyra/extension-webmcp',
+    '@eclipse-lyra/extension-dataviewer',
     '@eclipse-lyra/extension-duckdb',
   ],
     },
