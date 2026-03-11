@@ -3,6 +3,7 @@ import { rootContext, uiContext } from './di';
 import { html, render } from 'lit';
 import * as constants from './constants';
 import { toastInfo, toastError, toastWarning } from './toast';
+import { publish, subscribe } from './events';
 
 rootContext.put('constants', constants);
 uiContext.put('html', html);
@@ -10,6 +11,8 @@ uiContext.put('render', render);
 uiContext.put('toastInfo', toastInfo);
 uiContext.put('toastError', toastError);
 uiContext.put('toastWarning', toastWarning);
+uiContext.put('publish', publish);
+uiContext.put('subscribe', subscribe);
 
 // 1. Foundation: logging, persistence, settings
 import './logger';

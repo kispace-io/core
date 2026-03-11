@@ -318,14 +318,12 @@ class ExtensionRegistry {
                 if (module?.default instanceof Function) {
                     logger.debug(`Executing extension function for: ${extensionId}`)
                     try {
-                        module?.default(uiContext.getProxy())
+                        module.default(uiContext.getProxy())
                         logger.debug(`Extension function executed successfully: ${extensionId}`)
                     } catch (error) {
                         logger.error(`Error executing extension function for ${extensionId}: ${error}`)
                         throw error
                     }
-                } else {
-                    logger.warn(`Extension ${extensionId} does not export a default function`)
                 }
                 
                 logger.debug(`Extension loaded: ${extensionId}`)
