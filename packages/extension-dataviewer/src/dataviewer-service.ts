@@ -1,7 +1,7 @@
-import { persistenceService, subscribe } from '@eclipse-lyra/core';
+import { persistenceService, subscribe, publish } from '@eclipse-lyra/core';
 import { v4 } from '@eclipse-lyra/core/externals/third-party';
 import type { DataView } from './api';
-import { TOPIC_DATAVIEW_PUBLISH } from './api';
+import { TOPIC_DATAVIEW_PUBLISH, TOPIC_DATAVIEW_ADDED } from './api';
 
 const KEY_PREFIX = 'dataview/';
 const KEY_INDEX = KEY_PREFIX + 'index';
@@ -9,6 +9,7 @@ const KEY_INDEX = KEY_PREFIX + 'index';
 export interface DataviewListEntry {
   storageKey: string;
   title: string;
+  source?: string;
   createdAt: number;
 }
 
@@ -37,8 +38,9 @@ export class DataviewerService {
     await persistenceService.persistObject(KEY_PREFIX + storageKey, entry);
     const index = (await persistenceService.getObject(KEY_INDEX)) as IndexEntry[] | undefined;
     const list = Array.isArray(index) ? index : [];
-    list.push({ storageKey, title: payload.title, createdAt });
+    list.push({ storageKey, title: payload.title, source: payload.source, createdAt });
     await persistenceService.persistObject(KEY_INDEX, list);
+    publish(TOPIC_DATAVIEW_ADDED, { storageKey, title: payload.title, createdAt });
   }
 
   async listViews(): Promise<DataviewListEntry[]> {

@@ -4,6 +4,7 @@ import { PropertyValues, TemplateResult, nothing } from "lit";
 import { partDirtySignal, activePartSignal } from "../core/appstate";
 import { CommandStack } from "../core/commandregistry";
 import { TabContribution } from "../core/contributionregistry";
+import type { LyraTabs } from "./tabs";
 
 export abstract class LyraPart extends LyraContainer {
     @property()
@@ -61,6 +62,38 @@ export abstract class LyraPart extends LyraContainer {
             bubbles: true,
             composed: true
         }));
+    }
+
+    /**
+     * Activates the tab that contains this part by walking up the DOM to the first
+     * lyra-tabs ancestor and activating the tab panel that contains this part.
+     * Crosses Shadow DOM boundaries (e.g. wa-tab-group) via getRootNode().host.
+     * No-op if this part is not inside a lyra-tabs / wa-tab-panel.
+     */
+    protected activateContainingTab(): void {
+        let el: Element | null = this;
+        let panelName: string | null = null;
+        let tabsEl: Element | null = null;
+        while (el) {
+            const tag = el.tagName?.toLowerCase();
+            if (tag === 'wa-tab-panel') {
+                panelName = el.getAttribute('name');
+            }
+            if (tag === 'lyra-tabs') {
+                tabsEl = el;
+                break;
+            }
+            const parent: Element | null = el.parentElement;
+            if (parent) {
+                el = parent;
+            } else {
+                const root = el.getRootNode();
+                el = root instanceof ShadowRoot ? (root.host as Element) : null;
+            }
+        }
+        if (tabsEl && panelName != null && panelName !== '') {
+            (tabsEl as LyraTabs).activate(panelName);
+        }
     }
 
     /**

@@ -12,3 +12,4 @@ export interface DataView {
 }
 
 export const TOPIC_DATAVIEW_PUBLISH = 'dataview/publish';
+export const TOPIC_DATAVIEW_ADDED = 'dataview/added';

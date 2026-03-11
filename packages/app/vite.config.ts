@@ -46,7 +46,7 @@ export default defineConfig({
     alias: workspaceSourceAliases(),
   },
   optimizeDeps: {
-    exclude: ['@eclipse-lyra/core'],
+    exclude: ['@eclipse-lyra/core', '@electric-sql/pglite'],
   },
   server: {
     watch: {

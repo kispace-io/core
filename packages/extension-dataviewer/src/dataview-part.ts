@@ -1,10 +1,10 @@
 import { customElement, property, state } from 'lit/decorators.js';
 import { css, html } from 'lit';
-import { LyraPart } from '@eclipse-lyra/core';
-import { toastError } from '@eclipse-lyra/core';
+import { LyraPart, toastError } from '@eclipse-lyra/core';
 import { dataviewerService, type DataviewListEntry } from './dataviewer-service';
 import type { DataView } from './api';
-import { TOPIC_DATAVIEW_PUBLISH } from './api';
+import { TOPIC_DATAVIEW_ADDED } from './api';
+import { when } from '@eclipse-lyra/core/externals/lit';
 
 @customElement('lyra-dataview')
 export class DataViewPart extends LyraPart {
@@ -23,12 +23,20 @@ export class DataViewPart extends LyraPart {
   @state()
   private loadingList = true;
 
+  @state()
+  private autoActivateTab = true;
+
   private get displayed(): DataView | null {
     return this.selectedView ?? this.dataview;
   }
 
   protected async doInitUI() {
-    this.subscribe(TOPIC_DATAVIEW_PUBLISH, () => this.refreshPersistedList(true));
+    const persisted = await this.getDialogSetting();
+    if (persisted && typeof persisted.autoActivateTab === 'boolean') this.autoActivateTab = persisted.autoActivateTab;
+    this.subscribe(TOPIC_DATAVIEW_ADDED, async () => {
+      await this.refreshPersistedList(true);
+      if (this.autoActivateTab) this.activateContainingTab();
+    });
     await this.refreshPersistedList(false);
   }
 
@@ -62,6 +70,7 @@ export class DataViewPart extends LyraPart {
     if (!key) {
       this.selectedView = null;
       this.requestUpdate();
+      this.updateToolbar();
       return;
     }
     try {
@@ -71,6 +80,15 @@ export class DataViewPart extends LyraPart {
       this.selectedView = null;
     }
     this.requestUpdate();
+    this.updateToolbar();
+  }
+
+  private async onAutoActivateChange(e: Event): Promise<void> {
+    const checked = (e.target as HTMLInputElement).checked;
+    this.autoActivateTab = checked;
+    const current = (await this.getDialogSetting()) ?? {};
+    await this.setDialogSetting({ ...current, autoActivateTab: checked });
+    this.updateToolbar();
   }
 
   private async onHistorySelect(e: CustomEvent<{ item?: { value?: string } }>): Promise<void> {
@@ -106,9 +124,10 @@ export class DataViewPart extends LyraPart {
       (selectedMeta?.createdAt ?? (current as any)?.createdAt)
         ? new Date(selectedMeta?.createdAt ?? (current as any)?.createdAt).toLocaleString()
         : null;
-    const currentLabel = formattedCreatedAt ? `${baseTitle} (${formattedCreatedAt})` : baseTitle;
+    const engineLabel = current?.source ?? null;
+    const titleWithEngine = engineLabel ? `${baseTitle} · ${engineLabel}` : baseTitle;
+    const currentLabel = formattedCreatedAt ? `${titleWithEngine} (${formattedCreatedAt})` : titleWithEngine;
     return html`
-        <span>${currentLabel}</span>
         <wa-dropdown
           placement="bottom-start"
           distance="4"
@@ -133,7 +152,7 @@ export class DataViewPart extends LyraPart {
           ${this.persistedList.map(
             (entry) => html`
               <wa-dropdown-item value=${entry.storageKey}>
-                ${entry.title}
+                ${entry.source ? `${entry.title} · ${entry.source}` : entry.title}
                 ${entry.createdAt
                   ? html`<span style="opacity: 0.7; margin-left: 0.5rem; font-size: 0.75em;">
                       (${new Date(entry.createdAt).toLocaleString()})
@@ -152,6 +171,20 @@ export class DataViewPart extends LyraPart {
             `
           )}
         </wa-dropdown>
+
+        <wa-divider orientation="vertical"></wa-divider>
+
+        <wa-switch
+          ?checked=${this.autoActivateTab}
+          size="small"
+          title="Switch to this tab when new results arrive"
+          @change=${(e: Event) => this.onAutoActivateChange(e)}
+          style="margin-top: 0.5rem;"
+        >
+          Auto-show
+        </wa-switch>
+
+        ${when(current, () => html`<wa-divider orientation="vertical"></wa-divider><span>${currentLabel}</span>`)}
     `;
   }
 
