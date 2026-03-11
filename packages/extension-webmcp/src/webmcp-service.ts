@@ -6,7 +6,6 @@ import {
 } from "@eclipse-lyra/core";
 import { ToolRegistry, type ToolDefinition } from "@eclipse-lyra/extension-ai-system/api";
 import type { Command } from "@eclipse-lyra/core";
-import type { InputSchema } from "@mcp-b/webmcp-types";
 
 export class WebMCPService {
   private readonly toolRegistry = new ToolRegistry();
@@ -15,9 +14,6 @@ export class WebMCPService {
   private commandSubscriptionToken: ReturnType<typeof subscribe> | null = null;
 
   async start(): Promise<void> {
-    await this.ensureModelContext();
-    if (!navigator.modelContext) return;
-
     const initialCommands = Object.values(commandRegistry.listCommands()) as Command[];
     for (const command of initialCommands) {
       this.registerCommand(command);
@@ -33,25 +29,20 @@ export class WebMCPService {
       unsubscribe(this.commandSubscriptionToken);
       this.commandSubscriptionToken = null;
     }
-    if (typeof navigator !== "undefined" && navigator.modelContext) {
-      this.registeredNames.forEach((name) => navigator.modelContext!.unregisterTool(name));
+    const modelContext = navigator.modelContext;
+    if (modelContext) {
+      this.registeredNames.forEach((name) => modelContext.unregisterTool(name));
     }
     this.registeredNames.clear();
     this.registeredIds.clear();
   }
 
-  private async ensureModelContext(): Promise<void> {
-    if (typeof navigator === "undefined") return;
-    if (navigator.modelContext) return;
-    await import("@mcp-b/global");
-  }
-
   private toolDefToInputSchema(
     params: ToolDefinition["function"]["parameters"]
-  ): InputSchema {
+  ): { type: "object"; properties?: Record<string, unknown>; required?: string[] } {
     return {
       type: "object",
-      properties: params.properties as InputSchema["properties"],
+      properties: params.properties,
       required: params.required,
     };
   }
@@ -64,7 +55,8 @@ export class WebMCPService {
 
   private registerCommand(command: Command): void {
     if (this.registeredIds.has(command.id)) return;
-    if (!navigator.modelContext) return;
+    const modelContext = navigator.modelContext;
+    if (!modelContext) return;
 
     const schemaContext = commandRegistry.createExecutionContext?.() ?? {};
     const toolDef = this.toolRegistry.commandToTool(command, schemaContext) as ToolDefinition;
@@ -72,7 +64,7 @@ export class WebMCPService {
     const toolName = toolDef.function.name;
     const toTextContent = (t: string) => this.textContent(t);
 
-    navigator.modelContext.registerTool({
+    modelContext.registerTool({
       name: toolName,
       description: toolDef.function.description,
       inputSchema: this.toolDefToInputSchema(toolDef.function.parameters),

@@ -29,8 +29,8 @@
     "build:extensions": "node scripts/build-extensions.cjs"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
     "typedoc": "^0.27.0",
+    "typescript": "^5.9.3",
     "vite": "^7.1.12"
   }
 }

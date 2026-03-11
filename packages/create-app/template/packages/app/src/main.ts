@@ -14,7 +14,8 @@ import '@eclipse-lyra/extension-command-palette';
 import '@eclipse-lyra/extension-notebook';
 import '@eclipse-lyra/extension-python-runtime';
 
-import 'example-extension';
+// Eagerly import all local extensions so they can register with the extension registry.
+void import.meta.glob('../../extension-*/src/index.ts', { eager: true });
 
 import { appLoaderService, contributionRegistry, type HTMLContribution, TOOLBAR_MAIN } from '@eclipse-lyra/core';
 
