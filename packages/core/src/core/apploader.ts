@@ -499,8 +499,15 @@ class AppLoaderService {
         const extensionsSet = new Set<string>(app.extensions || []);
         this.systemRequiredExtensions.forEach(extId => extensionsSet.add(extId));
         app.extensions = Array.from(extensionsSet);
+
+        // At this point, all core/built-in extension modules and app contributions
+        // have been registered. It is now safe for the extension registry to
+        // load any extensions that are marked as enabled in settings (including
+        // persisted external extensions).
+        await extensionRegistry.loadEnabledExtensions();
         
-        // Enable new app's extensions (after contributions are registered)
+        // Enable new app's extensions (after contributions are registered and
+        // any globally enabled extensions have been loaded)
         if (app.extensions.length > 0) {
             logger.info(`Enabling ${app.extensions.length} extensions...`);
             app.extensions.forEach(extId => {

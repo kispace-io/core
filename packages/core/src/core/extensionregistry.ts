@@ -90,19 +90,12 @@ class ExtensionRegistry {
             this.checkExtensionsConfig().then()
         })
 
-        // Load persisted external extensions first, then load enabled extensions
+        // Initialize settings and load metadata for persisted external extensions.
+        // Actual extension loading is triggered by the app loader (app.extensions)
+        // and explicit calls to enable()/load(), so we avoid eagerly loading any
+        // extensions before an app has started.
         this.loadPersistedExternalExtensions().then(() => {
-            this.checkExtensionsConfig().then(async () => {
-                const loadPromises = this.extensionsSettings
-                    ?.filter(setting => this.isEnabled(setting.id))
-                    .map(setting => 
-                        this.load(setting.id).catch(e => {
-                            toastError("Extension could not be loaded: " + e.message)
-                        })
-                    ) || []
-                
-                await Promise.all(loadPromises)
-            })
+            this.checkExtensionsConfig().then()
         })
     }
 
@@ -217,6 +210,28 @@ class ExtensionRegistry {
 
     getExtensions(): Extension[] {
         return Object.values(this.extensions)
+    }
+
+    /**
+     * Load all extensions that are currently marked as enabled in settings.
+     * This is intended to be called by the app loader once an app has started,
+     * after all extension modules have had a chance to register themselves.
+     */
+    public async loadEnabledExtensions(): Promise<void> {
+        await this.checkExtensionsConfig();
+        const settings = this.extensionsSettings ?? [];
+        const loadPromises = settings
+            // Only attempt to load extensions that are:
+            // - marked as enabled, and
+            // - already registered in this.extensions (either built-in or persisted external).
+            .filter(setting => this.isEnabled(setting.id) && this.extensions[setting.id])
+            .map(setting =>
+                this.load(setting.id).catch(e => {
+                    toastError("Extension could not be loaded: " + e.message);
+                }),
+            );
+
+        await Promise.all(loadPromises);
     }
 
     public isEnabled(extensionId: string) {

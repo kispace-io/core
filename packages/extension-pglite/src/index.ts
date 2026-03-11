@@ -7,5 +7,7 @@ extensionRegistry.registerExtension({
   description: 'In-browser PostgreSQL via PGlite',
   loader: () => import('./pglite-extension'),
   icon: 'database',
+  dependencies: ['@eclipse-lyra/extension-sqleditor'],
+  experimental: true,
 });
 

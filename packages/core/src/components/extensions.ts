@@ -369,53 +369,57 @@ export class LyraExtensions extends LyraPart {
                     </div>
                 </wa-dialog>
             `)}
-            <wa-split-panel position="30" style="height: 100%">
-                <wa-tree 
-                    selection="leaf"
-                    style="--indent-guide-width: 1px;" 
-                    slot="start"
-                    @wa-selection-change="${this.selectionChanged}">
-                    ${hasAnyExtensions ? html`
-                        ${grouped.enabled.length > 0 ? html`
-                            <wa-tree-item expanded>
-                                <span>
-                                    <wa-icon name="check-circle" style="color: var(--wa-color-success-50);"></wa-icon>
-                                    ${t.INSTALLED} (${grouped.enabled.length})
-                                </span>
-                                ${grouped.enabled.map(e => {
-                                    const isExternal = this.isExternalExtension(e);
-                                    return html`
-                                        <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
-                                            <span><lyra-icon name="${e.icon}"></lyra-icon></span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
-                                        </wa-tree-item>
-                                    `;
-                                })}
-                            </wa-tree-item>
-                        ` : ''}
-                        ${grouped.available.length > 0 ? html`
-                            <wa-tree-item expanded>
-                                <span>
-                                    <wa-icon name="circle" style="color: var(--wa-color-neutral-50);"></wa-icon>
-                                    ${t.AVAILABLE} (${grouped.available.length})
-                                </span>
-                                ${grouped.available.map(e => {
-                                    const isExternal = this.isExternalExtension(e);
-                                    return html`
-                                        <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
-                                            <span><lyra-icon name="${e.icon}"></lyra-icon></span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
-                                        </wa-tree-item>
-                                    `;
-                                })}
-                            </wa-tree-item>
-                        ` : ''}
-                    ` : ''}
-                    ${!hasAnyExtensions ? html`
-                        <div style="padding: 1em; text-align: center; opacity: 0.7;">
-                            ${t.NO_MATCHES({ filterText: this.filterText })}
-                        </div>
-                    ` : ''}
-                </wa-tree>
-                <div slot="end" style="padding: 1em;">
+            <wa-split-panel position="30" class="extensions-split-panel">
+                <div slot="start" class="extensions-tree-panel">
+                    <wa-scroller class="extensions-tree-scroller" orientation="vertical">
+                        <wa-tree 
+                            selection="leaf"
+                            style="--indent-guide-width: 1px;" 
+                            @wa-selection-change="${this.selectionChanged}">
+                            ${hasAnyExtensions ? html`
+                                ${grouped.enabled.length > 0 ? html`
+                                    <wa-tree-item expanded>
+                                        <span>
+                                            <wa-icon name="check-circle" style="color: var(--wa-color-success-50);"></wa-icon>
+                                            ${t.INSTALLED} (${grouped.enabled.length})
+                                        </span>
+                                        ${grouped.enabled.map(e => {
+                                            const isExternal = this.isExternalExtension(e);
+                                            return html`
+                                                <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
+                                                    <span><lyra-icon name="${e.icon}"></lyra-icon></span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
+                                                </wa-tree-item>
+                                            `;
+                                        })}
+                                    </wa-tree-item>
+                                ` : ''}
+                                ${grouped.available.length > 0 ? html`
+                                    <wa-tree-item expanded>
+                                        <span>
+                                            <wa-icon name="circle" style="color: var(--wa-color-neutral-50);"></wa-icon>
+                                            ${t.AVAILABLE} (${grouped.available.length})
+                                        </span>
+                                        ${grouped.available.map(e => {
+                                            const isExternal = this.isExternalExtension(e);
+                                            return html`
+                                                <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
+                                                    <span><lyra-icon name="${e.icon}"></lyra-icon></span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
+                                                </wa-tree-item>
+                                            `;
+                                        })}
+                                    </wa-tree-item>
+                                ` : ''}
+                            ` : ''}
+                            ${!hasAnyExtensions ? html`
+                                <div style="padding: 1em; text-align: center; opacity: 0.7;">
+                                    ${t.NO_MATCHES({ filterText: this.filterText })}
+                                </div>
+                            ` : ''}
+                        </wa-tree>
+                    </wa-scroller>
+                </div>
+                <wa-scroller slot="end" class="extensions-detail-scroller" orientation="vertical">
+                <div class="extensions-detail-content">
                     ${when(this.selectedExtension, (e) => {
                             const isExternal = this.isExternalExtension(e);
                             const isEnabled = extensionRegistry.isEnabled(e.id);
@@ -518,12 +522,44 @@ export class LyraExtensions extends LyraPart {
                             `;
                         })}
                 </div>
+                </wa-scroller>
             </wa-split-panel>
         `
     }
 
     static styles = css`
         :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .extensions-split-panel {
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .extensions-tree-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .extensions-tree-scroller {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .extensions-detail-scroller {
+            height: 100%;
+            min-height: 0;
+        }
+
+        .extensions-detail-content {
+            padding: 1em;
         }
 
         wa-tree-item > span {
