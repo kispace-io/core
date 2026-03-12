@@ -17,10 +17,11 @@ const isExternal = (id: string): boolean => {
   return true;
 };
 
-/** Emit portable specifiers so consumers resolve @electric-sql/pglite from their node_modules. */
+/** Emit portable specifiers: pglite → package name, package.json → relative path. */
 const outputPath = (id: string): string => {
   if (isPgliteEntry(id)) return id;
   if (id.includes('@electric-sql/pglite')) return PGLITE_PKG;
+  if (id.endsWith('package.json')) return '../package.json';
   return id;
 };
 
