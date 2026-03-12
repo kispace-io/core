@@ -5,17 +5,23 @@ import path from 'path';
 import dts from 'vite-plugin-dts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const PGLITE_PKG = '@electric-sql/pglite';
+
+const isPgliteEntry = (id: string): boolean =>
+  id === PGLITE_PKG || id.startsWith(`${PGLITE_PKG}/`);
+
 const isExternal = (id: string): boolean => {
-  // Bundle @electric-sql/pglite into this extension so consumers
-  // don't need to depend on it separately.
-  if (id === '@electric-sql/pglite' || id.startsWith('@electric-sql/pglite/')) {
-    return false;
-  }
-  return (
-    !id.startsWith('./') &&
-    !id.startsWith('../') &&
-    !(path.isAbsolute(id) && id.includes('/src/'))
-  );
+  if (id.startsWith('./') || id.startsWith('../')) return false;
+  if (path.isAbsolute(id) && id.includes('/src/')) return false;
+  if (isPgliteEntry(id)) return true;
+  return true;
+};
+
+/** Emit portable specifiers so consumers resolve @electric-sql/pglite from their node_modules. */
+const outputPath = (id: string): string => {
+  if (isPgliteEntry(id)) return id;
+  if (id.includes('@electric-sql/pglite')) return PGLITE_PKG;
+  return id;
 };
 
 export default defineConfig({
@@ -37,6 +43,7 @@ export default defineConfig({
       external: isExternal,
       output: {
         format: 'es',
+        paths: outputPath,
       },
     },
     outDir: 'dist',
