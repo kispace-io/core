@@ -11,5 +11,4 @@ extensionRegistry.registerExtension({
   icon: "file-pen",
 });
 
-export { MONACO_EDITOR_TOOLBAR_TARGET_PREFIX } from './monaco-toolbar-constants';
-export { LyraMonacoWidget } from './monaco-widget';
+export const MONACO_EDITOR_TOOLBAR_TARGET_PREFIX = 'toolbar:system.monaco-editor';

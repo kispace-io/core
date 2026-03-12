@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="packages/app/public/lyra-logo.svg" alt="Eclipse Lyra" width="280" />
+  <img src="packages/app/public/logo.svg" alt="Eclipse Lyra" width="280" />
 </p>
 
 <p align="center">

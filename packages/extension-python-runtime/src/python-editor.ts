@@ -4,7 +4,7 @@ import { css, html } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { EditorInput, EditorContentProvider, workspaceService } from "@eclipse-lyra/core";
-import { LyraMonacoWidget } from "@eclipse-lyra/extension-monaco-editor";
+import { LyraMonacoWidget } from '@eclipse-lyra/extension-monaco-editor/widget';
 import { PyEnv, pythonPackageManagerService } from "./api";
 import { parsePackagesFromContent, contentWithPackagesLine } from "./editor-python-run";
 import { toastError } from "@eclipse-lyra/core";

@@ -1,8 +1,3 @@
-import Pace from 'pace-js';
-import 'pace-js/themes/blue/pace-theme-minimal.css';
-
-Pace.start();
-
 import { TOOLBAR_MAIN, appLoaderService, contributionRegistry, type HTMLContribution } from '@eclipse-lyra/core';
 import { html } from '@eclipse-lyra/core/externals/lit';
 void import.meta.glob('../../extension-*/src/index.ts', { eager: true });
@@ -22,7 +17,7 @@ contributionRegistry.registerContribution(TOOLBAR_MAIN, {
       "
     >
       <img
-        src="/lyra-logo.svg"
+        src="/logo.svg"
         alt="Eclipse Lyra"
         style="display: block; height: 28px; width: auto;"
       />
@@ -30,6 +25,7 @@ contributionRegistry.registerContribution(TOOLBAR_MAIN, {
   `,
 } as HTMLContribution);
 
+const appRoot = document.getElementById('app-root') ?? document.body;
 appLoaderService.registerApp(
   {
     name: 'Eclipse Lyra',
@@ -48,5 +44,5 @@ appLoaderService.registerApp(
       '@eclipse-lyra/extension-dataviewer',
     ],
   },
-  { autoStart: true, hostConfig: true },
+  { autoStart: true, hostConfig: true, container: appRoot },
 );

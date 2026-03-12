@@ -431,12 +431,18 @@ class AppLoaderService {
      * @param appName - Application name (must be already registered)
      * @param container - Optional DOM element to render into (if provided, auto-renders after loading)
      */
+    private dispatchLoadProgress(message: string): void {
+        window.dispatchEvent(new CustomEvent('app-load-progress', { detail: { message } }));
+    }
+
     async loadApp(appName: string, container?: HTMLElement): Promise<void> {
         const app = this.apps.get(appName);
         if (!app) {
             throw new Error(`App '${appName}' not found. Make sure it's registered.`);
         }
-        
+
+        this.dispatchLoadProgress('Starting…');
+
         // Dispose current app if exists
         if (this.currentApp) {
             logger.info(`Disposing current app: ${this.currentApp.name}`);
@@ -500,30 +506,34 @@ class AppLoaderService {
         // have been registered. It is now safe for the extension registry to
         // load any extensions that are marked as enabled in settings (including
         // persisted external extensions).
+        this.dispatchLoadProgress('Loading extensions…');
         await extensionRegistry.loadEnabledExtensions();
-        
+
         // Enable new app's extensions (after contributions are registered and
         // any globally enabled extensions have been loaded)
         if (app.extensions.length > 0) {
+            this.dispatchLoadProgress('Enabling extensions…');
             app.extensions.forEach(extId => {
                 extensionRegistry.enable(extId);
             });
         }
-        
+
         // Initialize new app
         if (app.initialize) {
+            this.dispatchLoadProgress('Initializing…');
             logger.info(`Initializing ${app.name}...`);
             await app.initialize();
         }
-        
+
         this.currentApp = app;
         logger.info(`App ${app.name} loaded successfully`);
         this.preferredLayoutId = await this.getPreferredLayoutId();
         this.updateDocumentMetadata(app);
         if (container) {
+            this.dispatchLoadProgress('Rendering layout…');
             this.renderApp(container);
         }
-        
+
         // Dispatch event for components to react to app changes
         window.dispatchEvent(new CustomEvent('app-loaded', { detail: { appName: app.name } }));
     }

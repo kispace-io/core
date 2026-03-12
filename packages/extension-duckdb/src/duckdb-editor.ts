@@ -3,7 +3,7 @@ import { LyraPart } from "@eclipse-lyra/core";
 import { css, html } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { EditorInput, EditorContentProvider, toastError, toastInfo, promptDialog, confirmDialog, activePartSignal, publish } from "@eclipse-lyra/core";
-import { LyraMonacoWidget } from "@eclipse-lyra/extension-monaco-editor";
+import { LyraMonacoWidget } from '@eclipse-lyra/extension-monaco-editor/widget';
 import { duckdbService, duckdbExtensionManagerService, type DuckDBDatabase } from "./api";
 
 const MAX_TAB_LABEL = 28;

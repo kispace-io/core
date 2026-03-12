@@ -7,7 +7,7 @@ import type {
 } from '@eclipse-lyra/extension-sqleditor';
 import { css, html } from 'lit';
 import { createRef, ref } from 'lit/directives/ref.js';
-import { LyraMonacoWidget } from '@eclipse-lyra/extension-monaco-editor';
+import { LyraMonacoWidget } from '@eclipse-lyra/extension-monaco-editor/widget';
 
 const MAX_TAB_LABEL = 28;
 

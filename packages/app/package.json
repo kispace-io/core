@@ -33,8 +33,7 @@
     "@eclipse-lyra/extension-utils": "*",
     "@eclipse-lyra/extension-webdav": "*",
     "@eclipse-lyra/extension-webllm": "*",
-    "@eclipse-lyra/extension-webmcp": "*",
-    "pace-js": "^1.2.4"
+    "@eclipse-lyra/extension-webmcp": "*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

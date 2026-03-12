@@ -1,4 +1,4 @@
-import { PGlite } from '@electric-sql/pglite';
+import type { PGlite } from '@electric-sql/pglite';
 import type {
   SqlAdapterContribution,
   SqlConnectionInfo,
@@ -10,6 +10,11 @@ import {
   toastInfo,
   promptDialog,
 } from '@eclipse-lyra/core';
+
+async function createPglite(persistentId?: string): Promise<PGlite> {
+  const { PGlite: PGliteCtor } = await import('@electric-sql/pglite');
+  return persistentId ? new PGliteCtor(`idb://${persistentId}`) : new PGliteCtor();
+}
 const PGLITE_DB_SETTING_KEY = 'pglite.databases';
 const DB_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
 
@@ -54,13 +59,8 @@ class PgliteSqlDatabase implements SqlDatabase {
       await this.db.close();
     }
     this.db = null;
-    if (id === null) {
-      this.db = new PGlite();
-      this.currentId = null;
-    } else {
-      this.db = new PGlite(`idb://${id}`);
-      this.currentId = id;
-    }
+    this.db = await createPglite(id ?? undefined);
+    this.currentId = id;
   }
 
   async runQuery(sql: string): Promise<{ columns: string[]; rows: unknown[][] }> {

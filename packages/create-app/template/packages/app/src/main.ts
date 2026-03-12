@@ -1,8 +1,3 @@
-import Pace from 'pace-js';
-import 'pace-js/themes/blue/pace-theme-minimal.css';
-
-Pace.start();
-
 import { appLoaderService, contributionRegistry, type HTMLContribution, TOOLBAR_MAIN } from '@eclipse-lyra/core';
 void import.meta.glob('../../extension-*/src/index.ts', { eager: true });
 
@@ -12,6 +7,7 @@ contributionRegistry.registerContribution(TOOLBAR_MAIN, {
   component: '<span style="margin-right: 1rem;">{{APP_NAME}}</span>',
 } as HTMLContribution);
 
+const appRoot = document.getElementById('app-root') ?? document.body;
 appLoaderService.registerApp(
   {
     extensions: [
@@ -26,5 +22,5 @@ appLoaderService.registerApp(
       'example-extension',
     ],
   },
-  { autoStart: true, hostConfig: true }
+  { autoStart: true, hostConfig: true, container: appRoot },
 );

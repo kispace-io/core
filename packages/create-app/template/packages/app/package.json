@@ -21,8 +21,7 @@
     "@eclipse-lyra/extension-python-runtime": "^0.x",
     "@eclipse-lyra/extension-settings-tree": "^0.x",
     "@eclipse-lyra/extension-utils": "^0.x",
-    "example-extension": "*",
-    "pace-js": "^1.2.4"
+    "example-extension": "*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

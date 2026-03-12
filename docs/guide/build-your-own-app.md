@@ -15,6 +15,10 @@ This creates a project with:
 - **`packages/app`** — The Lyra app (entry point, extension list, logo). Edit `packages/app/src/main.ts` to add or remove extensions and customize the toolbar.
 - **`packages/example-extension`** — A sample extension that adds a view to the left sidebar (same tab bar as the Workspace / file browser). Use it as a reference for your own extensions.
 
+### Customizing the logo
+
+The splash screen and toolbar use **`public/logo.svg`**. To brand your app, replace this file with your own SVG (keep the name `logo.svg`). The same asset is shown on the loading overlay and in the main toolbar; no code changes are required.
+
 From the new project root: `npm run dev` starts the app, `npm run build` builds it, `npm run preview` previews the production build. See the generated `README.md` in the project for a short overview.
 
 ## Alternative: manual setup in the monorepo
@@ -56,6 +60,7 @@ Use `layout: { id: 'standard', props: { 'show-bottom-panel': true } }` to parame
 To add another layout (e.g. dashboard), register a **LayoutContribution** to the `SYSTEM_LAYOUTS` slot (`id`, `name`, `component`, optional `onShow`). Users switch between layouts via the toolbar layout switcher.
 
 5. **Run and build**  
-   From the repo root: `npm run dev` (or run the app package's dev script). For production: `npm run build` then build the app package; output will be in the app's `dist/`.
+   From the repo root: `npm run dev` (or run the app package's dev script). For production: `npm run build` then build the app package; output will be in the app's `dist/`.  
+   For branding, add or replace **`public/logo.svg`** in the app package; it is used for the loading splash and the main toolbar.
 
 See [Concepts: Apps](/concepts/apps) for all `AppDefinition` options and layout registration.

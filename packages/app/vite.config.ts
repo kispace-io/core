@@ -34,6 +34,12 @@ function workspaceSourceAliases(): Record<string, string> {
     if (!existsSync(path.join(srcDir, 'index.ts'))) continue;
     if (pkg.exports?.['./api']) alias[`${pkg.name}/api`] = path.join(srcDir, 'api.ts');
     alias[pkg.name] = path.join(srcDir, 'index.ts');
+    const exports = pkg.exports && typeof pkg.exports === 'object' ? pkg.exports : {};
+    for (const [key, value] of Object.entries(exports)) {
+      if (key === '.' || !key.startsWith('./')) continue;
+      const target = typeof value === 'string' ? value : (value as { import?: string })?.import;
+      if (target?.startsWith('./src/')) alias[pkg.name + key] = path.join(pkgDir, target);
+    }
   }
 
   return alias;
@@ -80,6 +86,13 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
+      },
+      output: {
+        manualChunks(id) {
+          if (id.includes('monaco-editor')) return 'monaco';
+          if (id.includes('@electric-sql/pglite') || id.includes('pglite')) return 'pglite';
+          if (id.includes('node_modules')) return 'vendor';
+        },
       },
     },
   },
