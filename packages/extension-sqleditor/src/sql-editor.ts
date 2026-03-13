@@ -5,6 +5,7 @@ import type {
   SqlConnectionInfo,
   SqlDatabase,
 } from '@eclipse-lyra/extension-sqleditor';
+import { sqlExtensionManagerService } from './sql-extension-manager';
 import { css, html } from 'lit';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { LyraMonacoWidget } from '@eclipse-lyra/extension-monaco-editor/widget';
@@ -165,6 +166,55 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     this.updateToolbar();
   }
 
+  private async onEngineDropdownSelect(
+    e: CustomEvent<{ item?: { value?: string } }>,
+  ): Promise<void> {
+    const value = e.detail?.item?.value ?? '';
+    if (this.selectedEngineId === value) return;
+    this.selectedEngineId = value || null;
+    await this.refreshConnections();
+    this.requestUpdate();
+    this.updateToolbar();
+  }
+
+  private async onConnectionDropdownSelect(
+    e: CustomEvent<{ item?: { value?: string } }>,
+  ): Promise<void> {
+    const value = e.detail?.item?.value ?? '';
+    const next = value === '' ? null : value;
+    if (this.selectedConnectionId === next) return;
+    this.selectedConnectionId = next;
+    const engineId = this.selectedEngineId;
+    if (!engineId) return;
+    const db = await this.getOrLoadDatabase(engineId);
+    if (!db) return;
+    await db.selectConnection(next);
+    this.requestUpdate();
+    this.updateToolbar();
+  }
+
+  private async deleteConnectionById(e: Event, id: string | null): Promise<void> {
+    e.stopPropagation();
+    e.preventDefault();
+    const engineId = this.selectedEngineId;
+    if (!engineId) return;
+    const db = await this.getOrLoadDatabase(engineId);
+    if (!db || !db.deleteConnection) return;
+    const connectionLabel =
+      this.availableConnections.find((info) => info.id === id)?.label ??
+      (id === null ? 'In-memory' : id ?? 'Current connection');
+    const ok = await confirmDialog(`Delete connection "${connectionLabel}"?`);
+    if (!ok) return;
+    if (id !== null) {
+      await db.deleteConnection(id);
+    } else {
+      await db.selectConnection(null);
+    }
+    await this.refreshConnections();
+    this.requestUpdate();
+    this.updateToolbar();
+  }
+
   private _onContentChange = () => {
     this.markDirty(true);
   };
@@ -212,9 +262,9 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
   }
 
   private async runQuery(useSelectionOnly = false): Promise<void> {
-    const sql = useSelectionOnly
-      ? this.getSelection()?.trim()
-      : (this.getSelection()?.trim() || this.getContent()?.trim());
+    const selection = this.getSelection()?.trim();
+    const content = this.getContent()?.trim();
+    const sql = useSelectionOnly ? selection : content;
     if (!sql) {
       toastError(useSelectionOnly ? 'No selection to run' : 'No SQL to run');
       return;
@@ -310,39 +360,123 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     this.updateToolbar();
   }
 
+  private getCurrentConnectionLabel(): string | null {
+    const id = this.selectedConnectionId;
+    if (id === null) return 'In-memory';
+    if (!id) return null;
+    const info = this.availableConnections.find((c) => c.id === id);
+    return info?.label ?? id;
+  }
+
+  private async openExtensionManager(): Promise<void> {
+    const engineId = this.selectedEngineId;
+    if (!engineId) return;
+    const db = await this.getOrLoadDatabase(engineId);
+    if (!db || !db.listDbExtensions) {
+      toastInfo('Extensions are not available for the selected SQL engine.');
+      return;
+    }
+    const adapter =
+      this.availableAdapters.find((c) => c.id === engineId) ?? null;
+    const engineLabel = adapter?.label ?? engineId;
+    const connectionLabel = this.getCurrentConnectionLabel();
+    const databaseLabel = connectionLabel
+      ? `${engineLabel} – ${connectionLabel}`
+      : engineLabel;
+    sqlExtensionManagerService.showExtensionManager({
+      db,
+      databaseLabel,
+    });
+  }
+
   protected renderToolbar() {
-    const engineValue = this.selectedEngineId ?? '';
-    const connectionValue = this.selectedConnectionId ?? '';
     const adapters = this.availableAdapters;
     const hasEngines = adapters.length > 0;
     const hasConnections = this.availableConnections.length > 0;
+    const engineId = this.selectedEngineId;
+    const dbForEngine = engineId ? this.databases.get(engineId) : null;
+    const supportsExtensions = Boolean(dbForEngine?.listDbExtensions);
 
     return html`
-      <wa-select
+      <wa-dropdown
         class="engine-select"
+        placement="bottom-start"
+        distance="4"
         size="small"
-        .value=${engineValue}
-        title="SQL engine"
-        @change=${(e: Event) => void this.onEngineChange(e)}
+        @wa-select=${(e: CustomEvent) => void this.onEngineDropdownSelect(e)}
       >
+        <wa-button
+          slot="trigger"
+          appearance="plain"
+          size="small"
+          with-caret
+          title="SQL engine"
+        >
+          ${this.selectedEngineId
+            ? adapters.find((a) => a.id === this.selectedEngineId)?.label ??
+              this.selectedEngineId
+            : 'Select engine'}
+        </wa-button>
         ${adapters.map(
-          (adapter) =>
-            html`<wa-option value=${adapter.id}>${adapter.label}</wa-option>`,
+          (adapter) => html`
+            <wa-dropdown-item
+              value=${adapter.id}
+              type="checkbox"
+              ?checked=${adapter.id === this.selectedEngineId}
+            >
+              ${adapter.label}
+            </wa-dropdown-item>
+          `,
         )}
-      </wa-select>
-      <wa-select
+      </wa-dropdown>
+      <wa-dropdown
         class="connection-select"
+        placement="bottom-start"
+        distance="4"
         size="small"
-        .value=${connectionValue}
-        title="Connection"
-        ?disabled=${!hasEngines || !hasConnections}
-        @change=${(e: Event) => void this.onConnectionChange(e)}
+        @wa-select=${(e: CustomEvent) =>
+          void this.onConnectionDropdownSelect(e)}
       >
+        <wa-button
+          slot="trigger"
+          appearance="plain"
+          size="small"
+          with-caret
+          title="Connection"
+          ?disabled=${!hasEngines || !hasConnections}
+        >
+          ${this.selectedConnectionId === null
+            ? 'In-memory'
+            : this.availableConnections.find(
+                (c) => c.id === this.selectedConnectionId,
+              )?.label ?? 'Select connection'}
+        </wa-button>
         ${this.availableConnections.map(
-          (info) =>
-            html`<wa-option value=${info.id ?? ''}>${info.label}</wa-option>`,
+          (info) => html`
+            <wa-dropdown-item
+              value=${info.id ?? ''}
+              type="checkbox"
+              ?checked=${info.id === this.selectedConnectionId}
+            >
+              ${info.label}
+              <wa-button
+                slot="details"
+                appearance="plain"
+                size="small"
+                title=${info.id === null
+                  ? 'Reset in-memory connection'
+                  : 'Delete connection'}
+                @click=${(e: Event) => this.deleteConnectionById(e, info.id)}
+              >
+                <wa-icon
+                  name=${info.id === null ? 'rotate-right' : 'trash'}
+                  label=${info.id === null ? 'Reset' : 'Delete'}
+                ></wa-icon>
+              </wa-button>
+            </wa-dropdown-item>
+          `,
         )}
-      </wa-select>
+      </wa-dropdown>
       <wa-button
         size="small"
         appearance="plain"
@@ -351,14 +485,20 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
       >
         <wa-icon name="plus" label="New"></wa-icon>
       </wa-button>
-      <wa-button
-        size="small"
-        appearance="plain"
-        title="Delete connection"
-        @click=${() => void this.deleteConnection()}
-      >
-        <wa-icon name="trash" label="Delete"></wa-icon>
-      </wa-button>
+      ${supportsExtensions
+        ? html`
+            <wa-button
+              size="small"
+              appearance="plain"
+              title="Manage extensions"
+              ?disabled=${!hasEngines || !hasConnections}
+              @click=${() => void this.openExtensionManager()}
+            >
+              <wa-icon name="puzzle-piece" label="Extensions"></wa-icon>
+              Extensions
+            </wa-button>
+          `
+        : null}
       <wa-button
         size="small"
         appearance="plain"

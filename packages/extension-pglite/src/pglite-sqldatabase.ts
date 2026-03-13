@@ -3,6 +3,7 @@ import type {
   SqlAdapterContribution,
   SqlConnectionInfo,
   SqlDatabase,
+  SqlDatabaseExtensionInfo,
 } from '@eclipse-lyra/extension-sqleditor';
 import {
   appSettings,
@@ -10,10 +11,24 @@ import {
   toastInfo,
   promptDialog,
 } from '@eclipse-lyra/core';
+import {
+  listPgliteExtensions,
+  loadPgliteExtensionModule,
+} from './pglite-extensions';
 
-async function createPglite(persistentId?: string): Promise<PGlite> {
+async function createPglite(
+  persistentId?: string,
+  extensions?: Record<string, unknown>,
+): Promise<PGlite> {
   const { PGlite: PGliteCtor } = await import('@electric-sql/pglite');
-  return persistentId ? new PGliteCtor(`idb://${persistentId}`) : new PGliteCtor();
+  const options =
+    extensions && Object.keys(extensions).length > 0 ? { extensions } : {};
+  const AnyPGlite = PGliteCtor as unknown as {
+    new (dataDirOrOptions?: unknown, optionsOrUndefined?: unknown): PGlite;
+  };
+  return persistentId
+    ? new AnyPGlite(`idb://${persistentId}`, options)
+    : new AnyPGlite(options);
 }
 const PGLITE_DB_SETTING_KEY = 'pglite.databases';
 const DB_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
@@ -33,6 +48,7 @@ class PgliteSqlDatabase implements SqlDatabase {
 
   private db: PGlite | null = null;
   private currentId: string | null = null;
+  private enabledExtensions = new Set<string>();
 
   get currentConnectionId(): string | null {
     return this.currentId;
@@ -59,7 +75,8 @@ class PgliteSqlDatabase implements SqlDatabase {
       await this.db.close();
     }
     this.db = null;
-    this.db = await createPglite(id ?? undefined);
+    const extensions = await this.resolveEnabledExtensions();
+    this.db = await createPglite(id ?? undefined, extensions);
     this.currentId = id;
   }
 
@@ -120,6 +137,70 @@ class PgliteSqlDatabase implements SqlDatabase {
     if (this.currentId === id) {
       await this.close();
     }
+  }
+
+  async listDbExtensions(): Promise<SqlDatabaseExtensionInfo[]> {
+    if (!this.db) {
+      await this.selectConnection(null);
+    }
+    if (!this.db) {
+      return listPgliteExtensions().map<SqlDatabaseExtensionInfo>((def) => ({
+        id: def.id,
+        label: def.label,
+        description: def.description,
+        installed: false,
+      }));
+    }
+
+    const result = await this.db.query('SELECT extname FROM pg_extension');
+    const rows = Array.isArray(result.rows)
+      ? (result.rows as Record<string, unknown>[])
+      : [];
+    const installedNames = new Set(
+      rows
+        .map((row) => row.extname)
+        .filter((name): name is string => typeof name === 'string'),
+    );
+
+    return listPgliteExtensions().map<SqlDatabaseExtensionInfo>((def) => ({
+      id: def.id,
+      label: def.label,
+      description: def.description,
+      installed: installedNames.has(def.id),
+    }));
+  }
+
+  async enableDbExtension(id: string): Promise<void> {
+    this.enabledExtensions.add(id);
+    if (this.db) {
+      await this.db.close?.();
+      this.db = null;
+    }
+    await this.selectConnection(this.currentId ?? null);
+    if (!this.db) return;
+    const db = this.db as PGlite;
+    await db.query(`CREATE EXTENSION IF NOT EXISTS ${id};`);
+  }
+
+  private async resolveEnabledExtensions(): Promise<
+    Record<string, unknown> | undefined
+  > {
+    if (!this.enabledExtensions.size) {
+      return undefined;
+    }
+    const entries: [string, unknown][] = await Promise.all(
+      [...this.enabledExtensions].map(
+        async (extId): Promise<[string, unknown]> => [
+          extId,
+          await loadPgliteExtensionModule(extId),
+        ],
+      ),
+    );
+    const result: Record<string, unknown> = {};
+    for (const [extId, ext] of entries) {
+      result[extId] = ext;
+    }
+    return result;
   }
 }
 

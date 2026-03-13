@@ -2,13 +2,8 @@ import {
   duckdbService,
   DuckDBDatabase,
 } from './duckdb-service';
-import {
-  duckdbExtensionManagerService,
-  DUCKDB_AVAILABLE_EXTENSIONS,
-} from './duckdb-extension-manager';
 import type {
   SqlAdapterContribution,
-  SqlAdapterAction,
   SqlConnectionInfo,
   SqlDatabase,
   SqlDatabaseExtensionInfo,
@@ -19,6 +14,7 @@ class DuckdbSqlDatabase implements SqlDatabase {
 
   private current: DuckDBDatabase | null = null;
   private currentId: string | null = null;
+  private enabledExtensions = new Set<string>();
 
   get currentConnectionId(): string | null {
     return this.currentId;
@@ -81,33 +77,64 @@ class DuckdbSqlDatabase implements SqlDatabase {
     await duckdbService.delete(id);
   }
 
-  extraActions: SqlAdapterAction[] = [
-    {
-      id: 'duckdb.extensions',
-      label: 'DuckDB extensions',
-      icon: 'puzzle-piece',
-      run: async () => {
-        const db = this.current;
-        const label = this.currentId ?? 'In-memory';
-        duckdbExtensionManagerService.showExtensionManager({
-          db,
-          databaseLabel: label,
-        });
-      },
-    },
-  ];
-
   async listDbExtensions(): Promise<SqlDatabaseExtensionInfo[]> {
-    return DUCKDB_AVAILABLE_EXTENSIONS.map((ext) => ({
-      id: ext.name,
-      label: ext.name,
-      description: ext.description,
-    }));
+    if (!this.current) {
+      await this.selectConnection(null);
+    }
+    if (!this.current) {
+      return [];
+    }
+
+    try {
+      const result = await this.current.runQuery(
+        'SELECT extension_name, installed, loaded, description FROM duckdb_extensions();',
+      );
+      const nameIndex = result.columns.indexOf('extension_name');
+      if (nameIndex === -1) {
+        return [];
+      }
+      const installedIndex = result.columns.indexOf('installed');
+      const loadedIndex = result.columns.indexOf('loaded');
+      const descriptionIndex = result.columns.indexOf('description');
+
+      return result.rows.map<SqlDatabaseExtensionInfo>((row) => {
+        const cells = row as unknown[];
+        const id = String(cells[nameIndex] ?? '').trim();
+        const installedValue =
+          installedIndex >= 0 ? cells[installedIndex] : undefined;
+        const loadedValue =
+          loadedIndex >= 0 ? cells[loadedIndex] : undefined;
+        const descriptionValue =
+          descriptionIndex >= 0 ? cells[descriptionIndex] : undefined;
+        const isInstalledFromDb =
+          loadedValue === true ||
+          loadedValue === 1 ||
+          loadedValue === 't' ||
+          loadedValue === 'true' ||
+          installedValue === true ||
+          installedValue === 1 ||
+          installedValue === 't' ||
+          installedValue === 'true';
+        const isInstalled =
+          isInstalledFromDb || this.enabledExtensions.has(id);
+
+        return {
+          id,
+          label: id,
+          description:
+            typeof descriptionValue === 'string' ? descriptionValue : undefined,
+          installed: isInstalled,
+        };
+      });
+    } catch {
+      return [];
+    }
   }
 
   async enableDbExtension(id: string): Promise<void> {
     if (!this.current) return;
     await this.current.enableExtension(id);
+    this.enabledExtensions.add(id);
   }
 
   async close(): Promise<void> {
