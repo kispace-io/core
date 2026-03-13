@@ -34,7 +34,7 @@ import './webdav-commands';
 // Register WebDAV as a workspace contribution
 workspaceService.registerContribution({
     type: 'webdav',
-    name: 'WebDAV (Cloud Storage)',
+    name: 'webdav',
     
     canHandle(input: any): boolean {
         // Accept any connection info with a URL (credentials are optional for public/shared folders)
@@ -48,7 +48,7 @@ workspaceService.registerContribution({
             displayName: extractWorkspaceNameFromUrl(input.url),
             isDirectory: true
         };
-        return new WebDAVDirectoryResource(client, rootResource);
+        return new WebDAVDirectoryResource(client, rootResource, undefined, input);
     },
     
     async restore(data: WebDAVConnectionInfo) {
@@ -63,7 +63,7 @@ workspaceService.registerContribution({
                 displayName: extractWorkspaceNameFromUrl(data.url),
                 isDirectory: true
             };
-            return new WebDAVDirectoryResource(client, rootResource);
+            return new WebDAVDirectoryResource(client, rootResource, undefined, data);
         } catch (error) {
             logger.error('Failed to restore WebDAV workspace:', error);
             return undefined;
@@ -71,18 +71,16 @@ workspaceService.registerContribution({
     },
     
     async persist(workspace) {
-        // Extract connection info from the workspace
         if (workspace instanceof WebDAVDirectoryResource) {
-            const client = workspace.getClient();
-            const baseUrl = client.getBaseUrl();
-            
-            // Note: We can't extract username/password from the client after creation
-            // This is a security limitation - credentials should be re-requested on restore
-            // For now, we'll store a placeholder that will require re-authentication
+            const connectionInfo = workspace.getConnectionInfo();
+            if (!connectionInfo) {
+                return null;
+            }
+
             return {
-                url: baseUrl,
-                username: '',  // Will need re-authentication
-                password: ''   // Will need re-authentication
+                url: connectionInfo.url,
+                ...(connectionInfo.username !== undefined ? { username: connectionInfo.username } : {}),
+                ...(connectionInfo.password !== undefined ? { password: connectionInfo.password } : {})
             };
         }
         return null;

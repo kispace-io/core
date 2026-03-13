@@ -1,13 +1,14 @@
-import { 
-    File, 
-    Directory, 
-    Resource, 
-    GetResourceOptions, 
-    FileContentsOptions, 
+import {
+    File,
+    Directory,
+    Resource,
+    GetResourceOptions,
+    FileContentsOptions,
     FileContentType,
-    TOPIC_WORKSPACE_CHANGED 
+    TOPIC_WORKSPACE_CHANGED,
+    workspaceService
 } from '@eclipse-lyra/core';
-import { WebDAVClient, WebDAVResource } from './webdav-client';
+import { WebDAVClient, WebDAVResource, type WebDAVConnectionInfo } from './webdav-client';
 import { publish } from '@eclipse-lyra/core';
 
 export class WebDAVFileResource extends File {
@@ -52,7 +53,7 @@ export class WebDAVFileResource extends File {
 
     async saveContents(contents: any, _options?: FileContentsOptions): Promise<void> {
         await this.client.putFile(this.resource.href, contents);
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 
     async size(): Promise<number | null> {
@@ -61,7 +62,7 @@ export class WebDAVFileResource extends File {
 
     async delete(): Promise<void> {
         await this.client.deleteResource(this.resource.href);
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 
     async copyTo(targetPath: string): Promise<void> {
@@ -86,7 +87,7 @@ export class WebDAVFileResource extends File {
         this.resource.href = newPath;
         this.resource.displayName = newName;
         
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 }
 
@@ -95,12 +96,14 @@ export class WebDAVDirectoryResource extends Directory {
     private resource: WebDAVResource;
     private parent?: Directory;
     private children?: Map<string, Resource>;
+    private connectionInfo?: WebDAVConnectionInfo;
 
-    constructor(client: WebDAVClient, resource: WebDAVResource, parent?: Directory) {
+    constructor(client: WebDAVClient, resource: WebDAVResource, parent?: Directory, connectionInfo?: WebDAVConnectionInfo) {
         super();
         this.client = client;
         this.resource = resource;
         this.parent = parent;
+        this.connectionInfo = connectionInfo;
     }
 
     getName(): string {
@@ -173,7 +176,7 @@ export class WebDAVDirectoryResource extends Directory {
                         };
                         next = new WebDAVFileResource(this.client, newResource, currentResource);
                         currentResource.children.set(segment, next);
-                        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+                        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
                         return next;
                     }
                 }
@@ -197,7 +200,7 @@ export class WebDAVDirectoryResource extends Directory {
         const fullPath = this.buildPath(this.resource.href, name);
         await this.client.deleteResource(fullPath);
         this.children?.delete(name);
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 
     async copyTo(targetPath: string): Promise<void> {
@@ -220,11 +223,11 @@ export class WebDAVDirectoryResource extends Directory {
         this.resource.href = newPath;
         this.resource.displayName = newName;
         
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 
     touch(): void {
-        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
+        publish(TOPIC_WORKSPACE_CHANGED, workspaceService.getWorkspaceSync() ?? this.getWorkspace());
     }
 
     private buildPath(basePath: string, segment: string): string {
@@ -235,6 +238,20 @@ export class WebDAVDirectoryResource extends Directory {
 
     getClient(): WebDAVClient {
         return this.client;
+    }
+
+    /**
+     * Returns the connection info that was used to create this workspace root.
+     * For non-root directories this may be undefined and we fall back to the base URL.
+     */
+    getConnectionInfo(): WebDAVConnectionInfo | undefined {
+        if (this.connectionInfo) {
+            return this.connectionInfo;
+        }
+
+        return {
+            url: this.client.getBaseUrl()
+        };
     }
 }
 

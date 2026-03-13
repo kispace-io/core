@@ -185,7 +185,7 @@ export class LyraFileBrowser extends LyraPart {
                 if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
                     continue
                 }
-                const child = await this.resourceToTreeNode(childResource, true);
+                const child = await this.resourceToTreeNode(childResource, true, forceRefreshChildren);
                 node.children.push(child);
             }
             node.children.sort(treeNodeComparator)

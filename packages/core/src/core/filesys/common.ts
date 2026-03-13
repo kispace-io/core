@@ -246,6 +246,7 @@ export class WorkspaceService {
     private currentType?: string;
     private contributions: Map<string, WorkspaceContribution> = new Map();
     private initPromise: Promise<void>;
+    private restoredTypes: Set<string> = new Set();
 
     getWorkspaceSync(): Directory | undefined {
         return this._currentWorkspace;
@@ -261,6 +262,7 @@ export class WorkspaceService {
 
     registerContribution(contribution: WorkspaceContribution): void {
         this.contributions.set(contribution.type, contribution);
+        void this.tryRestoreForContribution(contribution);
     }
 
     getContributions(): WorkspaceContribution[] {
@@ -268,6 +270,64 @@ export class WorkspaceService {
     }
 
     private static readonly DEFAULT_INDEXEDDB_FOLDER_NAME = 'My Folder';
+
+    private async tryRestoreForContribution(contribution: WorkspaceContribution): Promise<void> {
+        await this.initPromise;
+
+        if (this.restoredTypes.has(contribution.type)) {
+            return;
+        }
+
+        if (this.folders.some(f => f.type === contribution.type)) {
+            this.restoredTypes.add(contribution.type);
+            return;
+        }
+
+        const raw = await persistenceService.getObject(LEGACY_WORKSPACE_KEY) as PersistedWorkspaceData | null;
+        if (!raw?.folders || !Array.isArray(raw.folders)) {
+            this.restoredTypes.add(contribution.type);
+            return;
+        }
+
+        const toRestore = raw.folders.filter(f => f.type === contribution.type);
+        if (toRestore.length === 0) {
+            this.restoredTypes.add(contribution.type);
+            return;
+        }
+
+        for (const folder of toRestore) {
+            if (!contribution.restore) {
+                continue;
+            }
+
+            try {
+                const dir = await contribution.restore(folder.data);
+                if (!dir) {
+                    continue;
+                }
+
+                this.folders.push({ type: contribution.type, data: folder.data, directory: dir });
+            } catch (error) {
+                logger.warn(`Failed to restore folder (${contribution.type}) on contribution registration:`, error);
+            }
+        }
+
+        if (this.folders.length === 0) {
+            this.restoredTypes.add(contribution.type);
+            return;
+        }
+
+        const composite = this.buildComposite();
+        this.workspace = Promise.resolve(composite);
+        this._currentWorkspace = composite ?? undefined;
+        await this.persistFolders();
+        if (composite) {
+            publish(TOPIC_WORKSPACE_CONNECTED, composite);
+            logger.debug(`Workspace folders restored for contribution type: ${contribution.type}`);
+        }
+
+        this.restoredTypes.add(contribution.type);
+    }
 
     private async loadPersistedWorkspace(resolveInit: () => void): Promise<void> {
         logger.debug('Restoring workspace from persistence');

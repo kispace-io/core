@@ -124,7 +124,8 @@ export class WebDAVClient {
         
         const resources: WebDAVResource[] = [];
         responses.forEach(response => {
-            const href = response.querySelector('href')?.textContent || '';
+            const hrefText = response.querySelector('href')?.textContent || '';
+            const href = new URL(hrefText, this.baseUrl).href;
             const displayName = response.querySelector('displayname')?.textContent || '';
             const resourceType = response.querySelector('resourcetype');
             const isDirectory = !!resourceType?.querySelector('collection');
