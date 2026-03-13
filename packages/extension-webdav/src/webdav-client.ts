@@ -1,5 +1,3 @@
-import axios, { AxiosInstance } from 'axios';
-
 export interface WebDAVConnectionInfo {
     url: string;
     username?: string;
@@ -17,29 +15,15 @@ export interface WebDAVResource {
 }
 
 export class WebDAVClient {
-    private axios: AxiosInstance;
     private baseUrl: string;
+    private authHeader?: string;
 
     constructor(connectionInfo: WebDAVConnectionInfo) {
         this.baseUrl = connectionInfo.url;
-        
-        const config: any = {
-            baseURL: connectionInfo.url,
-            headers: {
-                'Content-Type': 'application/xml',
-            },
-            maxRedirects: 5  // Follow redirects
-        };
-        
-        // Include auth if username is provided (password can be empty for public shares)
         if (connectionInfo.username !== undefined) {
-            config.auth = {
-                username: connectionInfo.username,
-                password: connectionInfo.password || ''
-            };
+            const raw = `${connectionInfo.username}:${connectionInfo.password ?? ''}`;
+            this.authHeader = `Basic ${btoa(raw)}`;
         }
-        
-        this.axios = axios.create(config);
     }
 
     async propfind(path: string, depth: number = 1): Promise<WebDAVResource[]> {
@@ -55,66 +39,102 @@ export class WebDAVClient {
                 </d:prop>
             </d:propfind>`;
 
-        const response = await this.axios.request({
+        const response = await fetch(new URL(path, this.baseUrl).href, {
             method: 'PROPFIND',
-            url: path,
-            headers: {
-                'Depth': depth.toString()
-            },
-            data: requestBody
+            headers: this.buildHeaders({
+                'Depth': depth.toString(),
+                'Content-Type': 'application/xml'
+            }),
+            body: requestBody
         });
 
-        return this.parseMultiStatus(response.data);
+        if (!response.ok) {
+            throw new Error(`WebDAV PROPFIND failed with status ${response.status}`);
+        }
+
+        const xml = await response.text();
+        return this.parseMultiStatus(xml);
     }
 
-    async getFile(path: string): Promise<ArrayBuffer> {
-        const response = await this.axios.get(path, {
-            responseType: 'arraybuffer'
+    async getFile(path: string): Promise<Blob> {
+        const response = await fetch(new URL(path, this.baseUrl).href, {
+            method: 'GET',
+            headers: this.buildHeaders()
         });
-        return response.data;
+        if (!response.ok) {
+            throw new Error(`WebDAV GET failed with status ${response.status}`);
+        }
+        return await response.blob();
     }
 
     async putFile(path: string, content: string | Blob | ArrayBuffer): Promise<void> {
-        await this.axios.put(path, content, {
-            headers: {
+        const body = typeof content === 'string' ? new Blob([content]) : content;
+        const response = await fetch(new URL(path, this.baseUrl).href, {
+            method: 'PUT',
+            headers: this.buildHeaders({
                 'Content-Type': 'application/octet-stream'
-            }
+            }),
+            body
         });
+        if (!response.ok) {
+            throw new Error(`WebDAV PUT failed with status ${response.status}`);
+        }
     }
 
     async deleteResource(path: string): Promise<void> {
-        await this.axios.delete(path);
+        const response = await fetch(new URL(path, this.baseUrl).href, {
+            method: 'DELETE',
+            headers: this.buildHeaders()
+        });
+        if (!response.ok) {
+            throw new Error(`WebDAV DELETE failed with status ${response.status}`);
+        }
     }
 
     async createDirectory(path: string): Promise<void> {
-        await this.axios.request({
+        const response = await fetch(new URL(path, this.baseUrl).href, {
             method: 'MKCOL',
-            url: path
+            headers: this.buildHeaders()
         });
+        if (!response.ok) {
+            throw new Error(`WebDAV MKCOL failed with status ${response.status}`);
+        }
     }
 
     async moveResource(fromPath: string, toPath: string): Promise<void> {
         const destination = new URL(toPath, this.baseUrl).href;
-        await this.axios.request({
+        const response = await fetch(new URL(fromPath, this.baseUrl).href, {
             method: 'MOVE',
-            url: fromPath,
-            headers: {
+            headers: this.buildHeaders({
                 'Destination': destination,
                 'Overwrite': 'F'
-            }
+            })
         });
+        if (!response.ok) {
+            throw new Error(`WebDAV MOVE failed with status ${response.status}`);
+        }
     }
 
     async copyResource(fromPath: string, toPath: string): Promise<void> {
         const destination = new URL(toPath, this.baseUrl).href;
-        await this.axios.request({
+        const response = await fetch(new URL(fromPath, this.baseUrl).href, {
             method: 'COPY',
-            url: fromPath,
-            headers: {
+            headers: this.buildHeaders({
                 'Destination': destination,
                 'Overwrite': 'F'
-            }
+            })
         });
+        if (!response.ok) {
+            throw new Error(`WebDAV COPY failed with status ${response.status}`);
+        }
+    }
+
+    private buildHeaders(extra?: Record<string, string>): HeadersInit {
+        const headers: Record<string, string> = { ...(extra ?? {}) };
+        if (this.authHeader) {
+            headers['Authorization'] = this.authHeader;
+        }
+        return headers;
     }
 
     private parseMultiStatus(xml: string): WebDAVResource[] {

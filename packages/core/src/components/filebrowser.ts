@@ -17,7 +17,7 @@ import { HIDE_DOT_RESOURCE } from "../core/constants";
 
 import { TreeNode, treeNodeComparator } from "../core/tree-utils";
 import { activeSelectionSignal } from "../core/appstate";
-import { confirmDialog } from "../dialogs";
+import { confirmDialog, infoDialog } from "../dialogs";
 import { editorRegistry } from "../core/editorregistry";
 import { TOPIC_CONTRIBUTEIONS_CHANGED, type ContributionChangeEvent } from '../core/contributionregistry';
 import { i18n } from '../core/i18n';
@@ -485,8 +485,13 @@ export class LyraFileBrowser extends LyraPart {
             return srcRoot === destRoot && !(e.ctrlKey || e.metaKey);
         };
 
+        const srcRoots = new Set<Directory>();
+        const destRoot = targetDir.getWorkspace();
+
         let processed = 0;
         let failed = 0;
+
+        const sources: { path: string; resource: Resource }[] = [];
 
         for (const path of paths) {
             try {
@@ -497,8 +502,61 @@ export class LyraFileBrowser extends LyraPart {
                     continue;
                 }
 
-                const move = await moveWithinSameBackend(src);
-                await workspaceService.copyResource(src, targetDir, { move });
+                sources.push({ path, resource: src });
+                const root = src.getWorkspace();
+                if (root) {
+                    srcRoots.add(root);
+                }
+            } catch (error) {
+                logger.error(`Failed to handle workspace drop for "${path}":`, error);
+                failed++;
+            }
+        }
+
+        if (sources.length === 0) {
+            if (failed > 0) {
+                logger.info(`Workspace drop failed for ${failed} item(s)`);
+            }
+            return;
+        }
+
+        let isCrossConnection = false;
+        if (destRoot) {
+            for (const root of srcRoots) {
+                if (root !== destRoot) {
+                    isCrossConnection = true;
+                    break;
+                }
+            }
+        }
+
+        if (isCrossConnection && destRoot) {
+            try {
+                const srcRootsArray = Array.from(srcRoots);
+                const srcInfo = await workspaceService.getFolderInfoForDirectory(
+                    srcRootsArray[0]
+                );
+                const destInfo = await workspaceService.getFolderInfoForDirectory(destRoot);
+                const srcBackend = srcInfo?.backendName ?? t.UNKNOWN_BACKEND;
+                const destBackend = destInfo?.backendName ?? t.UNKNOWN_BACKEND;
+
+                const confirmed = await confirmDialog(t.DND_CROSS_CONNECTION_CONFIRM({
+                    count: String(sources.length),
+                    srcBackend,
+                    destBackend
+                }));
+                if (!confirmed) {
+                    return;
+                }
+            } catch (err) {
+                logger.debug('Failed to resolve cross-connection info for DnD', err);
+            }
+        }
+
+        for (const { path, resource } of sources) {
+            try {
+                const move = await moveWithinSameBackend(resource);
+                await workspaceService.copyResource(resource, targetDir, { move });
                 processed++;
             } catch (error) {
                 logger.error(`Failed to handle workspace drop for "${path}":`, error);
@@ -506,7 +564,9 @@ export class LyraFileBrowser extends LyraPart {
             }
         }
 
-        logger.info(`Workspace drop completed: ${processed}/${paths.length} items copied${failed > 0 ? `, ${failed} failed` : ''}`);
+        logger.info(
+            `Workspace drop completed: ${processed}/${sources.length} items ${failed > 0 ? `, ${failed} failed` : ''}`
+        );
 
         await this.loadWorkspace(this.workspaceDir, true);
     }

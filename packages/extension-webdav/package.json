@@ -10,8 +10,7 @@
     }
   },
   "dependencies": {
-    "@eclipse-lyra/core": "*",
-    "axios": "^1.13.1"
+    "@eclipse-lyra/core": "*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

@@ -32,23 +32,21 @@ export class WebDAVFileResource extends File {
     }
 
     async getContents(options?: FileContentsOptions): Promise<any> {
-        const buffer = await this.client.getFile(this.resource.href);
+        const blob = await this.client.getFile(this.resource.href);
         
         if (!options || options?.contentType === FileContentType.TEXT) {
-            const decoder = new TextDecoder();
-            return decoder.decode(buffer);
+            return await blob.text();
         }
 
         if (options?.blob) {
-            return new Blob([buffer]);
+            return blob;
         }
 
         if (options?.uri) {
-            const blob = new Blob([buffer]);
             return URL.createObjectURL(blob);
         }
 
-        return buffer;
+        return await blob.arrayBuffer();
     }
 
     async saveContents(contents: any, _options?: FileContentsOptions): Promise<void> {
