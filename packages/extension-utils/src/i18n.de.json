@@ -1,0 +1,12 @@
+{
+  "EXT_UTILS_NAME": "Dienstprogramme",
+  "EXT_UTILS_DESC": "Hilfsbefehle wie wget, unzip und Zertifikatstools.",
+  "CMD_WGET_NAME": "wget",
+  "CMD_WGET_DESC": "Datei von einer URL in den Arbeitsbereich herunterladen.",
+  "CMD_UNZIP_NAME": "Archiv entpacken",
+  "CMD_UNZIP_DESC": "Ein Zip-Archiv im Arbeitsbereich entpacken.",
+  "CMD_P12SPLIT_NAME": ".p12-Datei aufteilen",
+  "CMD_P12SPLIT_DESC": "Eine .p12-Zertifikatsdatei in separate PEM-Dateien aufteilen.",
+  "RENAME": "Umbenennen",
+  "DELETE": "Löschen"
+}
