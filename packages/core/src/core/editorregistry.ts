@@ -1,7 +1,4 @@
 import { EDITOR_AREA_MAIN } from "./constants";
-import { LyraPart } from "../parts/part";
-import { activePartSignal, activeEditorSignal, partDirtySignal } from "./appstate";
-import { watchSignal } from "./signals";
 import { subscribe } from "./events";
 import { TOPIC_WORKSPACE_CONNECTED } from "./filesys";
 import { LyraTabs } from "../parts/tabs";
@@ -81,9 +78,7 @@ export interface EditorContentProvider {
 
 class EditorRegistry {
     private editorInputHandlers: RegisteredEditorInputHandler[] = [];
-    private listenersAttached = false;
     private cachedIconContributions: IconContribution[] | null = null;
-    private signalCleanup?: () => void;
 
     constructor() {
         subscribe(TOPIC_WORKSPACE_CONNECTED, () => {
@@ -116,52 +111,6 @@ class EditorRegistry {
         });
         
         return this.cachedIconContributions;
-    }
-
-    private setupEventListeners(editorArea: LyraTabs) {
-        if (this.listenersAttached) {
-            return;
-        }
-        this.listenersAttached = true;
-
-        const handler = (event: CustomEvent) => {
-            const tabPanel = event.detail
-            if (tabPanel) {
-                const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter((element): element is LyraPart => element instanceof LyraPart)
-                parts.forEach((part) => {
-                    activePartSignal.set(part)
-                    // Only update activeEditorSignal if this is an editor part
-                    if ((part as LyraPart).isEditor) {
-                        activeEditorSignal.set(part)
-                    }
-                })
-            }
-        }
-        // @ts-ignore
-        editorArea.addEventListener("tab-shown", handler)
-
-        const closed = (event: CustomEvent) => {
-            const tabPanel: HTMLElement = event.detail
-            const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter((element): element is LyraPart => element instanceof LyraPart)
-            parts.forEach((part) => {
-                // part.close() will be automatically called by disconnected callback of part
-                if (activePartSignal.get() == part) {
-                    activePartSignal.set(null as unknown as LyraPart)
-                }
-                if (activeEditorSignal.get() == part) {
-                    activeEditorSignal.set(null as unknown as LyraPart)
-                }
-            })
-        }
-        // @ts-ignore
-        editorArea.addEventListener("tab-closed", closed)
-
-        const dirtyHandler = (targetPart: LyraPart) => {
-            const tabPanel = targetPart.closest("wa-tab-panel") as HTMLElement
-            const name = tabPanel.getAttribute("name") as string
-            editorArea.markDirty(name, targetPart.isDirty())
-        }
-        this.signalCleanup = watchSignal(partDirtySignal, dirtyHandler)
     }
 
     registerEditorInputHandler(editorInputHandler: EditorInputHandler) {
@@ -275,8 +224,6 @@ class EditorRegistry {
             console.error("Editor area not found. The split pane system may not be initialized yet.");
             return;
         }
-
-        this.setupEventListeners(editorArea);
 
         if (editorArea.has(tabContribution.name)) {
             editorArea.activate(tabContribution.name)

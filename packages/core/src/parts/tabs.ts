@@ -11,7 +11,8 @@ import { LyraPart } from "./part";
 import { LyraToolbar } from "./toolbar";
 import {LyraContextMenu} from "./contextmenu";
 import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants";
-import {activePartSignal} from "../core/appstate";
+import {activePartSignal, activeEditorSignal, partDirtySignal} from "../core/appstate";
+import {watchSignal} from "../core/signals";
 import {confirmDialog} from "../dialogs";
 import {appLoaderService} from "../core/apploader";
 
@@ -47,6 +48,8 @@ export class LyraTabs extends LyraContainer {
     private resizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
     private tabGroupListenersAttached = false;
+
+    private dirtySignalCleanup?: () => void;
 
     // ============= Lifecycle Methods =============
 
@@ -117,10 +120,11 @@ export class LyraTabs extends LyraContainer {
     }
 
     open(contribution: TabContribution): void {
-        // Check if contribution already exists, if so just activate it
         const existing = this.contributions.find(c => c.name === contribution.name);
         if (existing) {
             this.activate(contribution.name);
+            const tabPanel = this.getTabPanel(contribution.name);
+            if (tabPanel) this.syncActiveSignalsFromPanel(tabPanel);
             return;
         }
         
@@ -138,6 +142,7 @@ export class LyraTabs extends LyraContainer {
                     part.tabContribution = contribution;
                     part.isEditor = this.containerId === EDITOR_AREA_MAIN;
                 }
+                this.syncActiveSignalsFromPanel(tabPanel);
                 requestAnimationFrame(() => {
                     this.updateToolbarFromComponent(tabPanel);
                     this.updateToolbarHeightVariable(tabPanel);
@@ -167,14 +172,13 @@ export class LyraTabs extends LyraContainer {
         if (!contribution) return;
         
         this.cleanupTabInstance(tabPanel);
-        
+        this.clearActiveSignalsIfPartInPanel(tabPanel);
+
         const index = this.contributions.indexOf(contribution);
         if (index > -1) {
             this.contributions.splice(index, 1);
         }
-        
-        this.dispatchEvent(new CustomEvent('tab-closed', {detail: tabPanel}));
-        
+
         this.requestUpdate();
         
         this.updateComplete.then(() => {
@@ -242,12 +246,12 @@ export class LyraTabs extends LyraContainer {
         el.addEventListener("wa-tab-show", (event: CustomEvent) => {
             const tabPanel = this.getTabPanel(event.detail.name);
             if (tabPanel) {
+                this.syncActiveSignalsFromPanel(tabPanel);
                 this.updateToolbarFromComponent(tabPanel);
                 requestAnimationFrame(() => {
                     this.updateToolbarHeightVariable(tabPanel);
                     this.setupToolbarResizeObserver(tabPanel);
                 });
-                this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
             }
         });
 
@@ -273,23 +277,14 @@ export class LyraTabs extends LyraContainer {
                 const panelName = tab.getAttribute('panel');
                 if (panelName) {
                     const tabPanel = this.getTabPanel(panelName);
-                    if (tabPanel) {
-                        const contentDiv = tabPanel.querySelector('.tab-content');
-                        if (contentDiv?.firstElementChild instanceof LyraPart) {
-                            activePartSignal.set(contentDiv.firstElementChild);
-                        }
-                    }
+                    if (tabPanel) this.syncActiveSignalsFromPanel(tabPanel);
                 }
                 return;
             }
             const scroller = target.closest('wa-scroller.tab-content');
             if (!scroller) return;
             const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
-            if (!tabPanel) return;
-            const contentDiv = tabPanel.querySelector('.tab-content');
-            if (contentDiv?.firstElementChild instanceof LyraPart) {
-                activePartSignal.set(contentDiv.firstElementChild);
-            }
+            if (tabPanel) this.syncActiveSignalsFromPanel(tabPanel);
         });
 
         el.addEventListener('contextmenu', (event: Event) => {
@@ -308,7 +303,22 @@ export class LyraTabs extends LyraContainer {
             });
         });
 
+        this.dirtySignalCleanup?.();
+        this.dirtySignalCleanup = watchSignal(partDirtySignal, (part: LyraPart | null) => {
+            if (!part) return;
+            const panel = part.closest('wa-tab-panel') as HTMLElement | null;
+            if (!panel || !this.contains(panel)) return;
+            const name = panel.getAttribute('name');
+            if (name) this.markDirty(name, part.isDirty());
+        });
+
         this.activateNextAvailableTab();
+    }
+
+    disconnectedCallback() {
+        this.dirtySignalCleanup?.();
+        this.dirtySignalCleanup = undefined;
+        super.disconnectedCallback();
     }
 
     private activateNextAvailableTab(): void {
@@ -333,6 +343,28 @@ export class LyraTabs extends LyraContainer {
     private getTab(name: string): HTMLElement | null {
         if (!this.tabGroup.value) return null;
         return this.tabGroup.value.querySelector(`wa-tab[panel='${name}']`) as HTMLElement | null;
+    }
+
+    private syncActiveSignalsFromPanel(tabPanel: HTMLElement): void {
+        const contentDiv = tabPanel.querySelector('.tab-content');
+        const part = contentDiv?.firstElementChild;
+        if (!(part instanceof LyraPart)) return;
+        activePartSignal.set(null as unknown as LyraPart);
+        activeEditorSignal.set(null as unknown as LyraPart);
+        activePartSignal.set(part);
+        if (this.containerId === EDITOR_AREA_MAIN && part.isEditor) {
+            activeEditorSignal.set(part);
+        }
+    }
+
+    private clearActiveSignalsIfPartInPanel(tabPanel: HTMLElement): void {
+        const parts = Array.from(tabPanel.querySelectorAll('*')).filter(
+            (el): el is LyraPart => el instanceof LyraPart
+        );
+        for (const part of parts) {
+            if (activePartSignal.get() === part) activePartSignal.set(null as unknown as LyraPart);
+            if (activeEditorSignal.get() === part) activeEditorSignal.set(null as unknown as LyraPart);
+        }
     }
 
     /**
