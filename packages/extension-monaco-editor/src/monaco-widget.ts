@@ -43,6 +43,32 @@ export class LyraMonacoWidget extends LitElement {
     private containerRef = createRef<HTMLElement>();
     private editor?: monaco.editor.IStandaloneCodeEditor;
     private model?: monaco.editor.ITextModel;
+    private themeObserver?: MutationObserver;
+
+    private getMonacoTheme(): string {
+        const root = document.documentElement;
+        if (root.classList.contains('wa-dark')) return 'vs-dark';
+        if (root.classList.contains('wa-light')) return 'vs';
+        return 'vs-dark';
+    }
+
+    private setupThemeObserver(): void {
+        const rootElement = document.documentElement;
+        let currentTheme = this.getMonacoTheme();
+
+        this.themeObserver = new MutationObserver(() => {
+            const newTheme = this.getMonacoTheme();
+            if (newTheme !== currentTheme) {
+                currentTheme = newTheme;
+                monaco.editor.setTheme(newTheme);
+            }
+        });
+
+        this.themeObserver.observe(rootElement, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    }
 
     private ensureEditor() {
         const container = this.containerRef.value;
@@ -52,7 +78,7 @@ export class LyraMonacoWidget extends LitElement {
         const uri = this.uri != null ? monaco.Uri.file(this.uri) : undefined;
         this.model = monaco.editor.createModel(this.value, this.language, uri);
         this.editor = monaco.editor.create(container, {
-            theme: this.theme,
+            theme: this.getMonacoTheme(),
             automaticLayout: false,
         });
         this.model.onDidChangeContent(() => {
@@ -60,6 +86,7 @@ export class LyraMonacoWidget extends LitElement {
             this.dispatchEvent(new CustomEvent('content-change', { bubbles: true, composed: true }));
         });
         this.editor.setModel(this.model);
+        this.setupThemeObserver();
     }
 
     protected firstUpdated(_changedProperties: PropertyValues) {
@@ -80,6 +107,8 @@ export class LyraMonacoWidget extends LitElement {
     }
 
     public dispose() {
+        this.themeObserver?.disconnect();
+        this.themeObserver = undefined;
         this.model?.dispose();
         this.editor?.dispose();
         this.model = undefined;
