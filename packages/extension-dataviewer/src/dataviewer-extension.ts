@@ -40,7 +40,7 @@ editorRegistry.registerEditorInputHandler({
     const editorInput: EditorInput = {
       title: name,
       data,
-      key: name,
+      key: input.getWorkspacePath(),
       icon: 'table',
       noOverflow: false,
       state: {},

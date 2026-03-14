@@ -4,8 +4,8 @@ import {LyraContainer} from "./container";
 import {contributionRegistry, ContributionChangeEvent, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry";
 import {when} from "lit/directives/when.js";
 import {repeat} from "lit/directives/repeat.js";
-import '../widgets/icon';
 import {createRef, ref} from "lit/directives/ref.js";
+import { parseIconSpec } from "../core/icon-utils";
 import {subscribe} from "../core/events";
 import { LyraPart } from "./part";
 import { LyraToolbar } from "./toolbar";
@@ -46,6 +46,8 @@ export class LyraTabs extends LyraContainer {
     /** Map to track ResizeObservers for cleanup */
     private resizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
+    private tabGroupListenersAttached = false;
+
     // ============= Lifecycle Methods =============
 
     protected doBeforeUI() {
@@ -57,107 +59,7 @@ export class LyraTabs extends LyraContainer {
     }
 
     protected doInitUI() {
-        this.updateComplete.then(() => {
-            this.activateNextAvailableTab();
-            
-            if (!this.tabGroup.value) return;
-            
-            // @ts-ignore
-            this.tabGroup.value.addEventListener("wa-tab-show", (event: CustomEvent) => {
-                const tabPanel = this.getTabPanel(event.detail.name);
-                if (tabPanel) {
-                    // Update toolbar from component's renderToolbar() method
-                    this.updateToolbarFromComponent(tabPanel);
-                    // Update toolbar height variable for calc() positioning
-                    requestAnimationFrame(() => {
-                        this.updateToolbarHeightVariable(tabPanel);
-                        this.setupToolbarResizeObserver(tabPanel);
-                    });
-                    this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
-                }
-            });
-
-            // Listen for toolbar update requests from components
-            this.tabGroup.value.addEventListener("part-toolbar-changed", (event: Event) => {
-                const component = event.target as HTMLElement;
-                const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
-                if (tabPanel) {
-                    this.updateToolbarFromComponent(tabPanel);
-                    // Update toolbar height variable for calc() positioning
-                    requestAnimationFrame(() => this.updateToolbarHeightVariable(tabPanel));
-                }
-            });
-
-            // Listen for context menu update requests from components
-            this.tabGroup.value.addEventListener("part-contextmenu-changed", (event: Event) => {
-                const component = event.target as HTMLElement;
-                const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
-                if (tabPanel) {
-                    this.updateContextMenuFromComponent(tabPanel);
-                }
-            });
-
-            // Update active part signal when clicking anywhere in tab content or tab title
-            this.tabGroup.value.addEventListener('click', (event: Event) => {
-                const target = event.target as HTMLElement;
-                
-                // Handle clicks on tab titles
-                const tab = target.closest('wa-tab');
-                if (tab) {
-                    const panelName = tab.getAttribute('panel');
-                    if (panelName) {
-                        const tabPanel = this.getTabPanel(panelName);
-                        if (tabPanel) {
-                            const contentDiv = tabPanel.querySelector('.tab-content');
-                            if (contentDiv && contentDiv.firstElementChild) {
-                                const part = contentDiv.firstElementChild;
-                                if (part instanceof LyraPart) {
-                                    activePartSignal.set(part);
-                                }
-                            }
-                        }
-                    }
-                    return;
-                }
-                
-                // Handle clicks on tab content
-                const scroller = target.closest('wa-scroller.tab-content');
-                if (!scroller) return;
-                
-                const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
-                if (!tabPanel) return;
-                
-                const contentDiv = tabPanel.querySelector('.tab-content');
-                if (contentDiv && contentDiv.firstElementChild) {
-                    const part = contentDiv.firstElementChild;
-                    if (part instanceof LyraPart) {
-                        activePartSignal.set(part);
-                    }
-                }
-            });
-
-            // Automatically wire up context menus for all tab content
-            this.tabGroup.value.addEventListener('contextmenu', (event: Event) => {
-                const mouseEvent = event as MouseEvent;
-                const scroller = (mouseEvent.target as HTMLElement).closest('wa-scroller.tab-content');
-                if (!scroller) return;
-                
-                mouseEvent.preventDefault();
-                
-                const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
-                if (!tabPanel) return;
-                
-                // Wait for selection to update before showing context menu
-                requestAnimationFrame(() => {
-                    this.updateContextMenuFromComponent(tabPanel);
-                    
-                    const contextMenu = tabPanel.querySelector('lyra-contextmenu') as LyraContextMenu;
-                    if (contextMenu) {
-                        contextMenu.show({ x: mouseEvent.clientX, y: mouseEvent.clientY }, mouseEvent);
-                    }
-                });
-            });
-        });
+        this.updateComplete.then(() => this.ensureTabGroupListenersAndActivate());
         
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
             if (!this.containerId || event.target !== this.containerId) return;
@@ -173,8 +75,11 @@ export class LyraTabs extends LyraContainer {
 
     updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
-        
+        if (this.contributions.length > 0 && this.tabGroup.value) {
+            this.updateComplete.then(() => this.ensureTabGroupListenersAndActivate());
+        }
         if (changedProperties.has('contributions')) {
+            if (this.contributions.length === 0) this.tabGroupListenersAttached = false;
             const isEditorArea = this.containerId === EDITOR_AREA_MAIN;
             this.contributions.forEach(contribution => {
                 const tabPanel = this.getTabPanel(contribution.name);
@@ -223,26 +128,22 @@ export class LyraTabs extends LyraContainer {
         this.requestUpdate();
         
         this.updateComplete.then(() => {
-            this.activate(contribution.name);
-            // Update toolbar after component is rendered
-            const tabPanel = this.getTabPanel(contribution.name);
-            if (tabPanel) {
+            requestAnimationFrame(() => {
+                this.activate(contribution.name);
+                const tabPanel = this.getTabPanel(contribution.name);
+                if (!tabPanel) return;
                 const contentDiv = tabPanel.querySelector('.tab-content');
-                if (contentDiv && contentDiv.firstElementChild) {
+                if (contentDiv?.firstElementChild instanceof LyraPart) {
                     const part = contentDiv.firstElementChild;
-                    if (part instanceof LyraPart) {
-                        part.tabContribution = contribution;
-                        part.isEditor = this.containerId === EDITOR_AREA_MAIN;
-                    }
+                    part.tabContribution = contribution;
+                    part.isEditor = this.containerId === EDITOR_AREA_MAIN;
                 }
-                
-                // Give component time to initialize
                 requestAnimationFrame(() => {
                     this.updateToolbarFromComponent(tabPanel);
                     this.updateToolbarHeightVariable(tabPanel);
                     this.setupToolbarResizeObserver(tabPanel);
                 });
-            }
+            });
         });
     }
 
@@ -329,8 +230,88 @@ export class LyraTabs extends LyraContainer {
         }
     }
 
+    private ensureTabGroupListenersAndActivate(): void {
+        if (!this.tabGroup.value || this.tabGroupListenersAttached) {
+            this.activateNextAvailableTab();
+            return;
+        }
+        this.tabGroupListenersAttached = true;
+        const el = this.tabGroup.value;
+
+        // @ts-ignore
+        el.addEventListener("wa-tab-show", (event: CustomEvent) => {
+            const tabPanel = this.getTabPanel(event.detail.name);
+            if (tabPanel) {
+                this.updateToolbarFromComponent(tabPanel);
+                requestAnimationFrame(() => {
+                    this.updateToolbarHeightVariable(tabPanel);
+                    this.setupToolbarResizeObserver(tabPanel);
+                });
+                this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
+            }
+        });
+
+        el.addEventListener("part-toolbar-changed", (event: Event) => {
+            const component = event.target as HTMLElement;
+            const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
+            if (tabPanel) {
+                this.updateToolbarFromComponent(tabPanel);
+                requestAnimationFrame(() => this.updateToolbarHeightVariable(tabPanel));
+            }
+        });
+
+        el.addEventListener("part-contextmenu-changed", (event: Event) => {
+            const component = event.target as HTMLElement;
+            const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
+            if (tabPanel) this.updateContextMenuFromComponent(tabPanel);
+        });
+
+        el.addEventListener('click', (event: Event) => {
+            const target = event.target as HTMLElement;
+            const tab = target.closest('wa-tab');
+            if (tab) {
+                const panelName = tab.getAttribute('panel');
+                if (panelName) {
+                    const tabPanel = this.getTabPanel(panelName);
+                    if (tabPanel) {
+                        const contentDiv = tabPanel.querySelector('.tab-content');
+                        if (contentDiv?.firstElementChild instanceof LyraPart) {
+                            activePartSignal.set(contentDiv.firstElementChild);
+                        }
+                    }
+                }
+                return;
+            }
+            const scroller = target.closest('wa-scroller.tab-content');
+            if (!scroller) return;
+            const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
+            if (!tabPanel) return;
+            const contentDiv = tabPanel.querySelector('.tab-content');
+            if (contentDiv?.firstElementChild instanceof LyraPart) {
+                activePartSignal.set(contentDiv.firstElementChild);
+            }
+        });
+
+        el.addEventListener('contextmenu', (event: Event) => {
+            const mouseEvent = event as MouseEvent;
+            const scroller = (mouseEvent.target as HTMLElement).closest('wa-scroller.tab-content');
+            if (!scroller) return;
+            mouseEvent.preventDefault();
+            const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
+            if (!tabPanel) return;
+            requestAnimationFrame(() => {
+                this.updateContextMenuFromComponent(tabPanel);
+                const contextMenu = tabPanel.querySelector('lyra-contextmenu') as LyraContextMenu;
+                if (contextMenu) {
+                    contextMenu.show({ x: mouseEvent.clientX, y: mouseEvent.clientY }, mouseEvent);
+                }
+            });
+        });
+
+        this.activateNextAvailableTab();
+    }
+
     private activateNextAvailableTab(): void {
-        // Guard: Component might not be fully initialized yet
         if (!this.tabGroup.value) return;
         
         const allRemainingTabs = this.tabGroup.value.querySelectorAll("wa-tab");
@@ -431,60 +412,63 @@ export class LyraTabs extends LyraContainer {
 
     // ============= Render Method =============
 
-    render() {
+    private renderEmptyState() {
         const currentApp = appLoaderService.getCurrentApp();
-        
         return html`
-            <wa-tab-group ${ref(this.tabGroup)} placement=${this.placement}>
+            <div class="empty-state">
                 ${when(
-                    this.contributions.length === 0,
+                    currentApp,
                     () => html`
-                        <div class="empty-state">
+                        <div class="empty-content">
+                            <h2 class="empty-title">${currentApp!.name}</h2>
                             ${when(
-                                currentApp,
-                                () => html`
-                                    <div class="empty-content">
-                                        <h2 class="empty-title">${currentApp!.name}</h2>
-                                        ${when(
-                                            currentApp!.description,
-                                            () => html`<p class="empty-description">${currentApp!.description}</p>`
-                                        )}
-                                    </div>
-                                `,
-                                () => html`
-                                    <wa-icon name="folder-open" class="empty-icon"></wa-icon>
-                                `
+                                currentApp!.description,
+                                () => html`<p class="empty-description">${currentApp!.description}</p>`
                             )}
                         </div>
                     `,
-                    () => repeat(
-                        this.contributions,
-                        (c) => c.name,
-                        (c) => html`
-                            <wa-tab panel="${c.name}"
-                                    @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
-                                <lyra-icon name="${c.icon!}"></lyra-icon>
-                                ${c.label}
-                                ${when(c.closable, () => html`
-                                    <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>
-                                `)}
-                            </wa-tab>
-                            <wa-tab-panel name="${c.name}">
-                                ${when(c.toolbar !== false, () => html`
-                                    <lyra-toolbar id="toolbar:${c.editorId ?? c.name}"
-                                               class="tab-toolbar"
-                                               ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></lyra-toolbar>
-                                `)}
-                                <wa-scroller class="tab-content" orientation="vertical">
-                                    ${c.component ? c.component(c.name) : nothing}
-                                </wa-scroller>
-                                ${when(c.contextMenu !== false, () => html`
-                                    <lyra-contextmenu id="contextmenu:${c.name}"
-                                                   ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></lyra-contextmenu>
-                                `)}
-                            </wa-tab-panel>
-                        `
-                    )
+                    () => html`<wa-icon name="folder-open" class="empty-icon"></wa-icon>`
+                )}
+            </div>
+        `;
+    }
+
+    render() {
+        if (this.contributions.length === 0) {
+            return this.renderEmptyState();
+        }
+        return html`
+            <wa-tab-group ${ref(this.tabGroup)} placement=${this.placement}>
+                ${repeat(
+                    this.contributions,
+                    (c) => c.name,
+                    (c) => {
+                        const { name: iconName, library: iconLibrary } = parseIconSpec(c.icon ?? '');
+                        return html`
+                        <wa-tab panel="${c.name}"
+                                @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
+                            <wa-icon library=${iconLibrary ?? nothing} name=${iconName} label=${c.label ?? nothing}></wa-icon>
+                            ${c.label}
+                            ${when(c.closable, () => html`
+                                <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>
+                            `)}
+                        </wa-tab>
+                        <wa-tab-panel name="${c.name}">
+                            ${when(c.toolbar !== false, () => html`
+                                <lyra-toolbar id="toolbar:${c.editorId ?? c.name}"
+                                           class="tab-toolbar"
+                                           ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></lyra-toolbar>
+                            `)}
+                            <wa-scroller class="tab-content" orientation="vertical">
+                                ${c.component ? c.component(c.name) : nothing}
+                            </wa-scroller>
+                            ${when(c.contextMenu !== false, () => html`
+                                <lyra-contextmenu id="contextmenu:${c.name}"
+                                               ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></lyra-contextmenu>
+                            `)}
+                        </wa-tab-panel>
+                    `;
+                    }
                 )}
             </wa-tab-group>
         `;

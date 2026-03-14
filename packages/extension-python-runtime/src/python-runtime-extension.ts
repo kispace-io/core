@@ -71,7 +71,7 @@ registerAll({
 editorRegistry.registerEditorInputHandler({
     editorId: "system.python-editor",
     label: "Python",
-    icon: "python",
+    icon: "lyra python",
     lazyInit: async () => {
         await import("./python-editor");
     },
@@ -82,7 +82,7 @@ editorRegistry.registerEditorInputHandler({
         const editorInput: EditorInput = {
             title: input.getName(),
             data: input,
-            key: input.getName(),
+            key: input.getWorkspacePath(),
             icon: "python",
             noOverflow: false,
             state: {},

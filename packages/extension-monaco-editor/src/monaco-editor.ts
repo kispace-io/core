@@ -25,7 +25,7 @@ export class LyraMonacoEditor extends LyraPart implements EditorContentProvider 
         const file = this.input!.data;
         const textContents = await file.getContents();
         this.initialContent = textContents;
-        this.initialUri = file.getName();
+        this.initialUri = file.getWorkspacePath();
         this.initialLanguage = undefined;
         this.requestUpdate();
     }

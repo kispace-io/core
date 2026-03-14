@@ -15,7 +15,7 @@ editorRegistry.registerEditorInputHandler({
         const editorInput = {
             title: input.getName(),
             data: input,
-            key: input.getName(),
+            key: input.getWorkspacePath(),
             icon: "book",
             noOverflow: false,
             state: {},

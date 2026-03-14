@@ -14,7 +14,7 @@ export default function activate() {
       const editorInput: EditorInput = {
         title: input.getName(),
         data: input,
-        key: input.getName(),
+        key: input.getWorkspacePath(),
         icon: 'database',
         noOverflow: false,
         state: {},

@@ -63,7 +63,7 @@ export default ({ editorRegistry, commandRegistry, contributionRegistry }: any) 
             const editorInput = {
                 title: input.getName(),
                 data: input,
-                key: input.getName(),
+                key: input.getWorkspacePath(),
                 icon: "lyra jupyter",
                 noOverflow: true,
                 state: {},
