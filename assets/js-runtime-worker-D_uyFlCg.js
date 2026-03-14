@@ -1,0 +1,1 @@
+self.onmessage=async function(t){const n=t.data;try{let e=new Function(n)();e!=null&&typeof e.then=="function"&&(e=await e);try{self.postMessage({type:"result",value:e})}catch{self.postMessage({type:"result",value:e===void 0?void 0:String(e)})}}catch(s){self.postMessage({type:"error",message:s instanceof Error?s.message:String(s)})}};
