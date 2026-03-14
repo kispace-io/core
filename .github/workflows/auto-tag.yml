@@ -60,3 +60,10 @@ jobs:
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Publish workflow
+        if: steps.extract-version.outputs.version != ''
+        run: |
+          gh workflow run "Publish to npm" --ref ${{ steps.extract-version.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
