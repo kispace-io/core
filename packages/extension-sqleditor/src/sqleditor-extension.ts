@@ -12,7 +12,7 @@ export default function activate() {
     ranking: 900,
     handle: async (input: File) => {
       const editorInput: EditorInput = {
-        title: input.getName(),
+        title: input.getWorkspacePath(),
         data: input,
         key: input.getWorkspacePath(),
         icon: 'database',

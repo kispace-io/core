@@ -55,7 +55,7 @@ editorRegistry.registerEditorInputHandler({
     canHandle: input => input instanceof File && isSupportedMediaFile(input),
     handle: async (input: File) => {
         const editorInput = {
-            title: input.getName(),
+            title: input.getWorkspacePath(),
             data: input,
             key: input.getWorkspacePath(),
             icon: getFileIcon(input.getName()),

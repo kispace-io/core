@@ -412,6 +412,16 @@ export class LyraTabs extends LyraContainer {
 
     // ============= Render Method =============
 
+    private static readonly MAX_TAB_LABEL = 16;
+
+    private truncateTabLabel(label: string): string {
+        if (!label || label.length <= LyraTabs.MAX_TAB_LABEL) return label;
+        const ellipsis = '…';
+        const take = LyraTabs.MAX_TAB_LABEL - ellipsis.length;
+        const startLen = Math.floor(take / 2);
+        return label.slice(0, startLen) + ellipsis + label.slice(-(take - startLen));
+    }
+
     private renderEmptyState() {
         const currentApp = appLoaderService.getCurrentApp();
         return html`
@@ -444,11 +454,14 @@ export class LyraTabs extends LyraContainer {
                     (c) => c.name,
                     (c) => {
                         const { name: iconName, library: iconLibrary } = parseIconSpec(c.icon ?? '');
+                        const fullLabel = c.label ?? c.name;
+                        const shortLabel = this.truncateTabLabel(fullLabel);
                         return html`
                         <wa-tab panel="${c.name}"
+                                title="${fullLabel}"
                                 @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
-                            <wa-icon library=${iconLibrary ?? nothing} name=${iconName} label=${c.label ?? nothing}></wa-icon>
-                            ${c.label}
+                            <wa-icon library=${iconLibrary ?? nothing} name=${iconName} label=${fullLabel}></wa-icon>
+                            ${shortLabel}
                             ${when(c.closable, () => html`
                                 <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>
                             `)}

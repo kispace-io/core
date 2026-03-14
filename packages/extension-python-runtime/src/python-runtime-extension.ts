@@ -80,7 +80,7 @@ editorRegistry.registerEditorInputHandler({
     ranking: 1000,
     handle: async (input: File) => {
         const editorInput: EditorInput = {
-            title: input.getName(),
+            title: input.getWorkspacePath(),
             data: input,
             key: input.getWorkspacePath(),
             icon: "python",

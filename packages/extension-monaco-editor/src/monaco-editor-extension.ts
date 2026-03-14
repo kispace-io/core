@@ -14,7 +14,7 @@ editorRegistry.registerEditorInputHandler({
         input instanceof File && !input.getName().toLowerCase().endsWith(".py"),
     handle: async (input: File) => {
         const editorInput = {
-            title: input.getName(),
+            title: input.getWorkspacePath(),
             data: input,
             key: input.getWorkspacePath(),
             icon: "file-pen",

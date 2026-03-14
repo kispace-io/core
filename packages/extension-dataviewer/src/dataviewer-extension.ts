@@ -38,7 +38,7 @@ editorRegistry.registerEditorInputHandler({
     const { columns, rows } = parseCsv(text ?? '');
     const data = { columns, rows };
     const editorInput: EditorInput = {
-      title: name,
+      title: input.getWorkspacePath(),
       data,
       key: input.getWorkspacePath(),
       icon: 'table',

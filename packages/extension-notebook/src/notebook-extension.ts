@@ -61,7 +61,7 @@ export default ({ editorRegistry, commandRegistry, contributionRegistry }: any) 
         canHandle: (input: any) => input instanceof File && input.getName().toLowerCase().endsWith(".ipynb"),
         handle: async (input: File) => {
             const editorInput = {
-                title: input.getName(),
+                title: input.getWorkspacePath(),
                 data: input,
                 key: input.getWorkspacePath(),
                 icon: "lyra jupyter",
