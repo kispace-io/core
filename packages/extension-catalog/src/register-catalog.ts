@@ -1,7 +1,7 @@
 import {
     contributionRegistry,
     type TreeContribution,
-} from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
 
 export interface CatalogContribution extends TreeContribution {
     items?: CatalogContribution[];

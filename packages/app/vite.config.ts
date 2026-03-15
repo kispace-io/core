@@ -20,7 +20,6 @@ function workspaceSourceAliases(): Record<string, string> {
   alias['@eclipse-lyra/core/externals/webawesome'] = path.resolve(coreDir, 'src/externals/webawesome.ts');
   alias['@eclipse-lyra/core/parts'] = path.resolve(coreDir, 'src/parts');
   alias['@eclipse-lyra/core/widgets'] = path.resolve(coreDir, 'src/widgets');
-  alias['@eclipse-lyra/core/api'] = path.resolve(coreDir, 'src/api/index.ts');
   alias['@eclipse-lyra/core'] = path.resolve(coreDir, 'src/index.ts');
 
   for (const name of readdirSync(packagesDir, { withFileTypes: true })) {

@@ -16,10 +16,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./api": {
-      "types": "./dist/api/index.d.ts",
-      "import": "./dist/api/index.js"
-    },
     "./widgets": {
       "types": "./dist/widgets/index.d.ts",
       "import": "./dist/widgets/index.js"

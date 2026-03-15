@@ -19,7 +19,7 @@ import {
     TOPIC_CONTRIBUTEIONS_CHANGED,
     type ContributionChangeEvent,
     icon,
-} from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
 
 export const CID_CATALOG_ROOT = "catalog.root";
 

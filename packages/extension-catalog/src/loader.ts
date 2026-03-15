@@ -1,5 +1,5 @@
 import { html } from "@eclipse-lyra/core/externals/lit";
-import { contributionRegistry, SIDEBAR_MAIN } from "@eclipse-lyra/core/api";
+import { contributionRegistry, SIDEBAR_MAIN } from "@eclipse-lyra/core";
 import "./lyra-catalog";
 
 contributionRegistry.registerContribution(SIDEBAR_MAIN, {
