@@ -1,7 +1,7 @@
 import { css, html, nothing } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { LyraWidget } from '../widgets/widget'
-import '../widgets/icon'
+import { icon } from '../core/icon-utils'
 import { keyBindingManager } from '../core/keybindings'
 import { contributionRegistry, Contribution, CommandContribution, HTMLContribution, ContributionChangeEvent, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry'
 import { subscribe } from '../core/events'
@@ -143,7 +143,7 @@ export class LyraCommand extends LyraWidget {
                 <wa-dropdown-item 
                     ?disabled=${this.disabled}
                     @click=${(e: Event) => this.handleClick(e)}>
-                    <lyra-icon name="${this.icon}" label="${this.title}" slot="icon"></lyra-icon>
+                    ${icon(this.icon, { label: this.title, slot: 'icon' })}
                     <slot></slot>
                     ${keybinding ? html`<span class="keybinding">${keybinding}</span>` : ''}
                 </wa-dropdown-item>
@@ -163,7 +163,7 @@ export class LyraCommand extends LyraWidget {
                         ?disabled=${this.disabled}
                         with-caret
                         title=${keybinding ? `${this.title} (${keybinding})` : this.title}>
-                        <lyra-icon slot="start" name="${this.icon}" label="${this.title}"></lyra-icon>
+                        ${icon(this.icon, { label: this.title, slot: 'start' })}
                         <slot></slot>
                         ${this.label ? this.title : nothing}
                     </wa-button>
@@ -199,7 +199,7 @@ export class LyraCommand extends LyraWidget {
                 ?disabled=${this.disabled}
                 title=${keybinding ? `${this.title} (${keybinding})` : this.title}
                 @click=${(e: Event) => this.handleClick(e)}>
-                <lyra-icon slot="start" name="${this.icon}" label="${this.title}"></lyra-icon>
+                ${icon(this.icon, { label: this.title, slot: 'start' })}
                 <slot></slot>
             </wa-button>
         `

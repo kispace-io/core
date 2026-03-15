@@ -2,6 +2,7 @@ import { html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { LyraElement } from "../parts/element";
 import { appLoaderService } from "../core/apploader";
+import { icon } from '../core/icon-utils';
 
 @customElement('lyra-layout-switcher')
 export class LyraLayoutSwitcher extends LyraElement {
@@ -61,9 +62,7 @@ export class LyraLayoutSwitcher extends LyraElement {
                             value="${layout.id}"
                             type="checkbox"
                             ?checked=${layout.id === this.currentLayoutId}>
-                            ${layout.icon
-                                ? html`<lyra-icon slot="icon" name="${layout.icon}" label="${layout.name}"></lyra-icon>`
-                                : ''}
+                            ${icon(layout.icon, { label: layout.name, slot: 'icon' })}
                             ${layout.name}
                         </wa-dropdown-item>
                     `

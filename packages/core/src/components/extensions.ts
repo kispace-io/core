@@ -3,7 +3,7 @@ import {when} from "lit/directives/when.js";
 import {customElement, state} from 'lit/decorators.js'
 import { LyraPart } from "../parts/part";
 import {Extension, extensionRegistry, TOPIC_EXTENSIONS_CHANGED} from "../core/extensionregistry";
-import '../widgets/icon';
+import { icon } from '../core/icon-utils';
 import {subscribe} from "../core/events";
 import {appLoaderService} from "../core/apploader";
 import {i18n} from "../core/i18n";
@@ -387,7 +387,7 @@ export class LyraExtensions extends LyraPart {
                                             const isExternal = this.isExternalExtension(e);
                                             return html`
                                                 <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
-                                                    <span><lyra-icon name="${e.icon}"></lyra-icon></span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
+                                                    <span>${icon(e.icon)}</span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
                                                 </wa-tree-item>
                                             `;
                                         })}
@@ -403,7 +403,7 @@ export class LyraExtensions extends LyraPart {
                                             const isExternal = this.isExternalExtension(e);
                                             return html`
                                                 <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
-                                                    <span><lyra-icon name="${e.icon}"></lyra-icon></span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
+                                                    <span>${icon(e.icon)}</span> ${e.name}${isExternal ? html` <span style="opacity: 0.6; font-size: 0.9em; margin-left: 0.5rem;">(External)</span>` : ''}
                                                 </wa-tree-item>
                                             `;
                                         })}
@@ -425,7 +425,7 @@ export class LyraExtensions extends LyraPart {
                             const isEnabled = extensionRegistry.isEnabled(e.id);
                             
                             return html`
-                                <h1><lyra-icon name="${e.icon}"></lyra-icon> ${e.name}${isExternal ? ' (External)' : ''}</h1>
+                                <h1>${icon(e.icon)} ${e.name}${isExternal ? ' (External)' : ''}</h1>
                                 ${when(isExternal, () => html`
                                     <div class="marketplace-badge">
                                         <wa-icon name="store"></wa-icon>
@@ -504,7 +504,7 @@ export class LyraExtensions extends LyraPart {
                                                             name="${isEnabled ? 'check-circle' : 'circle'}" 
                                                             style="color: ${isEnabled ? 'var(--wa-color-success-50)' : 'var(--wa-color-neutral-50)'};">
                                                         </wa-icon>
-                                                        <lyra-icon name="${depExt?.icon || 'puzzle-piece'}"></lyra-icon>
+                                                        ${icon(depExt?.icon ?? 'puzzle-piece')}
                                                         <span>${depExt?.name || depId}</span>
                                                         ${!isEnabled ? html`
                                                             <span class="dependency-badge">${t.NOT_INSTALLED}</span>

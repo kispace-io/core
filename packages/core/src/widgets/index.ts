@@ -1,2 +1,1 @@
 import "./nocontent"
-import "./icon"

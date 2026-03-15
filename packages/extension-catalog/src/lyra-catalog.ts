@@ -18,6 +18,7 @@ import {
     unsubscribe,
     TOPIC_CONTRIBUTEIONS_CHANGED,
     type ContributionChangeEvent,
+    icon,
 } from "@eclipse-lyra/core/api";
 
 export const CID_CATALOG_ROOT = "catalog.root";
@@ -155,7 +156,7 @@ export class LyraCatalog extends LyraPart {
                 .model=${node}
                 ?expanded=${expanded}
             >
-                <span><lyra-icon name="${node.icon}"></lyra-icon> ${node.label}</span>
+                <span>${icon(node.icon)} ${node.label}</span>
                 ${node.children?.map((child) => this.createTreeItems(child))}
             </wa-tree-item>
         `;

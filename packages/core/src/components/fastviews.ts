@@ -2,7 +2,7 @@ import { css, html, nothing } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { createRef, ref, Ref } from 'lit/directives/ref.js'
 import { LyraWidget } from '../widgets/widget'
-import '../widgets/icon'
+import { icon } from '../core/icon-utils'
 import { contributionRegistry, TabContribution, ContributionChangeEvent, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry'
 import { subscribe } from '../core/events'
 import { Signal } from '@lit-labs/signals'
@@ -209,7 +209,7 @@ export class LyraFastViews extends LyraWidget {
         return html`
             <wa-dropdown-item 
                 @click=${() => this.handleTabClick(contribution)}>
-                <lyra-icon name="${contribution.icon || ''}" label="${contribution.label}" slot="icon"></lyra-icon>
+                ${icon(contribution.icon, { label: contribution.label, slot: 'icon' })}
                 ${contribution.label}
             </wa-dropdown-item>
         `
@@ -233,7 +233,7 @@ export class LyraFastViews extends LyraWidget {
                     ?disabled=${this.disabled}
                     with-caret
                     title=${this.title}>
-                    <lyra-icon slot="start" name="${this.icon}" label="${this.title}"></lyra-icon>
+                    ${icon(this.icon, { label: this.title, slot: 'start' })}
                     <slot></slot>
                 </wa-button>
                 

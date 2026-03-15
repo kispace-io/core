@@ -4,7 +4,7 @@ import {html} from "lit";
 import {activePartSignal} from "../core/appstate";
 import {contributionRegistry, HTMLContribution} from "../core/contributionregistry";
 import {TOOLBAR_BOTTOM_CENTER} from "../core/constants";
-import '../widgets/icon';
+import { icon } from '../core/icon-utils';
 import {i18n} from "../core/i18n";
 
 const t = await i18n(import.meta.glob('./partname*.json'));
@@ -39,7 +39,7 @@ export class LyraPartName extends LyraElement {
                 appearance="plain"
                 size="small"
                 title="${t.ACTIVE_PART}">
-                <lyra-icon slot="start" name="${partIcon}" label="Part"></lyra-icon>
+                ${icon(partIcon, { label: 'Part', slot: 'start' })}
                 ${this.getPartName()}
             </wa-button>
         `;

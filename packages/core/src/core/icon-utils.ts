@@ -1,6 +1,14 @@
+import { html, nothing } from 'lit';
+import type { TemplateResult } from 'lit';
+
 export interface ParsedIconSpec {
     name: string;
     library?: string;
+}
+
+export interface IconOptions {
+    label?: string;
+    slot?: string;
 }
 
 /**
@@ -14,10 +22,7 @@ export interface ParsedIconSpec {
  * - When the spec contains **whitespace**, the **last segment** is treated as
  *   the icon name and every prior segment (joined by a single space) becomes `library`.
  *
- * This allows call sites to pass a single string (e.g. contribution `icon` fields
- * or `lyra-icon`'s `name` prop) while still rendering plain `<wa-icon>` elements.
- * Some Web Awesome internals look specifically for `wa-icon` tags and cannot
- * handle wrapper components, so we normalize everything through this helper.
+ * Prefer {@link icon} for rendering; use parseIconSpec only when you need the parsed parts.
  */
 export function parseIconSpec(spec: string): ParsedIconSpec {
     const trimmed = (spec ?? '').trim();
@@ -27,4 +32,14 @@ export function parseIconSpec(spec: string): ParsedIconSpec {
     const name = parts.pop()!;
     const library = parts.join(' ');
     return { name, library };
+}
+
+/**
+ * Returns a Lit template that renders a `wa-icon` for the given spec.
+ * Use this for all icon rendering so specs (e.g. contribution `icon` fields) stay consistent.
+ * Handles undefined/null/empty spec internally; call sites may pass values directly.
+ */
+export function icon(spec: string | undefined | null, options?: IconOptions): TemplateResult {
+    const { name: iconName, library } = parseIconSpec(spec ?? '');
+    return html`<wa-icon library=${library ?? nothing} name=${iconName} label=${options?.label ?? nothing} slot=${options?.slot ?? nothing}></wa-icon>`;
 }

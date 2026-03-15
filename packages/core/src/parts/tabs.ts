@@ -5,7 +5,7 @@ import {contributionRegistry, ContributionChangeEvent, TabContribution, TOPIC_CO
 import {when} from "lit/directives/when.js";
 import {repeat} from "lit/directives/repeat.js";
 import {createRef, ref} from "lit/directives/ref.js";
-import { parseIconSpec } from "../core/icon-utils";
+import { icon } from "../core/icon-utils";
 import {subscribe} from "../core/events";
 import { LyraPart } from "./part";
 import { LyraToolbar } from "./toolbar";
@@ -485,14 +485,13 @@ export class LyraTabs extends LyraContainer {
                     this.contributions,
                     (c) => c.name,
                     (c) => {
-                        const { name: iconName, library: iconLibrary } = parseIconSpec(c.icon ?? '');
                         const fullLabel = c.label ?? c.name;
                         const shortLabel = this.truncateTabLabel(fullLabel);
                         return html`
                         <wa-tab panel="${c.name}"
                                 title="${fullLabel}"
                                 @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
-                            <wa-icon library=${iconLibrary ?? nothing} name=${iconName} label=${fullLabel}></wa-icon>
+                            ${icon(c.icon, { label: fullLabel })}
                             ${shortLabel}
                             ${when(c.closable, () => html`
                                 <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>

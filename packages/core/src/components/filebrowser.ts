@@ -20,7 +20,7 @@ import { activeSelectionSignal } from "../core/appstate";
 import { confirmDialog, infoDialog } from "../dialogs";
 import { editorRegistry } from "../core/editorregistry";
 import { TOPIC_CONTRIBUTEIONS_CHANGED, type ContributionChangeEvent } from '../core/contributionregistry';
-import { parseIconSpec } from '../core/icon-utils';
+import { icon } from '../core/icon-utils';
 import { i18n } from '../core/i18n';
 import { createLogger } from '../core/logger';
 
@@ -93,12 +93,11 @@ export class LyraFileBrowser extends LyraPart {
         const selection = activeSelectionSignal.get()
         const file = selection instanceof File ? selection : null
         const hasOpenWith = file && this.fileEditorOptions.length > 0
-        const folderOpenIcon = parseIconSpec('folder-open')
         return html`
             <lyra-command cmd="open_editor" icon="folder-open">${t.OPEN}</lyra-command>
             ${hasOpenWith ? html`
                 <wa-dropdown-item>
-                    <wa-icon library=${folderOpenIcon.library ?? nothing} name=${folderOpenIcon.name} slot="icon"></wa-icon>
+                    ${icon('folder-open', { slot: 'icon' })}
                     ${t.OPEN_WITH}
                     ${this.fileEditorOptions.map(opt => html`
                         <lyra-command
@@ -205,11 +204,9 @@ export class LyraFileBrowser extends LyraPart {
         const resource = node.data as Resource;
         const isFile = resource instanceof File;
         const isDraggable = !!resource.getParent();
-        const iconSpec = parseIconSpec(
-            isFile
-                ? editorRegistry.getFileIcon(resource.getName())
-                : (node.icon || "folder-open")
-        );
+        const iconSpec = isFile
+            ? editorRegistry.getFileIcon(resource.getName())
+            : (node.icon || "folder-open");
         const workspaceTag = (node as any).workspaceTag as string | undefined;
 
         return html`
@@ -222,7 +219,7 @@ export class LyraFileBrowser extends LyraPart {
                 ?expanded=${expanded}
                 ?lazy=${isLazy}>
                 <span class="tree-label">
-                    <wa-icon library=${iconSpec.library ?? nothing} name=${iconSpec.name} label="${node.leaf ? t.FILE : t.FOLDER}"></wa-icon>
+                    ${icon(iconSpec, { label: node.leaf ? t.FILE : t.FOLDER })}
                     <span class="tree-label-text">${node.label}</span>
                     ${!node.leaf && workspaceTag
                         ? html`<wa-badge appearance="outlined" variant="neutral" style="font-size: var(--wa-font-size-xs);">${workspaceTag}</wa-badge>`
