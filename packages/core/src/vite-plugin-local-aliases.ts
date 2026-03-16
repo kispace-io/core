@@ -32,6 +32,10 @@ export interface LocalAliasesOptions {
    * Defaults to `true`.
    */
   useSrcInDev?: boolean;
+  /**
+   * If true, always point aliases at `src` regardless of mode.
+   */
+  alwaysUseSrc?: boolean;
 }
 
 const discoverLocalAliases = (
@@ -40,13 +44,14 @@ const discoverLocalAliases = (
   options: LocalAliasesOptions = {},
 ): Record<string, string> => {
   const useSrcInDev = options.useSrcInDev ?? true;
+  const alwaysUseSrc = options.alwaysUseSrc ?? false;
 
   const rootDir = cfg.root ?? process.cwd();
   const packagesRoot =
     options.packagesRoot ?? path.resolve(rootDir, '..');
 
   const entries = fs.readdirSync(packagesRoot, { withFileTypes: true });
-  const useSrc = useSrcInDev && mode === 'development';
+  const useSrc = alwaysUseSrc || (useSrcInDev && mode === 'development');
 
   const patterns: PackagePattern[] =
     options.patterns && options.patterns.length
