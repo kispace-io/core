@@ -23,6 +23,9 @@ import {LyraElement} from "./element";
 
 @customElement('lyra-resizable-grid')
 export class LyraResizableGrid extends LyraElement {
+    private static readonly HANDLE_VISUAL_SIZE_PX = 1;
+    private static readonly HANDLE_HITBOX_PADDING_PX = 4;
+
     @property()
     orientation: 'horizontal' | 'vertical' = 'horizontal';
 
@@ -234,7 +237,7 @@ export class LyraResizableGrid extends LyraElement {
                 if (index === newSizes.length - 1) {
                     return sizeStr;
                 }
-                return `${sizeStr} 4px`;
+                return `${sizeStr} ${LyraResizableGrid.HANDLE_VISUAL_SIZE_PX}px`;
             }).join(' ');
             
             if (this.orientation === 'horizontal') {
@@ -287,7 +290,7 @@ export class LyraResizableGrid extends LyraElement {
             if (index === this.gridSizes.length - 1) {
                 return [size];
             }
-            return [size, '1px'];
+            return [size, `${LyraResizableGrid.HANDLE_VISUAL_SIZE_PX}px`];
         }).join(' ');
 
         // Apply grid layout to the custom element itself
@@ -311,6 +314,22 @@ export class LyraResizableGrid extends LyraElement {
                     background-color: var(--wa-color-neutral-border-quiet);
                     transition: background-color var(--wa-transition-fast);
                 }
+
+                .resize-handle::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                }
+
+                .resize-handle.horizontal::before {
+                    right: -${LyraResizableGrid.HANDLE_HITBOX_PADDING_PX}px;
+                    left: -${LyraResizableGrid.HANDLE_HITBOX_PADDING_PX}px;
+                }
+
+                .resize-handle.vertical::before {
+                    top: -${LyraResizableGrid.HANDLE_HITBOX_PADDING_PX}px;
+                    bottom: -${LyraResizableGrid.HANDLE_HITBOX_PADDING_PX}px;
+                }
                 
                 .resize-handle:hover {
                     background-color: var(--wa-color-brand-fill-normal);
@@ -323,7 +342,7 @@ export class LyraResizableGrid extends LyraElement {
                     const gridRow = this.orientation === 'vertical' ? `${index * 2 + 2}` : '1';
                     return html`
                         <div 
-                            class="resize-handle"
+                            class="resize-handle ${this.orientation === 'horizontal' ? 'horizontal' : 'vertical'}"
                             style="
                                 cursor: ${this.orientation === 'horizontal' ? 'col-resize' : 'row-resize'};
                                 grid-column: ${gridCol};
