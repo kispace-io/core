@@ -1,7 +1,7 @@
 import {contributionRegistry, HTMLContribution} from "../core/contributionregistry";
 import {TOOLBAR_BOTTOM_CENTER} from "../core/constants";
 import {customElement} from "lit/decorators.js";
-import { LyraPart } from "../parts/part";
+import { LyraElement } from "../parts/element";
 import {css, html, render} from "lit";
 import {activeTasksSignal} from "../core/appstate";
 import {taskService, ProgressMonitor} from "../core/taskservice";
@@ -191,7 +191,7 @@ function updateProgressDialog(forceOpen = false) {
 }
 
 @customElement('lyra-tasks')
-export class LyraTasks extends LyraPart {
+export class LyraTasks extends LyraElement {
     static styles = css`
         :host {
             display: flex;
