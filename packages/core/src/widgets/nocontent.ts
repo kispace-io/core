@@ -24,11 +24,19 @@ export class LyraNoContent extends LyraWidget {
     static styles = css`
         :host {
             display: flex;
-            margin: 10px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
         }
 
-        * {
-            flex: 1;
+        h3 {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-align: center;
         }
     `
 }
