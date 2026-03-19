@@ -72,7 +72,7 @@ export class LyraMonacoEditor extends LyraPart implements EditorContentProvider 
         return this.input?.data?.getWorkspacePath() ?? null;
     }
 
-    render() {
+    protected renderContent() {
         if (this.initialContent === undefined) {
             return html`<div class="monaco-editor-placeholder"></div>`;
         }

@@ -72,7 +72,7 @@ export class LyraCommandShell extends LyraPart {
     return String(last);
   }
 
-  render() {
+  protected renderContent() {
     return html`
       <div class="shell-container">
         <div class="output-area" ${ref(this.outputRef)}>

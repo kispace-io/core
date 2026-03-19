@@ -53,7 +53,7 @@ editorRegistry.registerEditorInputHandler({
     ranking: 1000,
     canHandle: (input: EditorInput) => input.key === '.system.ai-config',
     handle: async (input: EditorInput) => {
-        input.component = () => html`<lyra-ai-config-editor .input="${input}"></lyra-ai-config-editor>`;
+        input.component = (id: string) => html`<lyra-ai-config-editor id="${id}" .input=${input}></lyra-ai-config-editor>`;
         return input;
     }
 });

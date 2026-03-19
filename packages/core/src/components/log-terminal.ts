@@ -50,7 +50,6 @@ export class LyraLogTerminal extends LyraPart {
         };
         
         this.messages = [...this.messages, logMessage];
-        this.updateToolbar();
         
         if (this.autoScroll) {
             this.updateComplete.then(() => {
@@ -64,7 +63,6 @@ export class LyraLogTerminal extends LyraPart {
 
     public clear() {
         this.messages = [];
-        this.updateToolbar();
     }
 
     private getFilteredMessages() {
@@ -116,7 +114,6 @@ export class LyraLogTerminal extends LyraPart {
                 .action=${() => {
                     this.filter = 'all';
                     this.saveSettings();
-                    this.updateToolbar();
                 }}>
                 ${t.ALL} (${this.messages.length})
             </lyra-command>
@@ -129,7 +126,6 @@ export class LyraLogTerminal extends LyraPart {
                 .action=${() => {
                     this.filter = 'info';
                     this.saveSettings();
-                    this.updateToolbar();
                 }}>
                 ${t.INFO}${infoCount > 0 ? ` (${infoCount})` : ''}
             </lyra-command>
@@ -142,7 +138,6 @@ export class LyraLogTerminal extends LyraPart {
                 .action=${() => {
                     this.filter = 'warning';
                     this.saveSettings();
-                    this.updateToolbar();
                 }}>
                 ${t.WARNINGS}${warningCount > 0 ? ` (${warningCount})` : ''}
             </lyra-command>
@@ -155,7 +150,6 @@ export class LyraLogTerminal extends LyraPart {
                 .action=${() => {
                     this.filter = 'error';
                     this.saveSettings();
-                    this.updateToolbar();
                 }}>
                 ${t.ERRORS}${errorCount > 0 ? ` (${errorCount})` : ''}
             </lyra-command>
@@ -168,7 +162,6 @@ export class LyraLogTerminal extends LyraPart {
                 .action=${() => {
                     this.filter = 'debug';
                     this.saveSettings();
-                    this.updateToolbar();
                 }}>
                 ${t.DEBUG}${debugCount > 0 ? ` (${debugCount})` : ''}
             </lyra-command>
@@ -183,7 +176,6 @@ export class LyraLogTerminal extends LyraPart {
                 .action=${() => {
                     this.autoScroll = !this.autoScroll;
                     this.saveSettings();
-                    this.updateToolbar();
                 }}>
                 ${this.autoScroll ? t.AUTO_SCROLL : t.MANUAL}
             </lyra-command>
@@ -197,7 +189,7 @@ export class LyraLogTerminal extends LyraPart {
         `;
     }
 
-    render() {
+    protected renderContent() {
         const filteredMessages = this.getFilteredMessages();
 
         return html`
@@ -313,7 +305,6 @@ export class LyraLogTerminal extends LyraPart {
             if (typeof persisted.autoScroll === 'boolean') {
                 this.autoScroll = persisted.autoScroll;
             }
-            this.updateToolbar();
         }
     }
 

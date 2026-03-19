@@ -16,12 +16,11 @@ export default function activate() {
         data: input,
         key: input.getWorkspacePath(),
         icon: 'database',
-        noOverflow: false,
         state: {},
         component: () => null as any,
       };
-      editorInput.component = () =>
-        html`<lyra-sql-editor .input=${editorInput}></lyra-sql-editor>`;
+      editorInput.component = (id: string) =>
+        html`<lyra-sql-editor id="${id}" .input=${editorInput}></lyra-sql-editor>`;
       return editorInput;
     },
   });

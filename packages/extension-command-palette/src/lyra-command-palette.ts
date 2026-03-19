@@ -220,7 +220,7 @@ export class LyraCommandPalette extends LyraPart {
     this.executeCommandWithParams(this.selectedCommand.id, this.parameterValues);
   }
 
-  protected render() {
+  protected renderContent() {
     return html`
       <wa-input
       appearance="filled"

@@ -471,7 +471,7 @@ export class LyraRAGSystemManager extends LyraPart {
         `;
     }
 
-    protected render(): TemplateResult {
+    protected renderContent(): TemplateResult {
         if (!this.stats) {
             this.stats = { totalDocuments: 0, byWorkspace: {} };
         }

@@ -146,7 +146,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         this.resetCellState();
         await this.ensureKernelLoaded();
         this.requestUpdate();
-        this.updateToolbar();
     }
 
     protected renderToolbar() {
@@ -272,7 +271,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         try {
             this.kernelConnecting = true;
             this.requestUpdate();
-            this.updateToolbar();
             await this.kernel.connect({
                 requiredPackages: this.notebook?.metadata?.required_packages,
             });
@@ -283,7 +281,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         } finally {
             this.kernelConnecting = false;
             this.requestUpdate();
-            this.updateToolbar();
         }
     }
 
@@ -322,7 +319,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         }
         this.requestUpdate();
         await this.ensureKernelLoaded();
-        this.updateToolbar();
     }
 
     private async ensureKernelLoaded(): Promise<void> {
@@ -337,7 +333,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         try {
             this.kernelConnecting = true;
             this.requestUpdate();
-            this.updateToolbar();
             const k = await contribution.loadKernel();
             if (this.selectedKernelId !== id) return;
             this.kernel = k;
@@ -355,7 +350,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         } finally {
             this.kernelConnecting = false;
             this.requestUpdate();
-            this.updateToolbar();
         }
     }
 
@@ -595,7 +589,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         try {
             this.kernelConnecting = true;
             this.requestUpdate();
-            this.updateToolbar();
             await this.kernel.restart();
             this.kernelConnected = true;
             if (this.kernel.getVersion) this.kernelVersion = await this.kernel.getVersion();
@@ -604,7 +597,6 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
         } finally {
             this.kernelConnecting = false;
             this.requestUpdate();
-            this.updateToolbar();
         }
     }
 
@@ -1052,11 +1044,10 @@ export class LyraNotebookEditor extends LyraPart implements NotebookEditorLike {
             changedProperties.has('availableKernels') ||
             changedProperties.has('selectedKernelId')
         ) {
-            this.updateToolbar();
         }
     }
 
-    protected render() {
+    protected renderContent() {
         if (!this.notebook) {
             return html`<div class="loading">Loading notebook...</div>`;
         }

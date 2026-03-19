@@ -96,7 +96,6 @@ export class LyraAIView extends LyraPart {
         this.currentTaskPlan = undefined;
         this.currentArtifacts = [];
         this.requestUpdate();
-        this.updateToolbar();
     }
 
     private createNewSession() {
@@ -112,7 +111,6 @@ export class LyraAIView extends LyraPart {
     private deletePastSession(sessionId: string) {
         this.sessionManager.deletePastSession(sessionId);
         this.requestUpdate();
-        this.updateToolbar();
     }
 
     private async sendMessage() {
@@ -154,7 +152,6 @@ export class LyraAIView extends LyraPart {
 
         if (session.history.length === 1) {
             this.sessionManager.setTitle(this.sessionManager.generateTitle(prompt));
-            this.updateToolbar();
         }
 
         this.requestUpdate();
@@ -278,7 +275,6 @@ export class LyraAIView extends LyraPart {
             this.streamManager.reset();
             this.agentGroupManager.clearCurrentGroup();
             this.requestUpdate();
-            this.updateToolbar();
         });
     }
 
@@ -354,7 +350,7 @@ export class LyraAIView extends LyraPart {
         `;
     }
 
-    render() {
+    protected renderContent() {
         const session = this.sessionManager.getActiveSession();
         const selectedProvider = this.providerManager.getSelectedProvider();
 

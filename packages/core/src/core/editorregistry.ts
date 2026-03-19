@@ -12,7 +12,6 @@ export interface EditorInput {
     title: string;
     icon?: string;
     data: any;
-    noOverflow?: boolean;
     component: (container: any, tab: HTMLElement) => any;
     state: { [key: string]: any };
 }
@@ -212,7 +211,6 @@ class EditorRegistry {
             label: editorInput.title,
             icon: editorInput.icon,
             closable: true,
-            noOverflow: editorInput.noOverflow,
             component: editorInput.component
         } as TabContribution) 
     }

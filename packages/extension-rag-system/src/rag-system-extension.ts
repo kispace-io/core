@@ -329,8 +329,8 @@ export default function ragSystemExtension(context: any) {
                     return input.key === '.system.rag-system';
         },
         handle: async (input: EditorInput) => {
-            input.component = () => html`
-                <lyra-rag-system-manager .input=${input}></lyra-rag-system-manager>
+            input.component = (id: string) => html`
+                <lyra-rag-system-manager id="${id}" .input=${input}></lyra-rag-system-manager>
             `;
             return input;
         }

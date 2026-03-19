@@ -84,13 +84,12 @@ editorRegistry.registerEditorInputHandler({
             data: input,
             key: input.getWorkspacePath(),
             icon: "python",
-            noOverflow: false,
             state: {},
             component: () => null as any,
         };
 
-        editorInput.component = () =>
-            html`<lyra-python-editor .input=${editorInput}></lyra-python-editor>`;
+        editorInput.component = (id: string) =>
+            html`<lyra-python-editor id="${id}" .input=${editorInput}></lyra-python-editor>`;
 
         return editorInput;
     },

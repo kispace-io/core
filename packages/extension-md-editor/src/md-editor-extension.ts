@@ -17,11 +17,10 @@ editorRegistry.registerEditorInputHandler({
             data: input,
             key: input.getWorkspacePath(),
             icon: "book",
-            noOverflow: false,
             state: {},
         } as EditorInput
-        editorInput.component = () => html`
-            <lyra-md-editor .input=${editorInput}></lyra-md-editor>`
+        editorInput.component = (id: string) => html`
+            <lyra-md-editor id="${id}" .input=${editorInput}></lyra-md-editor>`
         return editorInput;
     },
     ranking: 1000
@@ -59,7 +58,7 @@ export class LyraMDEditor extends LyraPart {
         }
     }
 
-    protected render() {
+    protected renderContent() {
         return html`
             <div style="padding: 10px;">${unsafeHTML(this.mdContents)}</div>`
     }

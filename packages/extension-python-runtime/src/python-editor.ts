@@ -222,11 +222,10 @@ export class LyraPythonEditor extends LyraPart implements EditorContentProvider 
             changedProperties.has("pyConnecting") ||
             changedProperties.has("pyVersion")
         ) {
-            this.updateToolbar();
         }
     }
 
-    render() {
+    protected renderContent() {
         if (this.initialContent === undefined) {
             return html`<div class="monaco-editor-placeholder"></div>`;
         }

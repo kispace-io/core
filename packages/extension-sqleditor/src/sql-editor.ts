@@ -74,7 +74,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
       this.availableConnections = [];
       this.selectedConnectionId = null;
       await this.updateComplete;
-      this.updateToolbar();
       return;
     }
     if (!this.selectedEngineId) {
@@ -84,7 +83,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     this.requestUpdate();
     await this.refreshConnections();
     await this.updateComplete;
-    this.updateToolbar();
   }
 
   private async getOrLoadDatabase(engineId: string): Promise<SqlDatabase | null> {
@@ -112,7 +110,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
       this.availableConnections = [];
       this.selectedConnectionId = null;
       await this.updateComplete;
-      this.updateToolbar();
       return;
     }
     const db = await this.getOrLoadDatabase(engineId);
@@ -120,7 +117,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
       this.availableConnections = [];
       this.selectedConnectionId = null;
       await this.updateComplete;
-      this.updateToolbar();
       return;
     }
     const infos = await db.listConnections();
@@ -129,7 +125,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     if (currentId !== null) {
       this.selectedConnectionId = currentId;
       await this.updateComplete;
-      this.updateToolbar();
       return;
     }
     const preferred = infos.find((info: SqlConnectionInfo) => info.isDefault) ?? infos[0];
@@ -138,7 +133,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
       await db.selectConnection(preferred.id ?? null);
     }
     await this.updateComplete;
-    this.updateToolbar();
   }
 
   private async onEngineChange(e: Event): Promise<void> {
@@ -148,7 +142,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     this.selectedEngineId = value || null;
     await this.refreshConnections();
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private async onConnectionChange(e: Event): Promise<void> {
@@ -163,7 +156,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     if (!db) return;
     await db.selectConnection(next);
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private async onEngineDropdownSelect(
@@ -174,7 +166,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     this.selectedEngineId = value || null;
     await this.refreshConnections();
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private async onConnectionDropdownSelect(
@@ -190,7 +181,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     if (!db) return;
     await db.selectConnection(next);
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private async deleteConnectionById(e: Event, id: string | null): Promise<void> {
@@ -212,7 +202,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     }
     await this.refreshConnections();
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private _onContentChange = () => {
@@ -294,7 +283,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     this.running = true;
     const label = truncateLabel(sql);
     this.requestUpdate();
-    this.updateToolbar();
 
     const timeoutMs = 60_000;
     const timeoutId = window.setTimeout(() => this.clearRunningState(), timeoutMs);
@@ -313,7 +301,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
       window.clearTimeout(timeoutId);
       this.running = false;
       this.requestUpdate();
-      this.updateToolbar();
     }
   }
 
@@ -321,7 +308,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     if (!this.running) return;
     this.running = false;
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private async createConnection(): Promise<void> {
@@ -336,7 +322,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     await db.selectConnection(info.id ?? null);
     toastInfo(`Connection "${info.label}" created`);
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private async deleteConnection(): Promise<void> {
@@ -357,7 +342,6 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     }
     await this.refreshConnections();
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private getCurrentConnectionLabel(): string | null {
@@ -522,7 +506,7 @@ export class LyraSqlEditor extends LyraPart implements EditorContentProvider {
     `;
   }
 
-  render() {
+  protected renderContent() {
     if (this.initialContent === undefined) {
       return html`<div class="editor-placeholder"></div>`;
     }

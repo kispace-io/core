@@ -15,8 +15,8 @@ export default (_uiContext: unknown) => {
         ranking: 1000,
         canHandle: (input: EditorInput) => input.key === '.system.settings',
         handle: async (input: EditorInput) => {
-            input.component = () => html`
-                <lyra-settings-tree .input=${input}></lyra-settings-tree>
+            input.component = (id: string) => html`
+                <lyra-settings-tree id="${id}" .input=${input}></lyra-settings-tree>
             `;
             return input;
         },

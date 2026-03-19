@@ -4,7 +4,7 @@ import { TOOLBAR_MAIN_RIGHT } from "../core/constants";
 import { EditorInput, editorRegistry } from "../core/editorregistry";
 import { html } from "lit";
 import { toastError, toastInfo } from "../core/toast";
-import { activeEditorSignal, activePartSignal } from "../core/appstate";
+import { activePartSignal } from "../core/appstate";
 import { appSettings } from "../core/settingsservice";
 import { extensionRegistry } from "../core/extensionregistry";
 import type { Extension } from "../core/extensionregistry";
@@ -22,7 +22,7 @@ registerAll({
     },
     handler: {
         execute: async _context => {
-            const part = activeEditorSignal.get() || activePartSignal.get()
+            const part = activePartSignal.get()
             if (part && part.isDirty()) {
                 part.save()
             }
@@ -122,8 +122,7 @@ registerAll({
                 key: "system.extensions",
                 icon: "puzzle-piece",
                 state: {},
-                noOverflow: true,
-                component: () => html`<lyra-extensions></lyra-extensions>`,
+                component: (id: string) => html`<lyra-extensions id="${id}"></lyra-extensions>`,
             }
             editorRegistry.loadEditor(editorInput, "extensions-editor").then()
         }

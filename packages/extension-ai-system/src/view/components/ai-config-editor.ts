@@ -137,7 +137,7 @@ export class LyraAIConfigEditor extends LyraPart {
         `;
     }
 
-    render() {
+    protected renderContent() {
         return html`
             <div class="editor">
                 <div class="editor-header">

@@ -8,8 +8,6 @@ import {createRef, ref} from "lit/directives/ref.js";
 import { icon } from "../core/icon-utils";
 import {subscribe} from "../core/events";
 import { LyraPart } from "./part";
-import { LyraToolbar } from "./toolbar";
-import {LyraContextMenu} from "./contextmenu";
 import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants";
 import {activePartSignal, activeEditorSignal, partDirtySignal} from "../core/appstate";
 import {watchSignal} from "../core/signals";
@@ -43,9 +41,6 @@ export class LyraTabs extends LyraContainer {
 
     /** Cached container ID (this element's 'id' attribute) */
     private containerId: string | null = null;
-
-    /** Map to track ResizeObservers for cleanup */
-    private resizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
     private tabGroupListenersAttached = false;
 
@@ -83,21 +78,14 @@ export class LyraTabs extends LyraContainer {
         }
         if (changedProperties.has('contributions')) {
             if (this.contributions.length === 0) this.tabGroupListenersAttached = false;
-            const isEditorArea = this.containerId === EDITOR_AREA_MAIN;
             this.contributions.forEach(contribution => {
                 const tabPanel = this.getTabPanel(contribution.name);
                 if (!tabPanel) return;
-                
-                const contentDiv = tabPanel.querySelector('.tab-content');
-                if (contentDiv && contentDiv.firstElementChild) {
-                    const part = contentDiv.firstElementChild;
-                    if (part instanceof LyraPart) {
-                        part.tabContribution = contribution;
-                        part.isEditor = isEditorArea;
-                    }
+
+                const part = this.getPartFromPanel(tabPanel);
+                if (part) {
+                    part.tabContribution = contribution;
                 }
-                
-                requestAnimationFrame(() => this.updateToolbarHeightVariable(tabPanel));
             });
         }
     }
@@ -136,18 +124,11 @@ export class LyraTabs extends LyraContainer {
                 this.activate(contribution.name);
                 const tabPanel = this.getTabPanel(contribution.name);
                 if (!tabPanel) return;
-                const contentDiv = tabPanel.querySelector('.tab-content');
-                if (contentDiv?.firstElementChild instanceof LyraPart) {
-                    const part = contentDiv.firstElementChild;
+                const part = this.getPartFromPanel(tabPanel);
+                if (part) {
                     part.tabContribution = contribution;
-                    part.isEditor = this.containerId === EDITOR_AREA_MAIN;
                 }
                 this.syncActiveSignalsFromPanel(tabPanel);
-                requestAnimationFrame(() => {
-                    this.updateToolbarFromComponent(tabPanel);
-                    this.updateToolbarHeightVariable(tabPanel);
-                    this.setupToolbarResizeObserver(tabPanel);
-                });
             });
         });
     }
@@ -217,21 +198,11 @@ export class LyraTabs extends LyraContainer {
      * 3. DOM element is removed by caller (closeTab method)
      */
     private cleanupTabInstance(tabPanel: HTMLElement): void {
-        // Clean up ResizeObserver
-        const observer = this.resizeObservers.get(tabPanel);
-        if (observer) {
-            observer.disconnect();
-            this.resizeObservers.delete(tabPanel);
-        }
-        
         // Explicitly close the component inside the tab before removing
         // This allows components to dispose resources (e.g., Monaco editor models, event listeners)
-        const contentDiv = tabPanel.querySelector('.tab-content');
-        if (contentDiv && contentDiv.firstElementChild) {
-            const component = contentDiv.firstElementChild;
-            if ('close' in component && typeof component.close === 'function') {
-                component.close();
-            }
+        const part = this.getPartFromPanel(tabPanel);
+        if (part && 'close' in part && typeof part.close === 'function') {
+            part.close();
         }
     }
 
@@ -248,27 +219,7 @@ export class LyraTabs extends LyraContainer {
             const tabPanel = this.getTabPanel(event.detail.name);
             if (tabPanel) {
                 this.syncActiveSignalsFromPanel(tabPanel);
-                this.updateToolbarFromComponent(tabPanel);
-                requestAnimationFrame(() => {
-                    this.updateToolbarHeightVariable(tabPanel);
-                    this.setupToolbarResizeObserver(tabPanel);
-                });
             }
-        });
-
-        el.addEventListener("part-toolbar-changed", (event: Event) => {
-            const component = event.target as HTMLElement;
-            const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
-            if (tabPanel) {
-                this.updateToolbarFromComponent(tabPanel);
-                requestAnimationFrame(() => this.updateToolbarHeightVariable(tabPanel));
-            }
-        });
-
-        el.addEventListener("part-contextmenu-changed", (event: Event) => {
-            const component = event.target as HTMLElement;
-            const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
-            if (tabPanel) this.updateContextMenuFromComponent(tabPanel);
         });
 
         el.addEventListener('click', (event: Event) => {
@@ -282,27 +233,10 @@ export class LyraTabs extends LyraContainer {
                 }
                 return;
             }
-            const scroller = target.closest('wa-scroller.tab-content');
-            if (!scroller) return;
-            const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
+            const tabPanel = target.closest('wa-tab-panel') as HTMLElement | null;
             if (tabPanel) this.syncActiveSignalsFromPanel(tabPanel);
         });
 
-        el.addEventListener('contextmenu', (event: Event) => {
-            const mouseEvent = event as MouseEvent;
-            const scroller = (mouseEvent.target as HTMLElement).closest('wa-scroller.tab-content');
-            if (!scroller) return;
-            mouseEvent.preventDefault();
-            const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
-            if (!tabPanel) return;
-            requestAnimationFrame(() => {
-                this.updateContextMenuFromComponent(tabPanel);
-                const contextMenu = tabPanel.querySelector('lyra-contextmenu') as LyraContextMenu;
-                if (contextMenu) {
-                    contextMenu.show({ x: mouseEvent.clientX, y: mouseEvent.clientY }, mouseEvent);
-                }
-            });
-        });
 
         this.dirtySignalCleanup?.();
         this.dirtySignalCleanup = watchSignal(partDirtySignal, (part: LyraPart | null) => {
@@ -348,8 +282,7 @@ export class LyraTabs extends LyraContainer {
     }
 
     private syncActiveSignalsFromPanel(tabPanel: HTMLElement): void {
-        const contentDiv = tabPanel.querySelector('.tab-content');
-        const part = contentDiv?.firstElementChild;
+        const part = this.getPartFromPanel(tabPanel);
         if (!(part instanceof LyraPart)) return;
 
         // Always update the active part to reflect current focus
@@ -375,79 +308,9 @@ export class LyraTabs extends LyraContainer {
         }
     }
 
-    /**
-     * Updates the toolbar for a tab panel by querying the component for its toolbar content.
-     * This allows LyraPart components to provide their own toolbar items directly.
-     */
-    private updateToolbarFromComponent(tabPanel: HTMLElement): void {
-        const contentDiv = tabPanel.querySelector('.tab-content');
-        if (!contentDiv || !contentDiv.firstElementChild) return;
-        
-        const component = contentDiv.firstElementChild;
-        if (!(component instanceof LyraPart)) return;
-        
-        // Check if component has renderToolbar method
-        if (!component['renderToolbar']) return;
-        
-        // Query for lyra-toolbar directly since there's only one per tab panel
-        const toolbar = tabPanel.querySelector('lyra-toolbar') as LyraToolbar | null;
-        if (toolbar) {
-            // Pass a bound render function to maintain component context
-            toolbar.partToolbarRenderer = () => component['renderToolbar']();
-            toolbar.requestUpdate();
-        }
-    }
-
-    /**
-     * Updates the context menu for a tab panel by querying the component for its context menu content.
-     * This allows LyraPart components to provide their own context menu items directly.
-     */
-    private updateContextMenuFromComponent(tabPanel: HTMLElement): void {
-        const contentDiv = tabPanel.querySelector('.tab-content');
-        if (!contentDiv || !contentDiv.firstElementChild) return;
-        
-        const component = contentDiv.firstElementChild;
-        if (!(component instanceof LyraPart)) return;
-        
-        // Check if component has renderContextMenu method
-        if (!component['renderContextMenu']) return;
-        
-        // Query for contextmenu directly since there's only one per tab panel
-        const contextMenu = tabPanel.querySelector('lyra-contextmenu') as LyraContextMenu | null;
-        if (contextMenu) {
-            // Pass a bound render function to maintain component context
-            contextMenu.partContextMenuRenderer = () => component['renderContextMenu']();
-            contextMenu.requestUpdate();
-        }
-    }
-
-    /**
-     * Updates the toolbar height CSS variable for calc() positioning.
-     */
-    private updateToolbarHeightVariable(tabPanel: HTMLElement): void {
-        const toolbar = tabPanel.querySelector('.tab-toolbar') as HTMLElement | null;
-        if (!toolbar) return;
-        
-        const toolbarHeight = toolbar.offsetHeight;
-        tabPanel.style.setProperty('--toolbar-height', `${toolbarHeight}px`);
-    }
-
-    /**
-     * Sets up a ResizeObserver to update toolbar height variable when toolbar size changes.
-     * Reuses existing observer if one already exists for this tab panel.
-     */
-    private setupToolbarResizeObserver(tabPanel: HTMLElement): void {
-        // Check if observer already exists
-        if (this.resizeObservers.has(tabPanel)) return;
-        
-        const toolbar = tabPanel.querySelector('.tab-toolbar') as HTMLElement | null;
-        if (!toolbar) return;
-
-        const observer = new ResizeObserver(() => {
-            this.updateToolbarHeightVariable(tabPanel);
-        });
-        observer.observe(toolbar);
-        this.resizeObservers.set(tabPanel, observer);
+    private getPartFromPanel(tabPanel: HTMLElement): LyraPart | null {
+        const first = tabPanel.firstElementChild;
+        return first instanceof LyraPart ? first : null;
     }
 
     // ============= Render Method =============
@@ -506,18 +369,7 @@ export class LyraTabs extends LyraContainer {
                             `)}
                         </wa-tab>
                         <wa-tab-panel name="${c.name}">
-                            ${when(c.toolbar !== false, () => html`
-                                <lyra-toolbar id="toolbar:${c.editorId ?? c.name}"
-                                           class="tab-toolbar"
-                                           ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></lyra-toolbar>
-                            `)}
-                            <wa-scroller class="tab-content" orientation="vertical">
-                                ${c.component ? c.component(c.name) : nothing}
-                            </wa-scroller>
-                            ${when(c.contextMenu !== false, () => html`
-                                <lyra-contextmenu id="contextmenu:${c.editorId ?? c.name}"
-                                               ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></lyra-contextmenu>
-                            `)}
+                            ${c.component ? c.component(c.name) : nothing}
                         </wa-tab-panel>
                     `;
                     }
@@ -553,12 +405,10 @@ export class LyraTabs extends LyraContainer {
             position: relative;
         }
 
-        .tab-content {
-            position: absolute;
-            top: calc(var(--toolbar-height, 0px));
-            right: 0;
-            left: 0;
-            height: calc(100% - var(--toolbar-height, 0px));
+        wa-tab-panel > * {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
         }
 
         wa-tab::part(base) {

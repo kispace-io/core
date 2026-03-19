@@ -56,8 +56,8 @@ export class LyraToolbar extends LyraElement {
     @property({reflect: true})
     size: "small" | "medium" | "large" = "small";
 
-    @property({type: Boolean, attribute: 'is-editor'})
-    private isEditor: boolean = false;
+    @property({attribute: false})
+    scopeTokens: string[] = [];
 
     @property({attribute: false})
     public partToolbarContent?: any = undefined;
@@ -121,23 +121,40 @@ export class LyraToolbar extends LyraElement {
     updated(changedProperties: Map<string, unknown>) {
         super.updated?.(changedProperties);
         if (!this.compact) this.scheduleOverflowCheck();
+        if (changedProperties.has('scopeTokens')) {
+            this.refreshContributions();
+        }
+    }
+
+    attributeChangedCallback(name: string, old: string | null, value: string | null) {
+        super.attributeChangedCallback(name, old, value);
+        if (name === 'id' && old !== value) {
+            this.refreshContributions();
+        }
     }
 
     protected doBeforeUI() {
-        const id = this.getAttribute("id");
-        if (id) {
-            this.loadContributions(id);
-        }
+        this.refreshContributions();
         
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
+            const id = this.getAttribute("id");
             if (!id) return;
             
             const shouldReload = this.matchesTarget(id, event.target);
             if (shouldReload) {
-                this.loadContributions(id);
+                this.refreshContributions();
                 this.requestUpdate()
             }
         })
+    }
+
+    private refreshContributions() {
+        const id = this.getAttribute("id");
+        if (!id) {
+            this.contributions = [];
+            return;
+        }
+        this.loadContributions(id);
     }
 
 
@@ -152,8 +169,8 @@ export class LyraToolbar extends LyraElement {
         const targetParts = target.split(':');
         if (targetParts.length === 2) {
             const categoryToken = targetParts[1];
-            if (categoryToken === 'system.editors' || categoryToken === '.system.editors') {
-                return this.isEditor && id.startsWith(`${prefix}:`);
+            if (this.scopeTokens.includes(categoryToken)) {
+                return id.startsWith(`${prefix}:`);
             }
         }
         
@@ -173,14 +190,11 @@ export class LyraToolbar extends LyraElement {
         const wildcard = contributionRegistry.getContributions(wildcardId);
         
         const categoryMatches: Contribution[] = [];
-        
-        if (this.isEditor) {
-            const allCategories = ['system.editors', '.system.editors'];
-            for (const category of allCategories) {
-                const categoryId = `${prefix}:${category}`;
-                const matches = contributionRegistry.getContributions(categoryId);
-                categoryMatches.push(...matches);
-            }
+
+        for (const category of this.scopeTokens) {
+            const categoryId = `${prefix}:${category}`;
+            const matches = contributionRegistry.getContributions(categoryId);
+            categoryMatches.push(...matches);
         }
         
         this.contributions = [...wildcard, ...categoryMatches, ...specific];

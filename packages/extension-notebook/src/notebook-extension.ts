@@ -67,11 +67,10 @@ export default ({ editorRegistry, commandRegistry, contributionRegistry }: any) 
                 data: input,
                 key: input.getWorkspacePath(),
                 icon: "lyra jupyter",
-                noOverflow: true,
                 state: {},
             } as EditorInput;
-            editorInput.component = () => html`
-                <lyra-notebook-editor .input=${editorInput}></lyra-notebook-editor>`;
+            editorInput.component = (id: string) => html`
+                <lyra-notebook-editor id="${id}" .input=${editorInput}></lyra-notebook-editor>`;
             return editorInput;
         },
         ranking: 100,

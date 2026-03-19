@@ -263,7 +263,7 @@ export class LyraExtensions extends LyraPart {
         `;
     }
 
-    render() {
+    protected renderContent() {
         const grouped = this.getGroupedExtensions();
         const hasAnyExtensions = grouped.enabled.length > 0 || grouped.available.length > 0;
         

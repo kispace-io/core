@@ -11,18 +11,17 @@ editorRegistry.registerEditorInputHandler({
         await import('./monaco-editor');
     },
     canHandle: (input: unknown) =>
-        input instanceof File && !input.getName().toLowerCase().endsWith(".py"),
+        input instanceof File,
     handle: async (input: File) => {
         const editorInput = {
             title: input.getWorkspacePath(),
             data: input,
             key: input.getWorkspacePath(),
             icon: "file-pen",
-            noOverflow: false,
             state: {},
         } as EditorInput
-        editorInput.component = () => html`
-            <lyra-monaco-editor .input=${editorInput}></lyra-monaco-editor>`
+        editorInput.component = (id: string) => html`
+            <lyra-monaco-editor id=${id} .input=${editorInput}></lyra-monaco-editor>`
         return editorInput;
     }
 })

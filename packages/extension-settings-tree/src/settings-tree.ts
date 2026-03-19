@@ -667,7 +667,7 @@ export class LyraSettingsTree extends LyraPart {
         `;
     }
 
-    render() {
+    protected renderContent() {
         return html`
             <div class="settings-editor-container">
                 <wa-split-panel position="25" class="split-panel-fill">

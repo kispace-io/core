@@ -1,17 +1,23 @@
 import { LyraContainer } from "./container";
 import { property } from "lit/decorators.js";
-import { PropertyValues, TemplateResult, nothing } from "lit";
+import { css, CSSResultGroup, html, PropertyValues, TemplateResult, nothing } from "lit";
 import { partDirtySignal, activePartSignal } from "../core/appstate";
 import { CommandStack } from "../core/commandregistry";
 import { TabContribution } from "../core/contributionregistry";
 import type { LyraTabs } from "./tabs";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { LyraContextMenu } from "./contextmenu";
 
 export abstract class LyraPart extends LyraContainer {
+    protected scrollMode: 'scroller' | 'native' = 'scroller';
+
     @property()
     private dirty: boolean = false
 
+    @property({ attribute: false })
     public tabContribution?: TabContribution;
     
+    @property({ type: Boolean, attribute: false })
     public isEditor: boolean = false;
 
     protected commandStack?: CommandStack;
@@ -51,17 +57,6 @@ export abstract class LyraPart extends LyraContainer {
      */
     protected renderToolbar(): TemplateResult | typeof nothing {
         return nothing;
-    }
-
-    /**
-     * Call this method to update the toolbar when the component's state changes.
-     * This triggers a re-render of the toolbar with the latest content from renderToolbar().
-     */
-    protected updateToolbar(): void {
-        this.dispatchEvent(new CustomEvent('part-toolbar-changed', {
-            bubbles: true,
-            composed: true
-        }));
     }
 
     /**
@@ -135,19 +130,75 @@ export abstract class LyraPart extends LyraContainer {
         return nothing;
     }
 
-    /**
-     * Call this method to update the context menu when the component's state changes.
-     * This triggers a re-render of the context menu with the latest content from renderContextMenu().
-     */
-    protected updateContextMenu(): void {
-        this.dispatchEvent(new CustomEvent('part-contextmenu-changed', {
-            bubbles: true,
-            composed: true
-        }));
+    protected renderContent(): TemplateResult | typeof nothing {
+        return nothing;
+    }
+
+    private getToolbarTarget(): string | undefined {
+        const contributionKey = this.tabContribution?.editorId ?? this.id ?? this.tabContribution?.name;
+        return contributionKey ? `toolbar:${contributionKey}` : undefined;
+    }
+
+    private getContextMenuTarget(): string | undefined {
+        const contributionKey = this.tabContribution?.editorId ?? this.id ?? this.tabContribution?.name;
+        return contributionKey ? `contextmenu:${contributionKey}` : undefined;
+    }
+
+    private onContentContextMenu = (event: MouseEvent): void => {
+        const contextMenu = this.renderRoot.querySelector('lyra-contextmenu') as LyraContextMenu | null;
+        if (!contextMenu) return;
+        event.preventDefault();
+        contextMenu.show({ x: event.clientX, y: event.clientY }, event);
+    };
+
+    private syncIsEditorCapability(): void {
+        const next = this.save !== LyraPart.prototype.save;
+        if (next === this.isEditor) return;
+        this.isEditor = next;
+    }
+
+    protected render() {
+        const toolbarTarget = this.getToolbarTarget();
+        const contextMenuTarget = this.getContextMenuTarget();
+        const toolbarEnabled = this.tabContribution?.toolbar !== false;
+        const contextMenuEnabled = this.tabContribution?.contextMenu !== false;
+        const scrollMode = this.scrollMode;
+        const scopeTokens = this.isEditor ? ['system.editors', '.system.editors'] : [];
+        const content = this.renderContent();
+        const contentNode = scrollMode === 'scroller'
+            ? html`
+                <wa-scroller class="part-content-scroll" orientation="vertical">
+                    <div class="part-content-inner">${content}</div>
+                </wa-scroller>
+            `
+            : html`<div class="part-content-inner">${content}</div>`;
+        return html`
+            <div class="part-shell">
+                ${toolbarEnabled ? html`
+                    <lyra-toolbar
+                        class="part-toolbar"
+                        id=${ifDefined(toolbarTarget)}
+                        .scopeTokens=${scopeTokens}
+                        .partToolbarRenderer=${() => this.renderToolbar()}>
+                    </lyra-toolbar>
+                ` : nothing}
+                <div class="part-content ${scrollMode === 'native' ? 'native-scroll' : ''}" @contextmenu=${contextMenuEnabled ? this.onContentContextMenu : undefined}>
+                    ${contentNode}
+                </div>
+                ${contextMenuEnabled ? html`
+                    <lyra-contextmenu
+                        id=${ifDefined(contextMenuTarget)}
+                        .scopeTokens=${scopeTokens}
+                        .partContextMenuRenderer=${() => this.renderContextMenu()}>
+                    </lyra-contextmenu>
+                ` : nothing}
+            </div>
+        `;
     }
 
     protected updated(_changedProperties: PropertyValues) {
         super.updated(_changedProperties);
+        this.syncIsEditorCapability();
 
         if (_changedProperties.has("dirty")) {
             const dirty = _changedProperties.get("dirty")
@@ -172,6 +223,8 @@ export abstract class LyraPart extends LyraContainer {
 
     connectedCallback() {
         super.connectedCallback();
+        this.syncIsEditorCapability();
+        queueMicrotask(() => this.syncIsEditorCapability());
     }
 
     save() {
@@ -187,5 +240,49 @@ export abstract class LyraPart extends LyraContainer {
         partDirtySignal.set(this)
         activePartSignal.set(null as unknown as LyraPart)
         activePartSignal.set(this)
+    }
+
+    private static readonly baseStyles = css`
+        :host {
+            display: block;
+        }
+
+        .part-shell {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            height: 100%;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .part-content {
+            min-height: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .part-content.native-scroll {
+            overflow: auto;
+        }
+
+        .part-content-scroll {
+            width: 100%;
+            height: 100%;
+        }
+
+        .part-content-inner {
+            height: 100%;
+            min-height: 100%;
+        }
+
+        .part-toolbar {
+            min-height: 0;
+        }
+    `;
+
+    protected static finalizeStyles(styles?: CSSResultGroup) {
+        const own = super.finalizeStyles(styles);
+        return [LyraPart.baseStyles, ...own];
     }
 }

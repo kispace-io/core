@@ -117,7 +117,6 @@ export class LyraCatalog extends LyraPart {
         const node: TreeNode = (event as CustomEvent).detail.selection[0]
             .model;
         activeSelectionSignal.set(node.data);
-        this.updateContextMenu();
     }
 
     protected renderContextMenu() {
@@ -162,7 +161,7 @@ export class LyraCatalog extends LyraPart {
         `;
     }
 
-    render() {
+    protected renderContent() {
         return html`
             <wa-tree
                 ${ref(this.treeRef)}

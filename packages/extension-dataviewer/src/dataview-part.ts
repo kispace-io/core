@@ -101,7 +101,6 @@ export class DataViewPart extends LyraPart {
     } finally {
       this.loadingList = false;
       this.requestUpdate();
-      this.updateToolbar();
     }
   }
 
@@ -110,7 +109,6 @@ export class DataViewPart extends LyraPart {
     if (!key) {
       this.selectedView = null;
       this.requestUpdate();
-      this.updateToolbar();
       return;
     }
     try {
@@ -120,7 +118,6 @@ export class DataViewPart extends LyraPart {
       this.selectedView = null;
     }
     this.requestUpdate();
-    this.updateToolbar();
   }
 
   private async onAutoActivateChange(e: Event): Promise<void> {
@@ -128,7 +125,6 @@ export class DataViewPart extends LyraPart {
     this.autoActivateTab = checked;
     const current = (await this.getDialogSetting()) ?? {};
     await this.setDialogSetting({ ...current, autoActivateTab: checked });
-    this.updateToolbar();
   }
 
   private async onHistorySelect(e: CustomEvent<{ item?: { value?: string } }>): Promise<void> {
@@ -269,7 +265,7 @@ export class DataViewPart extends LyraPart {
     return html`<lyra-data-table .data=${dv.data}></lyra-data-table>`;
   }
 
-  render() {
+  protected renderContent() {
     const dv = this.displayed;
     if (dv != null) return this.renderTable(dv);
     return html`<div class="result-empty">No data.</div>`;

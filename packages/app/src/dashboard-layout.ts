@@ -32,7 +32,7 @@ contributionRegistry.registerContribution("dashboard-toolbar-top", {
 
 @customElement('lyra-view-wrapper')
 export class LyraViewWrapper extends LyraPart {
-    protected render() {
+    protected renderContent() {
         return html`<slot></slot>`
     }
 }

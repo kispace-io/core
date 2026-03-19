@@ -352,15 +352,12 @@ export class LyraFileBrowser extends LyraPart {
             activeSelectionSignal.set(data)
             if (data instanceof File) {
                 this.fileEditorOptions = editorRegistry.getEditorOptionsForInput(data)
-                this.updateContextMenu()
             } else {
                 this.fileEditorOptions = []
-                this.updateContextMenu()
             }
         } else {
             activeSelectionSignal.set(undefined)
             this.fileEditorOptions = []
-            this.updateContextMenu()
         }
     }
 
@@ -635,7 +632,7 @@ export class LyraFileBrowser extends LyraPart {
         return dirPath ? `${dirPath}/${fileName}` : fileName;
     }
 
-    render() {
+    protected renderContent() {
         return html`
             <div class="tree" ${ref(this.treeRef)} style="--drop-files-text: '${t.DROP_FILES_HERE}'">
                 ${when(!this.workspaceDir, () => html`

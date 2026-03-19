@@ -59,11 +59,10 @@ editorRegistry.registerEditorInputHandler({
             data: input,
             key: input.getWorkspacePath(),
             icon: getFileIcon(input.getName()),
-            noOverflow: false,
             state: {},
         } as EditorInput
-        editorInput.component = () => html`
-            <lyra-media-viewer .input=${editorInput}></lyra-media-viewer>`
+        editorInput.component = (id: string) => html`
+            <lyra-media-viewer id="${id}" .input=${editorInput}></lyra-media-viewer>`
         return editorInput;
     },
     ranking: 1000
@@ -71,6 +70,7 @@ editorRegistry.registerEditorInputHandler({
 
 @customElement('lyra-media-viewer')
 export class LyraMediaViewer extends LyraPart {
+    protected scrollMode: 'scroller' | 'native' = 'native';
     @property({attribute: false})
     public input?: EditorInput
 
@@ -145,7 +145,7 @@ export class LyraMediaViewer extends LyraPart {
         }
     }
 
-    protected render() {
+    protected renderContent() {
         if (!this.mediaUrl) {
             return html`
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
@@ -156,15 +156,9 @@ export class LyraMediaViewer extends LyraPart {
 
         const isImage = this.getIsImage();
         if (isImage) {
-            const w = this.imageNaturalWidth || 1;
-            const h = this.imageNaturalHeight || 1;
-            const aspectRatio = w / h;
             return html`
                 <div class="image-container">
-                    <div
-                        class="image-wrapper"
-                        style="aspect-ratio: ${aspectRatio};"
-                    >
+                    <div class="image-wrapper">
                         <img
                             class="media-image"
                             src="${this.mediaUrl}"
@@ -228,8 +222,11 @@ export class LyraMediaViewer extends LyraPart {
 
         .image-wrapper {
             position: relative;
+            width: 100%;
+            height: 100%;
             max-width: 100%;
             max-height: 100%;
+            overflow: hidden;
         }
 
         .media-iframe-container {

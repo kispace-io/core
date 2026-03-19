@@ -42,7 +42,6 @@ editorRegistry.registerEditorInputHandler({
       data,
       key: input.getWorkspacePath(),
       icon: 'table',
-      noOverflow: false,
       state: {},
       component: () => html`<lyra-data-table .data=${data}></lyra-data-table>`,
     };
