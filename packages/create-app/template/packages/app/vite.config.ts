@@ -13,7 +13,7 @@ export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/',
   resolve: {},
   optimizeDeps: {
-    include: ['@eclipse-lyra/core'],
+    include: ['@eclipse-lyra/core', 'monaco-editor'],
   },
   plugins: [
     resolveDepVersionsPlugin(),

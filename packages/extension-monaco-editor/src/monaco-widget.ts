@@ -5,23 +5,28 @@ import { LitElement, PropertyValues } from "lit";
 import { css, html } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 
-const workerMap: Record<string, string> = {
-    'json': new URL('monaco-editor/esm/vs/language/json/json.worker.js', import.meta.url).href,
-    'css': new URL('monaco-editor/esm/vs/language/css/css.worker.js', import.meta.url).href,
-    'scss': new URL('monaco-editor/esm/vs/language/css/css.worker.js', import.meta.url).href,
-    'less': new URL('monaco-editor/esm/vs/language/css/css.worker.js', import.meta.url).href,
-    'html': new URL('monaco-editor/esm/vs/language/html/html.worker.js', import.meta.url).href,
-    'handlebars': new URL('monaco-editor/esm/vs/language/html/html.worker.js', import.meta.url).href,
-    'razor': new URL('monaco-editor/esm/vs/language/html/html.worker.js', import.meta.url).href,
-    'typescript': new URL('monaco-editor/esm/vs/language/typescript/ts.worker.js', import.meta.url).href,
-    'javascript': new URL('monaco-editor/esm/vs/language/typescript/ts.worker.js', import.meta.url).href,
-};
+import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker.js?worker';
+import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker.js?worker';
+import CssWorker from 'monaco-editor/esm/vs/language/css/css.worker.js?worker';
+import HtmlWorker from 'monaco-editor/esm/vs/language/html/html.worker.js?worker';
+import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker.js?worker';
 
-self.MonacoEnvironment = {
-    getWorkerUrl(_: unknown, label: string) {
-        return workerMap[label] || new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url).href;
+function getMonacoWorker(_: unknown, label: string): Worker {
+    switch (label) {
+        case 'json': return new JsonWorker();
+        case 'css':
+        case 'scss':
+        case 'less': return new CssWorker();
+        case 'html':
+        case 'handlebars':
+        case 'razor': return new HtmlWorker();
+        case 'typescript':
+        case 'javascript': return new TsWorker();
+        default: return new EditorWorker();
     }
-};
+}
+
+self.MonacoEnvironment = { getWorker: getMonacoWorker };
 
 @customElement('lyra-monaco-widget')
 export class LyraMonacoWidget extends LitElement {
