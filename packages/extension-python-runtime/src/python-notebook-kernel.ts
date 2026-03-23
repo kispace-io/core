@@ -1,4 +1,3 @@
-import { workspaceService } from '@eclipse-lyra/core';
 import type {
   NotebookExecutionResult,
   NotebookKernel,
@@ -20,8 +19,7 @@ class PythonNotebookKernel implements NotebookKernel {
     if (this.pyenv) return;
     this.requiredPackages = options?.requiredPackages ?? [];
     this.pyenv = new PyEnv();
-    const workspace = await workspaceService.getWorkspace();
-    await this.pyenv.init(workspace);
+    await this.pyenv.init();
     if (this.requiredPackages.length > 0) {
       await this.pyenv.loadPackages(this.requiredPackages);
     }

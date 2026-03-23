@@ -3,7 +3,7 @@ import { LyraPart } from "@eclipse-lyra/core";
 import { css, html } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { EditorInput, EditorContentProvider, workspaceService } from "@eclipse-lyra/core";
+import { EditorInput, EditorContentProvider } from "@eclipse-lyra/core";
 import { LyraMonacoWidget } from '@eclipse-lyra/extension-monaco-editor/widget';
 import { PyEnv, pythonPackageManagerService } from "./api";
 import { parsePackagesFromContent, contentWithPackagesLine } from "./editor-python-run";
@@ -90,13 +90,8 @@ export class LyraPythonEditor extends LyraPart implements EditorContentProvider 
 
     private async initPyEnv(): Promise<void> {
         if (this.pyenv) return;
-        const workspace = await workspaceService.getWorkspace();
-        if (!workspace) {
-            toastError("No workspace selected");
-            return;
-        }
         this.pyenv = new PyEnv();
-        await this.pyenv.init(workspace);
+        await this.pyenv.init();
         this.pyConnected = true;
         try {
             const response = await this.pyenv.execCode("import sys; sys.version.split()[0]");

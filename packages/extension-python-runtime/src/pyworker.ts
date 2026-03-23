@@ -3,7 +3,6 @@ import pyoPackageJson from "pyodide/package.json";
 import {loadPyodide, PyodideInterface} from "pyodide";
 
 let pyodide: PyodideInterface | null = null;
-let workspaceMountFS: any = null;
 let interruptBuffer: Uint8Array | null = null;
 let inputCounter = 0;
 const pendingInputRequests: Map<string, { resolve: (value: string) => void, reject: (error: any) => void }> = new Map();
@@ -81,7 +80,7 @@ console.debug = function(...args: any[]) {
 // Message types for worker communication
 export interface PyWorkerMessage {
     id: string;
-    type: 'init' | 'execCode' | 'execModule' | 'runFunction' | 'setGlobal' | 'loadPackages' | 'syncWorkspace' | 'getVersion' | 'mountWorkspace' | 'installDependencies' | 'inputResponse';
+    type: 'init' | 'execCode' | 'execModule' | 'runFunction' | 'setGlobal' | 'loadPackages' | 'getVersion' | 'inputResponse';
     payload?: any;
 }
 
@@ -190,30 +189,6 @@ async function initPyodide(payload: { vars?: any }) {
     }
 }
 
-// Mount workspace using FileSystemDirectoryHandle
-async function mountWorkspace(payload: { handle: FileSystemDirectoryHandle; mountPoint?: string }) {
-    if (!pyodide) throw new Error('Pyodide not initialized');
-    
-    const mountPoint = payload.mountPoint || '/workspace';
-    workspaceMountFS = await pyodide.mountNativeFS(mountPoint, payload.handle);
-    pyodide.runPython(`import os, sys; sys.path.append('${mountPoint}'); os.chdir("${mountPoint}");`);
-}
-
-// Install dependencies from requirements.txt
-async function installDependencies(payload: { requirements: string }) {
-    if (!pyodide) throw new Error('Pyodide not initialized');
-    
-    const lines = payload.requirements.split('\n')
-        .map(line => line.trim())
-        .filter(line => line && !line.startsWith('#'));
-    
-    if (lines.length > 0) {
-        await pyodide.loadPackage(lines, {
-            checkIntegrity: false
-        });
-    }
-}
-
 // Load Python packages
 async function loadPackages(payload: { packages: string[] }) {
     if (!pyodide) throw new Error('Pyodide not initialized');
@@ -291,7 +266,7 @@ function convertResult(result: any): any {
 async function execCode(payload: { code: string }) {
     if (!pyodide) throw new Error('Pyodide not initialized');
     
-    consoleBuffer.length = 0; // Clear buffer
+    consoleBuffer.length = 0;
     
     // Reset interrupt buffer before execution
     if (interruptBuffer) {
@@ -310,12 +285,9 @@ async function execCode(payload: { code: string }) {
         throw error;
     }
     
-    // Reset interrupt buffer after successful execution
     if (interruptBuffer) {
         interruptBuffer[0] = 0;
     }
-    
-    await syncWorkspace();
     
     return {
         result: convertResult(result),
@@ -340,8 +312,6 @@ async function execModule(payload: { moduleName: string; entryName?: string; var
         result = func.callKwargs(payload.vars || {});
     }
     
-    await syncWorkspace();
-    
     return {
         result: convertResult(result),
         console: consoleBuffer.slice()
@@ -356,7 +326,6 @@ async function runFunction(payload: { name: string; args: any }) {
     const func = pyodide.globals.get(payload.name);
     const result = func.callKwargs(payload.args);
     func.destroy();
-    await syncWorkspace();
     
     return {
         result: convertResult(result),
@@ -368,13 +337,6 @@ async function runFunction(payload: { name: string; args: any }) {
 async function setGlobal(payload: { key: string; value: any }) {
     if (!pyodide) throw new Error('Pyodide not initialized');
     pyodide.globals.set(payload.key, payload.value);
-}
-
-// Sync workspace filesystem
-async function syncWorkspace() {
-    if (workspaceMountFS) {
-        await workspaceMountFS.syncfs();
-    }
 }
 
 // Get Python version (e.g. "3.12.0")
@@ -410,14 +372,6 @@ self.onmessage = async (event: MessageEvent<PyWorkerMessage>) => {
                 await initPyodide(payload);
                 result = { initialized: true };
                 break;
-            case 'mountWorkspace':
-                await mountWorkspace(payload);
-                result = { mounted: true };
-                break;
-            case 'installDependencies':
-                await installDependencies(payload);
-                result = { installed: true };
-                break;
             case 'loadPackages':
                 await loadPackages(payload);
                 result = { loaded: true };
@@ -434,10 +388,6 @@ self.onmessage = async (event: MessageEvent<PyWorkerMessage>) => {
             case 'setGlobal':
                 await setGlobal(payload);
                 result = { set: true };
-                break;
-            case 'syncWorkspace':
-                await syncWorkspace();
-                result = { synced: true };
                 break;
             case 'getVersion':
                 result = await getVersion();

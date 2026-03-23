@@ -1,38 +1,22 @@
-import {Directory, File, TOPIC_WORKSPACE_CHANGED, workspaceService, createLogger} from "@eclipse-lyra/core";
+import { createLogger } from "@eclipse-lyra/core";
 
 const logger = createLogger('PyService');
-type PipRequirementsModule = typeof import("pip-requirements-js");
-
-let pipRequirementsModulePromise: Promise<PipRequirementsModule> | null = null;
-
-async function getPipRequirementsModule(): Promise<PipRequirementsModule> {
-    if (!pipRequirementsModulePromise) {
-        pipRequirementsModulePromise = import("pip-requirements-js");
-    }
-    return pipRequirementsModulePromise;
-}
-import {publish} from "@eclipse-lyra/core";
-import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker";
+import type { PyWorkerMessage, PyWorkerResponse } from "./pyworker";
 import PyWorker from "./pyworker?worker&inline";
 
-// Message counter for tracking requests/responses
 let messageId = 0;
 
-// Now runs in a Web Worker for better performance and isolation
 export class PyEnv {
     private worker?: Worker;
-    private workspace?: Directory;
     private vars: any;
     private pendingMessages: Map<string, { resolve: (value: any) => void, reject: (error: any) => void }> = new Map();
     private stdoutCallback?: (text: string) => void;
     private stderrCallback?: (text: string) => void;
     private interruptBuffer?: Uint8Array;
 
-    public async init(workspace?: Directory, vars?: any) {
-        this.workspace = workspace;
+    public async init(_workspace?: unknown, vars?: any) {
         this.vars = vars ?? {};
 
-        // Create Web Worker using Vite's ?worker import
         const worker = new PyWorker();
         this.worker = worker;
 
@@ -44,12 +28,7 @@ export class PyEnv {
             console.error('Python Worker error:', error);
         };
 
-        // Initialize Pyodide in worker
         await this.sendMessage('init', { vars: this.vars });
-
-        if (this.workspace) {
-            await this.mountWorkspace();
-        }
     }
 
     private handleWorkerMessage(response: PyWorkerResponse) {
@@ -146,40 +125,11 @@ export class PyEnv {
     }
 
     public async runFunction(name: string, args: any) {
-        const response = await this.sendMessage('runFunction', { name, args });
-        publish(TOPIC_WORKSPACE_CHANGED, this.workspace);
-        // Return the full response object so caller can access both result and console output
-        return response;
+        return await this.sendMessage('runFunction', { name, args });
     }
 
     public async setGlobal(key: string, value: any) {
         await this.sendMessage('setGlobal', { key, value });
-    }
-
-    public async mountWorkspace(mountPoint: string = "/workspace") {
-        if (!this.workspace) return;
-        // Only browser workspaces backed by File System Access API expose getHandle(); we use a capability check
-        // so the extension stays agnostic of core's FileSysDirHandleResource implementation.
-        const getHandle = (this.workspace as { getHandle?: () => FileSystemDirectoryHandle }).getHandle;
-        if (typeof getHandle !== "function") return;
-        await this.sendMessage("mountWorkspace", {
-            handle: getHandle.call(this.workspace),
-            mountPoint,
-        });
-    }
-
-    public async installDependencies(pyFile?: File) {
-        if (!pyFile) return;
-        const parent = pyFile.getParent();
-        if (!parent) return;
-        const reqFile = await parent.getResource("requirements.txt") as File | null;
-        if (!reqFile) return;
-        const reqContents: string = ((await reqFile.getContents()) as string).replaceAll("\r", "");
-        const { parsePipRequirementsFile } = await getPipRequirementsModule();
-        const packages = parsePipRequirementsFile(reqContents)
-            .filter(p => "name" in p)
-            .map(p => (p as any).name);
-        await this.loadPackages(packages);
     }
 
     public async loadPackages(packages: string[]) {
@@ -188,37 +138,22 @@ export class PyEnv {
         }
     }
 
-    public async syncWorkspace() {
-        await this.sendMessage('syncWorkspace');
-        publish(TOPIC_WORKSPACE_CHANGED, this.workspace);
-    }
-
     public async execCode(code: string) {
-        const response = await this.sendMessage('execCode', { code });
-        publish(TOPIC_WORKSPACE_CHANGED, this.workspace);
-        // Return the full response object so caller can access both result and console output
-        return response;
+        return await this.sendMessage('execCode', { code });
     }
 
-    public async execScript(path: string) {
-        const pyFile = this.workspace ? (await this.workspace.getResource(path) as File) : undefined;
-        if (pyFile) {
-            await this.installDependencies(pyFile);
-        }
+    public async execScript(path: string, _installDependencies: boolean = false) {
         const moduleName = path.split(".")[0];
         const entryName = path.includes(":") ? path.split(":").reverse()[0] : undefined;
         return await this.execModule(moduleName, entryName);
     }
 
     public async execModule(moduleName: string, entryName?: string) {
-        const response = await this.sendMessage('execModule', {
+        return await this.sendMessage('execModule', {
             moduleName,
             entryName,
             vars: this.vars
         });
-        publish(TOPIC_WORKSPACE_CHANGED, this.workspace);
-        // Return the full response object so caller can access both result and console output
-        return response;
     }
 
     public async getVersion() {
