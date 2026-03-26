@@ -12,9 +12,6 @@ export default defineConfig({
   root: __dirname,
   base: process.env.VITE_BASE_PATH || '/',
   resolve: {},
-  optimizeDeps: {
-    include: ['@eclipse-lyra/core', 'monaco-editor'],
-  },
   plugins: [
     resolveDepVersionsPlugin(),
     localAliasesPlugin({

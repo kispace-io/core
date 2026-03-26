@@ -10,7 +10,7 @@
     },
     "./widget": {
       "types": "./dist/monaco-widget.d.ts",
-      "import": "./src/monaco-widget.ts"
+      "import": "./dist/widget.js"
     }
   },
   "dependencies": {
