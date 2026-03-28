@@ -304,6 +304,120 @@ export class MissingContributionDirectory extends Directory {
     }
 }
 
+function workspaceFolderDisplayNameFromPersisted(folder: { type: string; data: any }): string {
+    const fromData =
+        folder.data && typeof folder.data === 'object' && (folder.data as { name?: string }).name;
+    if (typeof fromData === 'string' && fromData.length > 0) {
+        return fromData;
+    }
+    return folder.type;
+}
+
+function formatRestoreFailureReason(error: unknown): string {
+    if (error instanceof Error && error.message.trim()) {
+        return error.message;
+    }
+    return 'Could not connect to this workspace folder.';
+}
+
+const RESTORE_RETURNED_NOTHING = 'Could not restore this workspace folder.';
+
+/**
+ * Placeholder when a contribution exists but restore/connect cannot produce a usable root
+ * (network, auth, invalid persisted data). Treated like {@link MissingContributionDirectory}
+ * for late registration retries via {@link isWorkspaceFolderPlaceholder}.
+ */
+export class UnavailableWorkspaceFolderDirectory extends Directory {
+    private readonly backendType: string;
+    private readonly name: string;
+    private readonly reason: string;
+
+    constructor(options: { backendType: string; name: string; data: any; reason: string }) {
+        super();
+        this.backendType = options.backendType;
+        this.name = options.name;
+        this.reason = options.reason;
+    }
+
+    getFailureReason(): string {
+        return this.reason;
+    }
+
+    getName(): string {
+        return this.name;
+    }
+
+    getParent(): Directory | undefined {
+        return undefined;
+    }
+
+    async listChildren(_forceRefresh: boolean): Promise<Resource[]> {
+        return [];
+    }
+
+    async getResource(_path: string, _options?: GetResourceOptions): Promise<Resource | null> {
+        throw new Error(
+            `Workspace folder "${this.name}" (${this.backendType}) is unavailable: ${this.reason}`
+        );
+    }
+
+    touch(): void {
+        // No-op
+    }
+
+    async delete(_name?: string, _recursive?: boolean): Promise<void> {
+        throw new Error(`Cannot modify unavailable workspace folder "${this.name}" (${this.backendType}).`);
+    }
+
+    async copyTo(_targetPath: string): Promise<void> {
+        throw new Error(`Cannot copy from unavailable workspace folder "${this.name}" (${this.backendType}).`);
+    }
+
+    async rename(_newName: string): Promise<void> {
+        throw new Error(`Cannot rename unavailable workspace folder "${this.name}" (${this.backendType}).`);
+    }
+}
+
+export function isWorkspaceFolderPlaceholder(directory: Directory): boolean {
+    return (
+        directory instanceof MissingContributionDirectory ||
+        directory instanceof UnavailableWorkspaceFolderDirectory
+    );
+}
+
+/**
+ * Runs a contribution's restore; returns a real directory or an {@link UnavailableWorkspaceFolderDirectory}.
+ * Invokes onCaughtError only when restore threw (not when it returned undefined).
+ */
+async function restorePersistedFolderToDirectory(
+    type: string,
+    data: any,
+    restore: (data: any) => Promise<Directory | undefined>,
+    onCaughtError?: (error: unknown) => void
+): Promise<Directory> {
+    const displayName = workspaceFolderDisplayNameFromPersisted({ type, data });
+    try {
+        const dir = await restore(data);
+        if (dir) {
+            return dir;
+        }
+        return new UnavailableWorkspaceFolderDirectory({
+            backendType: type,
+            name: displayName,
+            data,
+            reason: RESTORE_RETURNED_NOTHING
+        });
+    } catch (error) {
+        onCaughtError?.(error);
+        return new UnavailableWorkspaceFolderDirectory({
+            backendType: type,
+            name: displayName,
+            data,
+            reason: formatRestoreFailureReason(error)
+        });
+    }
+}
+
 export interface WorkspaceContribution {
     type: string;
     name: string;
@@ -361,7 +475,7 @@ export class WorkspaceService {
         }
 
         const existingForType = this.folders.filter(f => f.type === contribution.type);
-        const hasRealFoldersForType = existingForType.some(f => !(f.directory instanceof MissingContributionDirectory));
+        const hasRealFoldersForType = existingForType.some(f => !isWorkspaceFolderPlaceholder(f.directory));
         if (hasRealFoldersForType) {
             this.restoredTypes.add(contribution.type);
             return;
@@ -381,23 +495,26 @@ export class WorkspaceService {
 
         // Remove any placeholder folders for this type; we'll replace them with
         // real directories if restoration succeeds.
-        this.folders = this.folders.filter(f => !(f.type === contribution.type && f.directory instanceof MissingContributionDirectory));
+        this.folders = this.folders.filter(
+            f => !(f.type === contribution.type && isWorkspaceFolderPlaceholder(f.directory))
+        );
 
         for (const folder of toRestore) {
             if (!contribution.restore) {
                 continue;
             }
 
-            try {
-                const dir = await contribution.restore(folder.data);
-                if (!dir) {
-                    continue;
-                }
-
-                this.folders.push({ type: contribution.type, data: folder.data, directory: dir });
-            } catch (error) {
-                logger.warn(`Failed to restore folder (${contribution.type}) on contribution registration:`, error);
-            }
+            const directory = await restorePersistedFolderToDirectory(
+                contribution.type,
+                folder.data,
+                contribution.restore,
+                (error) =>
+                    logger.warn(
+                        `Failed to restore folder (${contribution.type}) on contribution registration:`,
+                        error
+                    )
+            );
+            this.folders.push({ type: contribution.type, data: folder.data, directory });
         }
 
         if (this.folders.length === 0) {
@@ -494,14 +611,13 @@ export class WorkspaceService {
                 this.folders.push({ type: folder.type, data: folder.data, directory: placeholder });
                 continue;
             }
-            try {
-                const dir = await contribution.restore(folder.data);
-                if (dir) {
-                    this.folders.push({ type: folder.type, data: folder.data, directory: dir });
-                }
-            } catch (error) {
-                logger.warn(`Failed to restore folder (${folder.type}):`, error);
-            }
+            const directory = await restorePersistedFolderToDirectory(
+                folder.type,
+                folder.data,
+                contribution.restore,
+                (error) => logger.warn(`Failed to restore folder (${folder.type}):`, error)
+            );
+            this.folders.push({ type: folder.type, data: folder.data, directory });
         }
     }
 

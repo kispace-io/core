@@ -8,5 +8,7 @@
   "FILE_EXISTS_OVERWRITE": "File \"{fileName}\" already exists. Do you want to overwrite it?",
   "SELECT_WORKSPACE": "Select a workspace.",
   "DROP_FILES_HERE": "📁 Drop files here",
-  "OPEN_WITH": "Open with..."
+  "OPEN_WITH": "Open with...",
+  "FOLDER_LOAD_FAILED": "Failed to load folder: {detail}",
+  "FOLDER_UNAVAILABLE": "This workspace folder is unavailable: {detail}"
 }

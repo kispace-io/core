@@ -14,6 +14,10 @@ export interface TreeNode {
      * don't remain visible for empty folders.
      */
     loaded?: boolean;
+    /** Set when {@link Directory.listChildren} fails for this node. */
+    loadError?: string;
+    /** Persisted workspace folder that could not be restored (see UnavailableWorkspaceFolderDirectory). */
+    placeholderNotice?: string;
 }
 
 export const treeNodeComparator = (c1: TreeNode, c2: TreeNode) => {

@@ -8,6 +8,7 @@ import {
     Resource,
     TOPIC_WORKSPACE_CHANGED,
     TOPIC_WORKSPACE_CONNECTED,
+    UnavailableWorkspaceFolderDirectory,
     workspaceService
 } from "../core/filesys";
 import { when } from "lit/directives/when.js";
@@ -43,6 +44,8 @@ export class LyraFileBrowser extends LyraPart {
     private workspaceDir?: Directory
     private treeRef = createRef<HTMLElement>();
     private loadingNodes = new Set<TreeNode>();
+    /** Bumped on every workspace tree rebuild so in-flight listChildren can bail out after disconnect/reconnect. */
+    private treeBuildGeneration = 0;
     private workspaceChangedDebounceId: ReturnType<typeof setTimeout> | undefined;
     private pendingWorkspaceDir: Directory | undefined;
 
@@ -139,19 +142,30 @@ export class LyraFileBrowser extends LyraPart {
     }
 
     async onWorkspaceConnected(workspaceDir: Directory | undefined) {
+        activeSelectionSignal.set(undefined);
         await this.loadWorkspace(workspaceDir, true);
     }
 
     async loadWorkspace(workspaceDir?: Directory, forceRefresh = false) {
-        this.workspaceDir = workspaceDir
+        this.treeBuildGeneration += 1;
+        const buildGen = this.treeBuildGeneration;
+        this.loadingNodes.clear();
+        this.workspaceDir = workspaceDir;
         if (!workspaceDir) {
-            this.root = undefined
+            this.root = undefined;
             if (this.settingsLoaded) {
                 await this.persistSelectedPath(null);
             }
-        } else {
-            this.root = await this.resourceToTreeNode(workspaceDir, true, forceRefresh)
-            await this.restoreSelectionFromSettings();
+            return;
+        }
+        const root = await this.resourceToTreeNode(workspaceDir, true, forceRefresh);
+        if (buildGen !== this.treeBuildGeneration) {
+            return;
+        }
+        this.root = root;
+        await this.restoreSelectionFromSettings();
+        if (buildGen !== this.treeBuildGeneration) {
+            return;
         }
     }
 
@@ -229,6 +243,7 @@ export class LyraFileBrowser extends LyraPart {
     }
 
     async resourceToTreeNode(resource: Resource, loadChildren = false, forceRefreshChildren = false): Promise<TreeNode> {
+        const buildGen = this.treeBuildGeneration;
         const isFile = resource instanceof File;
         const node: TreeNode = {
             data: resource,
@@ -243,6 +258,10 @@ export class LyraFileBrowser extends LyraPart {
             // concrete backend types.
             try {
                 const info = await workspaceService.getFolderInfoForDirectory(resource);
+                if (buildGen !== this.treeBuildGeneration) {
+                    (node as any).loaded = !node.leaf;
+                    return node;
+                }
                 if (info?.backendName) {
                     (node as any).workspaceTag = info.backendName;
                 }
@@ -252,18 +271,40 @@ export class LyraFileBrowser extends LyraPart {
         }
 
         if (resource instanceof Directory && loadChildren) {
-            const children = await resource.listChildren(forceRefreshChildren);
-            for (const childResource of children) {
-                if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
-                    continue;
+            try {
+                const children = await resource.listChildren(forceRefreshChildren);
+                if (buildGen !== this.treeBuildGeneration) {
+                    (node as any).loaded = true;
+                    return node;
                 }
-                const child = await this.resourceToTreeNode(childResource, true, forceRefreshChildren);
-                node.children.push(child);
+                for (const childResource of children) {
+                    if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
+                        continue;
+                    }
+                    const child = await this.resourceToTreeNode(childResource, true, forceRefreshChildren);
+                    if (buildGen !== this.treeBuildGeneration) {
+                        (node as any).loaded = true;
+                        return node;
+                    }
+                    node.children.push(child);
+                }
+                node.children.sort(treeNodeComparator);
+            } catch (error) {
+                if (buildGen !== this.treeBuildGeneration) {
+                    (node as any).loaded = true;
+                    return node;
+                }
+                const detail = error instanceof Error ? error.message : String(error);
+                node.loadError = detail;
+                logger.error('Failed to load directory children:', error);
             }
-            node.children.sort(treeNodeComparator);
-            // Mark directory as loaded even if it has no children,
+            // Mark directory as loaded even if it has no children or loading failed,
             // so empty folders don't stay in a perpetual "loading" state.
             (node as any).loaded = true;
+        }
+
+        if (resource instanceof UnavailableWorkspaceFolderDirectory) {
+            node.placeholderNotice = resource.getFailureReason();
         }
 
         return node;
@@ -285,6 +326,13 @@ export class LyraFileBrowser extends LyraPart {
             ? editorRegistry.getFileIcon(resource.getName())
             : (node.icon || "folder-open");
         const workspaceTag = (node as any).workspaceTag as string | undefined;
+        const loadError = node.loadError;
+        const placeholderNotice = node.placeholderNotice;
+        const issueText = loadError
+            ? t.FOLDER_LOAD_FAILED({ detail: loadError })
+            : placeholderNotice
+              ? t.FOLDER_UNAVAILABLE({ detail: placeholderNotice })
+              : null;
 
         return html`
             <wa-tree-item 
@@ -295,13 +343,20 @@ export class LyraFileBrowser extends LyraPart {
                 .model=${node} 
                 ?expanded=${expanded}
                 ?lazy=${isLazy}>
-                <span class="tree-label">
-                    ${icon(iconSpec, { label: node.leaf ? t.FILE : t.FOLDER })}
-                    <span class="tree-label-text">${node.label}</span>
-                    ${!node.leaf && workspaceTag
-                        ? html`<wa-badge appearance="outlined" variant="neutral" style="font-size: var(--wa-font-size-xs);">${workspaceTag}</wa-badge>`
-                        : null}
-                </span>
+                <div class="tree-item-rows">
+                    <div class="tree-item-label-row">
+                        <span class="tree-label">
+                            ${icon(iconSpec, { label: node.leaf ? t.FILE : t.FOLDER })}
+                            <span class="tree-label-text">${node.label}</span>
+                            ${!node.leaf && workspaceTag
+                                ? html`<wa-badge appearance="outlined" variant="neutral" style="font-size: var(--wa-font-size-xs);">${workspaceTag}</wa-badge>`
+                                : null}
+                        </span>
+                    </div>
+                    ${issueText
+                        ? html`<div class="tree-item-detail-row tree-item-error-text">${issueText}</div>`
+                        : nothing}
+                </div>
                 ${node.children.map(child => this.createTreeItems(child, false))}
             </wa-tree-item>`
     }
@@ -372,14 +427,21 @@ export class LyraFileBrowser extends LyraPart {
             return;
         }
 
+        const buildGen = this.treeBuildGeneration;
         this.loadingNodes.add(node);
         try {
             const children = await resource.listChildren(false);
+            if (buildGen !== this.treeBuildGeneration) {
+                return;
+            }
             for (const childResource of children) {
                 if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
                     continue;
                 }
                 const child = await this.resourceToTreeNode(childResource, false);
+                if (buildGen !== this.treeBuildGeneration) {
+                    return;
+                }
                 node.children.push(child);
             }
             node.children.sort(treeNodeComparator);
@@ -388,7 +450,13 @@ export class LyraFileBrowser extends LyraPart {
             (node as any).loaded = true;
             this.requestUpdate();
         } catch (error) {
+            if (buildGen !== this.treeBuildGeneration) {
+                return;
+            }
+            const detail = error instanceof Error ? error.message : String(error);
+            node.loadError = detail;
             logger.error('Failed to load directory children:', error);
+            this.requestUpdate();
         } finally {
             this.loadingNodes.delete(node);
         }
@@ -773,6 +841,32 @@ export class LyraFileBrowser extends LyraPart {
             pointer-events: none;
             z-index: 1000;
             opacity: 0.3;
+        }
+
+        .tree-item-rows {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--wa-space-2xs);
+            min-width: 0;
+            width: 100%;
+        }
+
+        .tree-item-label-row {
+            min-width: 0;
+        }
+
+        .tree-item-detail-row {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow-wrap: anywhere;
+        }
+
+        .tree-item-error-text {
+            font-size: var(--wa-font-size-s);
+            line-height: var(--wa-line-height-normal);
+            color: var(--wa-color-danger-text, #c62828);
         }
 
         .tree-label {
