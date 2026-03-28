@@ -1,4 +1,5 @@
-import {LitElement, PropertyValues} from "lit";
+import {LitElement, PropertyValues, type CSSResultGroup} from "lit";
+import {waTreeLabelSlotStretch} from "../externals/wa-tree-shadow-parts";
 import {subscribe as event_subscribe, unsubscribe as event_unsubscribe, type SubscriptionToken} from "../core/events";
 import {toastError, toastInfo} from "../core/toast";
 import {commandRegistry, ExecuteParams} from "../core/commandregistry";
@@ -14,6 +15,10 @@ Object.defineProperty(LitElement.prototype, "model", {
 const LyraWidgetBase = SignalWatcher(LitElement) as unknown as typeof LitElement;
 
 export abstract class LyraWidget extends LyraWidgetBase {
+    static finalizeStyles(styles?: CSSResultGroup) {
+        return [waTreeLabelSlotStretch, ...super.finalizeStyles(styles)];
+    }
+
     private signalCleanups = new Set<() => void>();
     private eventSubscriptions = new Set<SubscriptionToken>();
 

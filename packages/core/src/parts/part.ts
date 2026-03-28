@@ -282,7 +282,7 @@ export abstract class LyraPart extends LyraContainer {
         }
     `;
 
-    protected static finalizeStyles(styles?: CSSResultGroup) {
+    static finalizeStyles(styles?: CSSResultGroup) {
         const own = super.finalizeStyles(styles);
         return [LyraPart.baseStyles, ...own];
     }
