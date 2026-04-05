@@ -27,6 +27,7 @@ contributionRegistry.registerContribution(SIDEBAR_MAIN, {
 
 - **name** — tab label.
 - **editorId** — optional; links the tab to an editor type.
+- **coupledEditors** — optional list of main-area editor type ids (same strings as those editors’ `editorId`). When any of them becomes the active editor, this tab is brought forward automatically.
 - **closable** — whether the tab can be closed.
 - **component** — optional function that returns a Lit `TemplateResult` for the tab content.
 

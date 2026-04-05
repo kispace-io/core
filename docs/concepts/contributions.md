@@ -23,7 +23,7 @@ Import these from `@eclipse-lyra/core`.
 ## Contribution types
 
 - **CommandContribution** — `command`, `label`, `icon`, optional `params`, `showLabel`, `disabled`. Used for toolbar buttons and menu items.
-- **TabContribution** — `name`, optional `editorId`, `closable`, `noOverflow`, `component` (function returning a Lit template). Used for sidebar and editor area tabs.
+- **TabContribution** — `name`, optional `editorId`, optional `coupledEditors` (list of main-area `editorId` values; when the active editor matches, the tab’s `LyraPart` can auto-activate its sidebar/panel tab), `closable`, `noOverflow`, `component` (function returning a Lit template). Used for sidebar and editor area tabs.
 - **HTMLContribution** — `component` (string or function returning a Lit `TemplateResult`). Raw HTML or template in a slot.
 - **LayoutContribution** — For `SYSTEM_LAYOUTS`: `id`, `name`, `component` (Lit template), optional `onShow`. Defines a layout shell; the app root is the chosen layout's component.
 - **IconContribution** — `mappings` (map of icon keys to identifiers), optional `priority`.

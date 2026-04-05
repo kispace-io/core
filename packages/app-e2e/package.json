@@ -1,0 +1,25 @@
+{
+  "name": "@eclipse-lyra/app-e2e",
+  "version": "0.0.0",
+  "description": "Minimal Lyra shell used only for Playwright E2E (not the demo app).",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "@eclipse-lyra/core": "*",
+    "@eclipse-lyra/extension-ai-system": "*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.0",
+    "typescript": "^6.0.0",
+    "vite": "^8.0.0",
+    "vite-plugin-cross-origin-isolation": "^0.1.6",
+    "vite-plugin-mkcert": "^1.17.9"
+  }
+}

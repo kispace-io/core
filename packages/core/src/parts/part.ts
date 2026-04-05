@@ -1,7 +1,7 @@
 import { LyraContainer } from "./container";
 import { property } from "lit/decorators.js";
 import { css, CSSResultGroup, html, PropertyValues, TemplateResult, nothing } from "lit";
-import { partDirtySignal, activePartSignal } from "../core/appstate";
+import { partDirtySignal, activePartSignal, activeEditorSignal } from "../core/appstate";
 import { CommandStack } from "../core/commandregistry";
 import { TabContribution } from "../core/contributionregistry";
 import type { LyraTabs } from "./tabs";
@@ -158,6 +158,16 @@ export abstract class LyraPart extends LyraContainer {
         this.isEditor = next;
     }
 
+    private maybeActivateForCoupledEditors(): void {
+        const coupled = this.tabContribution?.coupledEditors;
+        if (!coupled?.length) return;
+        const active = activeEditorSignal.get();
+        if (!(active instanceof LyraPart)) return;
+        const editorId = active.tabContribution?.editorId;
+        if (!editorId || !coupled.includes(editorId)) return;
+        this.activateContainingTab();
+    }
+
     protected render() {
         const toolbarTarget = this.getToolbarTarget();
         const contextMenuTarget = this.getContextMenuTarget();
@@ -200,6 +210,9 @@ export abstract class LyraPart extends LyraContainer {
     protected updated(_changedProperties: PropertyValues) {
         super.updated(_changedProperties);
         this.syncIsEditorCapability();
+        if (_changedProperties.has("tabContribution")) {
+            this.maybeActivateForCoupledEditors();
+        }
 
         if (_changedProperties.has("dirty")) {
             const dirty = _changedProperties.get("dirty")
@@ -226,6 +239,7 @@ export abstract class LyraPart extends LyraContainer {
         super.connectedCallback();
         this.syncIsEditorCapability();
         queueMicrotask(() => this.syncIsEditorCapability());
+        this.watch(activeEditorSignal, () => this.maybeActivateForCoupledEditors());
     }
 
     save() {

@@ -43,4 +43,7 @@ docs/.vitepress/cache
 # Testing
 coverage
 .nyc_output
+playwright-report
+test-results
+playwright/.cache
 

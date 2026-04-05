@@ -100,6 +100,8 @@ export class LyraTabs extends LyraContainer {
     activate(key: string): void {
         if (!this.tabGroup.value) return;
         this.tabGroup.value.setAttribute("active", key);
+        const tabPanel = this.getTabPanel(key);
+        if (tabPanel) this.syncActiveSignalsFromPanel(tabPanel);
     }
 
     public getActiveEditor(): string | null {
@@ -111,8 +113,6 @@ export class LyraTabs extends LyraContainer {
         const existing = this.contributions.find(c => c.name === contribution.name);
         if (existing) {
             this.activate(contribution.name);
-            const tabPanel = this.getTabPanel(contribution.name);
-            if (tabPanel) this.syncActiveSignalsFromPanel(tabPanel);
             return;
         }
         
@@ -121,14 +121,13 @@ export class LyraTabs extends LyraContainer {
         
         this.updateComplete.then(() => {
             requestAnimationFrame(() => {
-                this.activate(contribution.name);
                 const tabPanel = this.getTabPanel(contribution.name);
                 if (!tabPanel) return;
                 const part = this.getPartFromPanel(tabPanel);
                 if (part) {
                     part.tabContribution = contribution;
                 }
-                this.syncActiveSignalsFromPanel(tabPanel);
+                this.activate(contribution.name);
             });
         });
     }

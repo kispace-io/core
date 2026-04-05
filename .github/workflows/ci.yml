@@ -37,3 +37,9 @@ jobs:
       - name: Run type check
         run: npm run type-check
 
+      - name: Install Playwright Chromium
+        run: npm exec --workspace=@eclipse-lyra/app-e2e -- playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+

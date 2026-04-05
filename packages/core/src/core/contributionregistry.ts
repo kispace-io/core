@@ -44,6 +44,11 @@ export interface TabContribution extends Contribution {
     toolbar?: boolean;
     /** When true or omitted, a contextmenu is rendered for this tab; when false, no context menu is shown. */
     contextMenu?: boolean;
+    /**
+     * Main-area editor type ids (`TabContribution.editorId` of the editor tab) that should reveal this tab
+     * when any of them becomes the active editor in the main editor area. Omitted or empty = no auto-reveal.
+     */
+    coupledEditors?: string[];
     component?: (id: string) => TemplateResult;
 }
 
