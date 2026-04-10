@@ -59,6 +59,11 @@ function main() {
   logoSvg = logoSvg.replace(/\{\{APP_NAME\}\}/g, appName);
   writeFileSync(logoSvgPath, logoSvg);
 
+  const logoLoadingPath = join(targetDir, 'packages', 'app', 'public', 'logo-loading.svg');
+  let logoLoading = readFileSync(logoLoadingPath, 'utf8');
+  logoLoading = logoLoading.replace(/\{\{APP_NAME\}\}/g, appName);
+  writeFileSync(logoLoadingPath, logoLoading);
+
   const readmePath = join(targetDir, 'README.md');
   let readme = readFileSync(readmePath, 'utf8');
   readme = readme.replace(/\{\{APP_NAME\}\}/g, appName);
