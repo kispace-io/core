@@ -93,10 +93,11 @@ registerAll({
     },
     handler: {
         execute: async _context => {
-            if (document.fullscreenElement === document.body) {
+            const root = document.documentElement
+            if (document.fullscreenElement === root) {
                 await document.exitFullscreen()
             } else {
-                await document.body.requestFullscreen()
+                await root.requestFullscreen()
             }
         }
     },
