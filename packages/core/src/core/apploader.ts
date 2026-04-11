@@ -51,20 +51,6 @@ function getErrorMessage(error: unknown): string {
 }
 
 /**
- * Extracts the last path segment from a URL string.
- */
-function extractLastPathSegment(urlString: string): string | undefined {
-    try {
-        const url = new URL(urlString);
-        const pathSegments = url.pathname.split('/').filter(Boolean);
-        return pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : undefined;
-    } catch {
-        const pathSegments = urlString.split('/').filter(Boolean);
-        return pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : undefined;
-    }
-}
-
-/**
  * Extracts the first path segment from the current page URL.
  * This allows loading apps by path, e.g., /my-app loads the my-app app.
  */
@@ -223,7 +209,7 @@ export interface AppDefinition {
  * Options for registering an application with the apploader.
  */
 export interface RegisterAppOptions {
-    /** Default app name to load if no app URL parameter is provided. If not specified, the first registered app is loaded. */
+    /** Default app name when URL routing (?appId= or path) does not select an app. If not specified, the first registered app is loaded. */
     defaultAppName?: string;
     
     /** 
@@ -309,43 +295,10 @@ class AppLoaderService {
     registerSystemRequiredExtension(extensionId: string) {
         this.systemRequiredExtensions.add(extensionId);
     }
-    
-
-    /**
-     * Load an application definition from a URL.
-     * The module at the URL must export an AppDefinition as the default export.
-     * 
-     * @param url - URL to the app definition module
-     * @returns Promise that resolves to the loaded AppDefinition
-     */
-    async loadAppFromUrl(url: string): Promise<AppDefinition> {
-        logger.info(`Loading app from URL: ${url}...`);
-        
-        try {
-            const module = await import(/* @vite-ignore */ url);
-            
-            if (!module.default) {
-                throw new Error(`Module at ${url} does not have a default export`);
-            }
-            
-            const app = module.default as AppDefinition;
-            
-            if (!app.name || !app.version) {
-                throw new Error(`Module at ${url} does not export a valid AppDefinition (name and version required)`);
-            }
-            logger.info(`Successfully loaded app definition from URL: ${app.name}`);
-            return app;
-        } catch (error) {
-            logger.error(`Failed to load app from URL ${url}: ${getErrorMessage(error)}`);
-            throw error;
-        }
-    }
 
     /**
      * Start the application loader.
-     * Checks URL parameters for app=URL, loads that extension or app if found.
-     * URL parameter has higher precedence than defaultAppName.
-     * Then loads the default app or first registered app.
+     * Resolves which registered app to load from URL hints (?appId=, path) and settings, then loads it.
      * This method is idempotent - calling it multiple times only starts once.
      */
     async start(): Promise<void> {
@@ -357,55 +310,16 @@ class AppLoaderService {
         this.started = true;
 
         const urlParams = new URLSearchParams(window.location.search);
-        const appUrl = urlParams.get('app');
         const appIdFromUrl = urlParams.get('appId');
         const appIdFromPath = extractAppIdFromPath();
-        const appsBeforeExtension = this.apps.size;
-        
-        let appIdFromAppUrl: string | undefined;
-        if (appUrl) {
-            appIdFromAppUrl = extractLastPathSegment(appUrl);
-            if (appIdFromAppUrl) {
-                logger.info(`Extracted app ID from URL path: ${appIdFromAppUrl}`);
-            }
-        }
-        
+
         if (appIdFromPath) {
             logger.info(`Extracted app ID from current page path: ${appIdFromPath}`);
         }
-        
-        if (appUrl) {
-            try {
-                logger.info(`URL parameter 'app' found: ${appUrl}, attempting to load extension or app`);
-                
-                try {
-                    await extensionRegistry.loadExtensionFromUrl(appUrl);
-                    logger.info(`Successfully loaded extension from URL: ${appUrl}`);
-                } catch (extensionError) {
-                    logger.info(`Failed to load as extension, trying as app definition: ${getErrorMessage(extensionError)}`);
-                    
-                    try {
-                        const app = await this.loadAppFromUrl(appUrl);
-                        this.registerApp(app);
-                        if (!app.name) throw new Error('App from URL has no name after registration');
-                        await this.loadApp(app.name, this.container);
-                        logger.info(`Successfully loaded app from URL: ${appUrl}`);
-                        return;
-                    } catch (appError) {
-                        logger.error(`Failed to load from URL as both extension and app: ${getErrorMessage(appError)}`);
-                        throw appError;
-                    }
-                }
-            } catch (error) {
-                logger.error(`Failed to load from URL parameter, falling back to default app: ${getErrorMessage(error)}`);
-            }
-        }
-        
+
         const appToLoad = await this.selectAppToLoad({
             appIdFromUrl,
-            appIdFromPath,
-            appIdFromAppUrl,
-            appsBeforeExtension
+            appIdFromPath
         });
         
         if (!appToLoad) {
@@ -704,19 +618,15 @@ class AppLoaderService {
      * Select which app to load based on priority:
      * 1. appId URL parameter (?appId=...)
      * 2. App from current page URL path (/my-app)
-     * 3. App from app URL parameter (?app=...)
-     * 4. App registered by extension
-     * 5. Preferred app from settings
-     * 6. Default app
-     * 7. First registered app
+     * 3. Preferred app from settings
+     * 4. Default app
+     * 5. First registered app
      */
     private async selectAppToLoad(options: {
         appIdFromUrl: string | null;
         appIdFromPath: string | undefined;
-        appIdFromAppUrl: string | undefined;
-        appsBeforeExtension: number;
     }): Promise<string | undefined> {
-        const { appIdFromUrl, appIdFromPath, appIdFromAppUrl, appsBeforeExtension } = options;
+        const { appIdFromUrl, appIdFromPath } = options;
 
         if (appIdFromUrl) {
             const name = this.findAppNameBySegment(appIdFromUrl) ?? appIdFromUrl;
@@ -734,23 +644,6 @@ class AppLoaderService {
                 return name;
             }
             logger.debug(`App for path '${appIdFromPath}' not found, continuing search`);
-        }
-
-        if (appIdFromAppUrl) {
-            const name = this.findAppNameBySegment(appIdFromAppUrl) ?? appIdFromAppUrl;
-            if (this.apps.has(name)) {
-                logger.info(`Loading app using segment from app URL path: ${name}`);
-                return name;
-            }
-        }
-
-        if (this.apps.size > appsBeforeExtension) {
-            const newlyRegisteredApps = Array.from(this.apps.values()).slice(appsBeforeExtension);
-            if (newlyRegisteredApps.length > 0) {
-                const app = newlyRegisteredApps[0];
-                logger.info(`Loading app registered by extension: ${app.name}`);
-                return app.name;
-            }
         }
 
         const preferred = await this.getPreferredAppId();

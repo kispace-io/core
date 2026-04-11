@@ -33,6 +33,7 @@ export default defineConfig({
           { text: 'Architecture', link: '/concepts/architecture' },
           { text: 'Apps', link: '/concepts/apps' },
           { text: 'Extensions', link: '/concepts/extensions' },
+          { text: 'Security and safety', link: '/concepts/security' },
           { text: 'Contributions', link: '/concepts/contributions' },
           { text: 'Commands', link: '/concepts/commands' },
         ],

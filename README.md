@@ -115,6 +115,8 @@ For a deeper, more detailed tour of the architecture (including concepts like co
 - **Commands** — Id + handlers (with optional `canExecute`). Toolbar/menus reference commands; AI and command palette can execute them.
 - **Contribution remapping (per app)** — Apps can opt into a mapping layer (via `AppDefinition.remaps`) that **decouples where a contribution is defined from where it is rendered**. This allows downstream apps to move or hide platform and extension UI (e.g. moving the AI view from the right sidebar to the left, or disabling it entirely) without forking core or the extension. See the docs under `docs/concepts/contributions.md` for detailed usage.
 
+Extensions are **in-process and trust-based** (similar to Eclipse RCP–style desktop plugins). For browser deployments and trust boundaries, see [Security and safety](docs/concepts/security.md).
+
 ---
 
 ## Technology stack

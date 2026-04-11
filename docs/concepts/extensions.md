@@ -35,3 +35,5 @@ Each extension typically lives in its own package under `packages/extension-*`, 
 Use `dependencies` so that another extension is loaded first (e.g. Python runtime before the notebook). The system resolves order and detects circular dependencies.
 
 See [Create an extension](/guide/create-an-extension).
+
+For trust boundaries and deployment implications, see [Security and safety](/concepts/security).
