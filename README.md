@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="packages/app/public/logo.svg" alt="Eclipse Docks" width="280" />
+  <img src="packages/app/public/logo-loading.svg" alt="Eclipse Docks" width="280" />
 </p>
 
 <p align="center">
