@@ -31,12 +31,14 @@ jobs:
       - name: Build core package
         run: npm run build -w @eclipse-docks/core
 
+      # Root package.json and packages/app must match the tag: resolveDepVersionsPlugin reads
+      # packages/app/package.json (Vite root), so only bumping the repo root leaves __RESOLVED_PACKAGE_INFO__ at 0.0.0.
       - name: Set package.json version from tag
         run: |
           VERSION=${GITHUB_REF_NAME}
-          # Remove 'v' prefix if present
           VERSION=${VERSION#v}
           npm version --no-commit-hooks --no-git-tag-version "$VERSION"
+          (cd packages/app && npm version --no-commit-hooks --no-git-tag-version "$VERSION")
 
       - name: Build Docks app
         run: npm run build:app

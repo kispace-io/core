@@ -309,8 +309,12 @@ export class DocksCommandPalette extends DocksWidget {
 
   static styles = css`
     :host {
-      display: block;
-      width: 100%;
+      /* inline-flex + no width:100% keeps this on one row with siblings inside wa-button-group (flex-wrap: wrap). */
+      display: inline-flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: auto;
+      flex: 0 1 auto;
       max-width: 600px;
       min-width: 300px;
       position: relative;

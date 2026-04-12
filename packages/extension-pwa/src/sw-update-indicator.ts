@@ -185,7 +185,7 @@ export class DocksSwUpdateIndicator extends DocksElement {
           <wa-icon
             name="arrows-rotate"
             label=""
-            style="color: var(--wa-color-danger-fill-loud)"
+            style="color: var(--wa-color-success-fill-loud)"
           ></wa-icon>
         </wa-button>
       </wa-animation>

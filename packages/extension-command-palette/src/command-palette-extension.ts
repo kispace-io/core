@@ -19,6 +19,7 @@ registerAll({
 });
 
 contributionRegistry.registerContribution(TOOLBAR_MAIN_CENTER, {
+  name: 'commandPalette.toolbar',
   label: "Command Palette",
   icon: "terminal",
   component: () => html`<docks-command-palette></docks-command-palette>`,

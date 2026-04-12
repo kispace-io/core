@@ -5,6 +5,11 @@ import { marked } from "marked";
 import { toastError } from "../core/toast";
 import { appLoaderService, type ReleaseEntry } from "../core/apploader";
 
+/** Compare semver strings whether GitHub uses a leading "v" (e.g. v0.7.83) or package.json does not. */
+function semverEqual(a: string, b: string): boolean {
+    return a.replace(/^v/i, '') === b.replace(/^v/i, '');
+}
+
 registerAll({
     command: {
         "id": "show_version_info",
@@ -76,7 +81,7 @@ registerAll({
 
             const appVersion = app.version ?? '0.0.0';
             const isDev = appVersion === '0.0.0';
-            const currentIndex = releases.length > 0 ? releases.findIndex(r => r.tag_name === appVersion) : -1;
+            const currentIndex = releases.length > 0 ? releases.findIndex(r => semverEqual(r.tag_name, appVersion)) : -1;
             const startIndex = currentIndex >= 0 ? currentIndex : 0;
             let currentReleaseIndex = startIndex;
 
@@ -86,7 +91,7 @@ registerAll({
                 }
 
                 const release = releases[index];
-                const isCurrentVersion = release.tag_name === appVersion;
+                const isCurrentVersion = semverEqual(release.tag_name, appVersion);
 
                 let message = `**Version:** ${release.tag_name}`;
                 if (isCurrentVersion) {
@@ -140,7 +145,7 @@ registerAll({
 
                 const template = html`
                     <wa-dialog 
-                        label="About ${app.name ?? ''} - ${app.version ?? '0.0.0'}"
+                        label="About ${app.name ?? ''} - ${appVersion}"
                         open 
                         light-dismiss
                         style="--width: 600px;"

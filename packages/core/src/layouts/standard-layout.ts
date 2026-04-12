@@ -88,6 +88,14 @@ export class DocksStandardLayout extends DocksContainer {
                     position: relative;
                     z-index: 100;
                 }
+
+                docks-standard-layout .toolbar-top > :nth-child(1) {
+                    justify-self: start;
+                }
+
+                docks-standard-layout .toolbar-top > :nth-child(2) {
+                    justify-self: center;
+                }
                 
                 docks-standard-layout .toolbar-bottom {
                     width: 100%;
