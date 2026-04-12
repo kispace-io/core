@@ -55,6 +55,10 @@
     "./vite-plugin-local-aliases": {
       "types": "./dist/vite-plugin-local-aliases.d.ts",
       "import": "./dist/vite-plugin-local-aliases.js"
+    },
+    "./vite-plugin-app-splash": {
+      "types": "./dist/vite-plugin-app-splash.d.ts",
+      "import": "./dist/vite-plugin-app-splash.js"
     }
   },
   "peerDependencies": {

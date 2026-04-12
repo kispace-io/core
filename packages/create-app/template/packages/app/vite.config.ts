@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
 import mkcert from 'vite-plugin-mkcert';
 import { VitePWA } from 'vite-plugin-pwa';
+import { appSplashPlugin } from '@eclipse-docks/core/vite-plugin-app-splash';
 import { resolveDepVersionsPlugin } from '@eclipse-docks/core/vite-plugin-resolve-deps';
 import { localAliasesPlugin } from '@eclipse-docks/core/vite-plugin-local-aliases';
 
@@ -20,6 +21,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    appSplashPlugin(),
     resolveDepVersionsPlugin(),
     localAliasesPlugin({
       useSrcInDev: true,

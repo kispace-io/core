@@ -17,7 +17,11 @@ This creates a project with:
 
 ### Customizing the logo
 
-The splash screen and toolbar use **`public/logo.svg`**. To brand your app, replace this file with your own SVG (keep the name `logo.svg`). The same asset is shown on the loading overlay and in the main toolbar; no code changes are required.
+The main toolbar uses **`public/logo.svg`**. The startup splash uses **`public/logo-loading.svg`** by default (injected at build time by `appSplashPlugin()` from `@eclipse-docks/core/vite-plugin-app-splash`, wired in the app’s `vite.config.ts`). Replace those files to brand the app, or pass **`logo: { src, alt?, width?, height? }`** for a different asset or size. Pass **`description`** for a short tagline under the logo if you want one.
+
+### Splash screen
+
+The HTML for the loading overlay (progress text, `app-load-progress` / `app-loaded` listeners, and keyframes) comes from core via **`appSplashPlugin()`**, not from a long copy-paste in `index.html`. Keep a minimal `index.html` with `<div id="app-root"></div>` and add the plugin next to `resolveDepVersionsPlugin()` and `localAliasesPlugin()`. To fully customize the overlay, omit the plugin and provide your own markup, or keep a manual `#app-loading-overlay` block—the plugin skips injection when that id is already present.
 
 From the new project root: `npm run dev` starts the app, `npm run build` builds it, `npm run preview` previews the production build. See the generated `README.md` in the project for a short overview.
 
@@ -61,6 +65,6 @@ To add another layout (e.g. dashboard), register a **LayoutContribution** to the
 
 5. **Run and build**  
    From the repo root: `npm run dev` (or run the app package's dev script). For production: `npm run build` then build the app package; output will be in the app's `dist/`.  
-   For branding, add or replace **`public/logo.svg`** in the app package; it is used for the loading splash and the main toolbar.
+   For branding, add or replace **`public/logo.svg`** (toolbar) and **`public/logo-loading.svg`** (splash), and use **`appSplashPlugin()`** in Vite config unless you replace the splash HTML yourself.
 
 See [Concepts: Apps](/concepts/apps) for all `AppDefinition` options and layout registration.

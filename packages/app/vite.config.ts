@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
 import mkcert from 'vite-plugin-mkcert';
 import { VitePWA } from 'vite-plugin-pwa';
+import { appSplashPlugin } from '../core/src/vite-plugin-app-splash';
 import { localAliasesPlugin } from '../core/src/vite-plugin-local-aliases';
 import { resolveDepVersionsPlugin } from '../core/src/vite-plugin-resolve-deps';
 
@@ -20,6 +21,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    appSplashPlugin(),
     resolveDepVersionsPlugin(),
     localAliasesPlugin({
       packagesRoot: packagesDir,

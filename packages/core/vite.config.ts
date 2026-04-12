@@ -41,6 +41,7 @@ export default defineConfig({
         'core/events': path.resolve(__dirname, 'src/core/events.ts'),
         'vite-plugin-resolve-deps': path.resolve(__dirname, 'src/vite-plugin-resolve-deps.ts'),
         'vite-plugin-local-aliases': path.resolve(__dirname, 'src/vite-plugin-local-aliases.ts'),
+        'vite-plugin-app-splash': path.resolve(__dirname, 'src/vite-plugin-app-splash.ts'),
       },
       formats: ['es'],
       fileName: (format, entryName) => `${entryName}.js`,

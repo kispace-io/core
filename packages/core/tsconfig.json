@@ -25,13 +25,14 @@
     },
     "typeRoots": [
       "./node_modules/@types"
-    ],
-    "rootDir": "src"
+    ]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "test/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }

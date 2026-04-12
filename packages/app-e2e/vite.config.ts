@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
 import mkcert from 'vite-plugin-mkcert';
+import { appSplashPlugin } from '../core/src/vite-plugin-app-splash';
 import { localAliasesPlugin } from '../core/src/vite-plugin-local-aliases';
 import { resolveDepVersionsPlugin } from '../core/src/vite-plugin-resolve-deps';
 
@@ -20,6 +21,7 @@ export default defineConfig({
         },
     },
     plugins: [
+        appSplashPlugin({ logo: { src: '/logo.svg' } }),
         resolveDepVersionsPlugin(),
         localAliasesPlugin({
             packagesRoot: packagesDir,
