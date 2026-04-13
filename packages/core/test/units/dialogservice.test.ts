@@ -51,7 +51,7 @@ describe('dialogservice', () => {
   });
 
   it('loads only valid dialog contributions', async () => {
-    getContributionsMock.mockReturnValue([
+    (getContributionsMock as any).mockReturnValue([
       { id: 'valid', label: 'Valid', component: () => ({}), onButton: vi.fn() },
       { id: 'no-component', onButton: vi.fn() },
       { id: 'no-handler', component: () => ({}) },
@@ -66,7 +66,7 @@ describe('dialogservice', () => {
   });
 
   it('throws on opening unknown dialog', async () => {
-    getContributionsMock.mockReturnValue([]);
+    (getContributionsMock as any).mockReturnValue([]);
     const { dialogService } = await import('../../src/core/dialogservice');
     await expect(dialogService.open('missing')).rejects.toThrow('Dialog "missing" not found');
   });
@@ -74,7 +74,7 @@ describe('dialogservice', () => {
   it('reloads contributions on dialog target change events', async () => {
     const validA = { id: 'a', label: 'A', component: () => ({}), onButton: vi.fn() };
     const validB = { id: 'b', label: 'B', component: () => ({}), onButton: vi.fn() };
-    getContributionsMock.mockReturnValueOnce([validA]).mockReturnValue([validB]);
+    (getContributionsMock as any).mockReturnValueOnce([validA]).mockReturnValue([validB]);
 
     const { dialogService } = await import('../../src/core/dialogservice');
     expect(dialogService.hasDialog('a')).toBe(true);
@@ -93,7 +93,7 @@ describe('dialogservice', () => {
 
   it('ignores contribution change events for non-dialog targets', async () => {
     const validA = { id: 'a', label: 'A', component: () => ({}), onButton: vi.fn() };
-    getContributionsMock.mockReturnValue([validA]);
+    (getContributionsMock as any).mockReturnValue([validA]);
     const { dialogService } = await import('../../src/core/dialogservice');
     expect(dialogService.hasDialog('a')).toBe(true);
 
