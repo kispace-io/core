@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto';
 import { describe, it, expect } from 'vitest';
 import { PersistenceService } from '../../src/core/persistenceservice';
 
