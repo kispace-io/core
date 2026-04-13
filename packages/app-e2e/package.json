@@ -14,7 +14,9 @@
   "dependencies": {
     "@eclipse-docks/core": "*",
     "@eclipse-docks/extension-ai-system": "*",
-    "@eclipse-docks/extension-plain-editor": "*"
+    "@eclipse-docks/extension-notebook": "*",
+    "@eclipse-docks/extension-plain-editor": "*",
+    "@eclipse-docks/extension-python-runtime": "*"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0",

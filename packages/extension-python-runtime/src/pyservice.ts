@@ -24,8 +24,12 @@ export class PyEnv {
             this.handleWorkerMessage(event.data);
         };
 
-        worker.onerror = (error) => {
-            console.error('Python Worker error:', error);
+        worker.onerror = (ev: ErrorEvent) => {
+            const where = [ev.message, ev.filename, ev.lineno, ev.colno].filter(Boolean).join(' ');
+            logger.error(
+                `Python worker failed (script load or uncaught exception)${where ? `: ${where}` : ''}`,
+                ev.error,
+            );
         };
 
         await this.sendMessage('init', { vars: this.vars });
@@ -137,12 +141,9 @@ export class PyEnv {
     private handleWorkerMessage(response: PyWorkerResponse) {
         // Handle interrupt buffer initialization
         if (response.id === 'interrupt-buffer') {
-            if (response.type === 'success') {
-                this.interruptBuffer = new Uint8Array(response.payload);
-            } else {
-                // SharedArrayBuffer not available - interrupt buffer will be undefined
-                this.interruptBuffer = undefined;
-            }
+            const buf = response.type === 'success' ? response.payload : undefined;
+            this.interruptBuffer =
+                buf instanceof SharedArrayBuffer ? new Uint8Array(buf) : undefined;
             return;
         }
         

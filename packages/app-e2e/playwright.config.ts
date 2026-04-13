@@ -7,6 +7,7 @@ const repoRoot = path.resolve(packageRoot, '../..');
 
 export default defineConfig({
     testDir: path.join(packageRoot, 'e2e'),
+    testIgnore: ['**/storyboard-*.spec.ts'],
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
@@ -23,6 +24,7 @@ export default defineConfig({
             'npm run build -w @eclipse-docks/core && npm run build -w @eclipse-docks/app-e2e && E2E_HTTP_PREVIEW=1 npm run preview -w @eclipse-docks/app-e2e -- --host 127.0.0.1 --port 4173 --strictPort',
         cwd: repoRoot,
         url: 'http://127.0.0.1:4173',
+        // Local default reuses 4173; if Pyodide hangs, restart preview so COOP/COEP apply (vite E2E_HTTP_PREVIEW).
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,
     },

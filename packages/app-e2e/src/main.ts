@@ -55,7 +55,11 @@ appLoaderService.registerApp(
         name: 'Docks E2E',
         description: 'Playwright harness — not the product demo.',
         layoutId: 'standard-full',
-        extensions: ['@eclipse-docks/extension-ai-system', '@eclipse-docks/extension-plain-editor'],
+        extensions: [
+            '@eclipse-docks/extension-ai-system',
+            '@eclipse-docks/extension-plain-editor',
+            '@eclipse-docks/extension-python-runtime',
+        ],
     },
     { autoStart: true, hostConfig: true, container: appRoot },
 );

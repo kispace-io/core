@@ -186,20 +186,18 @@ async function initPyodide(payload: { vars?: any }) {
             });
         } catch (error) {
             console.warn('Failed to set up interrupt buffer:', error);
-            // Send notification that interrupt buffer is not available
             sendMessage({
                 id: 'interrupt-buffer',
-                type: 'error',
-                payload: { message: 'SharedArrayBuffer not available' }
+                type: 'success',
+                payload: undefined,
             });
         }
     } else {
         console.warn('SharedArrayBuffer not available - interrupt functionality will be limited');
-        // Send notification that interrupt buffer is not available
         sendMessage({
             id: 'interrupt-buffer',
-            type: 'error',
-            payload: { message: 'SharedArrayBuffer not available' }
+            type: 'success',
+            payload: undefined,
         });
     }
     

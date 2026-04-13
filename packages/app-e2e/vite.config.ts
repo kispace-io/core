@@ -12,6 +12,20 @@ const packagesDir = path.resolve(__dirname, '..');
 
 const e2eHttpPreview = process.env.E2E_HTTP_PREVIEW === '1';
 
+/** Same COOP/COEP as vite-plugin-cross-origin-isolation (that package only hooks configureServer, not preview). */
+function crossOriginIsolationPreviewPlugin() {
+    return {
+        name: 'cross-origin-isolation-preview',
+        configurePreviewServer(server) {
+            server.middlewares.use((_req, res, next) => {
+                res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+                res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+                next();
+            });
+        },
+    };
+}
+
 export default defineConfig({
     root: __dirname,
     base: process.env.VITE_BASE_PATH || '/',
@@ -33,6 +47,7 @@ export default defineConfig({
         }),
         ...(e2eHttpPreview ? [] : [mkcert()]),
         crossOriginIsolation(),
+        ...(e2eHttpPreview ? [crossOriginIsolationPreviewPlugin()] : []),
         {
             name: 'watch-workspace-packages',
             configureServer(server) {
