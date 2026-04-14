@@ -16,19 +16,19 @@ async function loadWorkerFactoryForVariant(
   switch (variant) {
     case 'minimal':
       return (
-        await import('./cereusdb-worker-minimal.ts?worker&inline')
+        await import('./cereusdb-worker-minimal.ts?worker')
       ).default;
     case 'standard':
       return (
-        await import('./cereusdb-worker-standard.ts?worker&inline')
+        await import('./cereusdb-worker-standard.ts?worker')
       ).default;
     case 'full':
       return (
-        await import('./cereusdb-worker-full.ts?worker&inline')
+        await import('./cereusdb-worker-full.ts?worker')
       ).default;
     case 'global':
       return (
-        await import('./cereusdb-worker-global.ts?worker&inline')
+        await import('./cereusdb-worker-global.ts?worker')
       ).default;
     default: {
       const neverVariant: never = variant;

@@ -1,5 +1,4 @@
 /** Shared surface used by each variant worker entry. */
-import pkg from '../package.json';
 
 export type CereusDbApi = {
   sqlJSON: (sql: string) => Promise<Record<string, unknown>[]>;
@@ -13,46 +12,6 @@ type CereusWorkerMessage = {
 };
 
 type CreateDb = () => Promise<CereusDbApi>;
-
-const DEFAULT_CEREUS_CDN_BASE = 'https://cdn.jsdelivr.net/npm';
-const DEFAULT_CEREUS_VERSION = '0.1.1';
-
-const CEREUS_DEP_VERSIONS = (pkg.dependencies ?? {}) as Record<string, string>;
-
-export function cereusWasmUrl(
-  packageName:
-    | '@cereusdb/minimal'
-    | '@cereusdb/standard'
-    | '@cereusdb/full'
-    | '@cereusdb/global',
-): string {
-  const configuredBase = (self as unknown as { __cereusdbCdnBase?: string })
-    .__cereusdbCdnBase;
-  const base = (configuredBase && configuredBase.trim()) || DEFAULT_CEREUS_CDN_BASE;
-  const normalized = base.replace(/\/+$/, '');
-  const spec = CEREUS_DEP_VERSIONS[packageName] ?? '';
-  const resolvedVersion =
-    spec.trim().replace(/^[~^><=\s]*/, '') || DEFAULT_CEREUS_VERSION;
-  // Use concrete package path so worker can fetch wasm from CDN and keep host bundles smaller.
-  return `${normalized}/${packageName}@${resolvedVersion}/dist/wasm/cereusdb_bg.wasm`;
-}
-
-export function cereusModuleUrl(
-  packageName:
-    | '@cereusdb/minimal'
-    | '@cereusdb/standard'
-    | '@cereusdb/full'
-    | '@cereusdb/global',
-): string {
-  const configuredBase = (self as unknown as { __cereusdbCdnBase?: string })
-    .__cereusdbCdnBase;
-  const base = (configuredBase && configuredBase.trim()) || DEFAULT_CEREUS_CDN_BASE;
-  const normalized = base.replace(/\/+$/, '');
-  const spec = CEREUS_DEP_VERSIONS[packageName] ?? '';
-  const resolvedVersion =
-    spec.trim().replace(/^[~^><=\s]*/, '') || DEFAULT_CEREUS_VERSION;
-  return `${normalized}/${packageName}@${resolvedVersion}/dist/index.js`;
-}
 
 export function runCereusWorker(createDb: CreateDb): void {
   let db: CereusDbApi | null = null;

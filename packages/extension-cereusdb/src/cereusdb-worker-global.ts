@@ -1,13 +1,9 @@
-import { cereusModuleUrl, cereusWasmUrl, runCereusWorker } from './cereusdb-worker-runtime';
-import type { CereusDbApi } from './cereusdb-worker-runtime';
+import { CereusDB } from '@cereusdb/global';
+import { runCereusWorker } from './cereusdb-worker-runtime';
+import globalWasmUrl from '@cereusdb/global/wasm?url&no-inline';
 
 runCereusWorker(async () => {
-  const { CereusDB } = (await import(cereusModuleUrl('@cereusdb/global'))) as {
-    CereusDB: { create: (opts: { wasmUrl: string }) => Promise<unknown> };
-  };
-  return (await CereusDB.create({
-    wasmUrl: cereusWasmUrl('@cereusdb/global'),
-  })) as CereusDbApi & Awaited<
+  return (await CereusDB.create({ wasmUrl: globalWasmUrl })) as Awaited<
     ReturnType<typeof CereusDB.create>
   >;
 });
