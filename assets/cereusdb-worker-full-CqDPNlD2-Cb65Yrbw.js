@@ -1,0 +1,1 @@
+function e(e){return new Worker(`/assets/cereusdb-worker-full--IXzxhF8.js`,{type:`module`,name:e?.name})}export{e as default};
