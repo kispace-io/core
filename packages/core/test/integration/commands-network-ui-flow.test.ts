@@ -14,8 +14,6 @@ const jsRuntimeCloseMock = vi.fn();
 const renderMock = vi.fn();
 const markedParseMock = vi.fn((s: string) => `<p>${s}</p>`);
 const unsafeHTMLMock = vi.fn((s: string) => s);
-const jsZipLoadAsyncMock = vi.fn();
-
 vi.mock('../../src/core/commandregistry', () => ({
   registerAll: harness.registerAllMock,
 }));
@@ -47,9 +45,6 @@ vi.mock('lit/directives/unsafe-html.js', () => ({
 }));
 vi.mock('marked', () => ({
   marked: { parse: markedParseMock },
-}));
-vi.mock('jszip', () => ({
-  default: { loadAsync: jsZipLoadAsyncMock },
 }));
 vi.mock('../../src/core/apploader', () => ({
   appLoaderService: { getCurrentApp: vi.fn() },
@@ -107,25 +102,6 @@ describe('commands network/ui flow', () => {
     const saved = await workspace?.getResource(`${folder}/downloads/a.txt`);
     expect(saved).toBeTruthy();
     expect(toastInfoMock).toHaveBeenCalled();
-  });
-
-  it('unzip extracts zip entries into target folder', async () => {
-    const folder = `unzip-${Date.now()}`;
-    const workspaceService = await setupWorkspace(folder);
-    const workspace = await workspaceService.getWorkspace();
-    const zipFile = await workspace?.getResource(`${folder}/archive.zip`, { create: true });
-    await (zipFile as any).saveContents(new Blob(['x']));
-    activeSelectionSignalMock.get.mockReturnValue({ path: `${folder}/archive.zip` });
-    jsZipLoadAsyncMock.mockResolvedValue({
-      files: {
-        'a.txt': { dir: false, async: async () => new Blob(['a']) },
-      },
-    });
-
-    await import('../../src/commands/unzip');
-    const cmd = harness.getRegistered('unzip');
-    await cmd.handler?.execute({ params: { target: `${folder}/archive/` } });
-    expect(await workspace?.getResource(`${folder}/archive/a.txt`)).toBeTruthy();
   });
 
   it('show_version_info errors when no app loaded', async () => {

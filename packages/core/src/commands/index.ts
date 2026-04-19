@@ -14,7 +14,6 @@ import "./mv";
 import "./rm";
 import "./tail";
 import "./touch";
-import "./unzip";
 import "./wc";
 import "./wget";
 

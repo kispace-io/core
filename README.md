@@ -18,6 +18,12 @@ Eclipse Docks is a runtime web platform for building modular, extensible desktop
 
 **Docs:** [https://app.kispace.de/docs/](https://app.kispace.de/docs/)
 
+**Demo video**:
+
+<video controls playsinline muted width="100%" src="docs/public/videos/app-walkthrough.webm"></video>
+
+If the clip does not play here, open the [docs walkthrough page](https://app.kispace.de/docs/videos/).
+
 **DeepWiki (interactive docs):** [talk to the code and architecture](https://deepwiki.com/eclipse-docks/core) — the recommended way to explore internals and ask questions about the codebase.
 
 ---
@@ -130,6 +136,19 @@ Eclipse Docks is built on a lightweight, browser-native stack:
 - **Vite** — Build and dev server.
 
 Optional extensions add capabilities like the Monaco editor, Pyodide, WebLLM, WebMCP, RxDB, and Xenova transformers.
+
+### Asset size (reference)
+
+Exact sizes move with each **`@eclipse-docks/core`**, extension, and Vite release; treat the table as **order-of-magnitude** guidance.
+
+| Scenario | **`packages/app/dist`** (typical) | **File count** (typical) |
+| -------- | ----------------------------------- | ------------------------ |
+| **Minimal (core-only)** | ~950 KB on disk | ~18 |
+| **Default create-app template** | ~6 MB on disk | ~170 |
+
+**Minimal** — Vite app with only `@eclipse-docks/core`, **`extensions: []`**, no PWA or other extensions. Main JS ~810 KB minified (~196 KB gzip); main CSS ~99 KB minified (~14 KB gzip).
+
+**Default create-app** — `npm create @eclipse-docks/app` as shipped: default extensions, PWA, `extension-example`. Largest pieces: Monaco / editor worker bundles (multi‑MB JS), many language and extension chunks; PWA **`sw.js`** precaches the build (**~6 MB** precache in a recent measure).
 
 ---
 

@@ -1,12 +1,15 @@
 {
-  "extends": "../../../../../tsconfig.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM"],
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "rootDir": "src"
   },
-  "include": [
-    "src/**/*",
-    "env.d.ts"
-  ]
+  "include": ["src/**/*", "env.d.ts"]
 }
