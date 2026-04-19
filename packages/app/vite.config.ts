@@ -41,6 +41,12 @@ export default defineConfig({
         'A modular, extensible web application framework for IDE-like applications.',
       // CereusDB full worker can exceed 139 MiB in prod builds.
       maximumFileSizeToCacheInBytes: 200 * 1024 * 1024,
+      serviceWorkerConfig: {
+        navigationRoute: {
+          // Same-origin VitePress docs (e.g. gh-pages `/docs/`); keep out of SPA navigation fallback.
+          denylist: ['^/docs'],
+        },
+      },
     }),
     {
       name: 'watch-workspace-packages',
