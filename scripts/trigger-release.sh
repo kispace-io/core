@@ -36,7 +36,6 @@ echo ""
 
 npm run type-check
 npm run test
-npm run build
 npm run build:app
 npm run playwright:install-chromium
 npm run test:e2e
