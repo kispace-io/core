@@ -40,7 +40,6 @@ export default defineConfig({
         localAliasesPlugin({
             packagesRoot: packagesDir,
             useSrcInDev: true,
-            alwaysUseSrc: true,
             patterns: [
                 { folderPrefix: 'core', packageNamePrefix: '@eclipse-docks/' },
                 { folderPrefix: 'extension-' },
