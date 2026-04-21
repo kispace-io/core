@@ -14,9 +14,9 @@
 
 Eclipse Docks is a runtime web platform for building modular, extensible desktop- and dashboard-style web applications, running fully in the browser and integrating with any existing backend.
 
-**Demo app:** [https://app.kispace.de](https://app.kispace.de)
+**Demo app:** [https://docks.eclipse.dev](https://docks.eclipse.dev)
 
-**Docs:** [https://app.kispace.de/docs/](https://app.kispace.de/docs/)
+**Docs:** [https://docks.eclipse.dev/docs/](https://docks.eclipse.dev/docs/)
 
 **DeepWiki (interactive docs):** [talk to the code and architecture](https://deepwiki.com/eclipse-docks/core) — the recommended way to explore internals and ask questions about the codebase.
 
@@ -45,7 +45,7 @@ Common places to start customizing:
 ### Explore and learn the internals
 
 - Use **DeepWiki** at [https://deepwiki.com/eclipse-docks/core](https://deepwiki.com/eclipse-docks/core) to ask questions about architecture, services, and extension points directly against the codebase.
-- Browse the docs at [https://app.kispace.de/docs/](https://app.kispace.de/docs/) for conceptual overviews and examples.
+- Browse the docs at [https://docks.eclipse.dev/docs/](https://docks.eclipse.dev/docs/) for conceptual overviews and examples.
 
 ### Advanced: work on this repo
 
@@ -160,7 +160,7 @@ Both are **Eclipse Foundation** technology projects, but they target different a
 
 For **browser standards**, PWA, and **long-term** positioning (vs VS Code–aligned stacks), see the **Standards & longevity** section in the full comparison.
 
-**Full comparison:** [Eclipse Docks vs Eclipse Theia](https://app.kispace.de/docs/concepts/docks-vs-theia) (or [`docs/concepts/docks-vs-theia.md`](docs/concepts/docks-vs-theia.md) in this repo).
+**Full comparison:** [Eclipse Docks vs Eclipse Theia](https://docks.eclipse.dev/docs/concepts/docks-vs-theia) (or [`docs/concepts/docks-vs-theia.md`](docs/concepts/docks-vs-theia.md) in this repo).
 
 ---
 

@@ -1,7 +1,7 @@
 /**
  * Eclipse Hosted Services integration for the public demo (e.g. docks.eclipse.dev).
  *
- * Deployment: app.kispace.de today; CNAME to docks.eclipse.dev after EF approval — then EF
+ * Deployment: https://docks.eclipse.dev (GitHub Pages with CNAME). Eclipse Foundation
  * Hosted Services Policy applies to you as Service Operator for that deployment.
  *
  * - Legal: toolbar entry + dialog (required footer content).

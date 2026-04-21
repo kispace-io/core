@@ -9,7 +9,7 @@ This documentation is for **developers** who want to:
 
 ## Live example
 
-A full app built on Eclipse Docks: [https://app.kispace.de](https://app.kispace.de).
+A full app built on Eclipse Docks: [https://docks.eclipse.dev](https://docks.eclipse.dev).
 
 ## Repository
 
