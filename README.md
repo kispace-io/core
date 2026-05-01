@@ -7,6 +7,7 @@
   <a href="https://github.com/eclipse-docks/core/actions/workflows/ci.yml"><img src="https://github.com/eclipse-docks/core/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://codecov.io/gh/eclipse-docks/core"><img src="https://codecov.io/gh/eclipse-docks/core/graph/badge.svg?branch=main" alt="codecov" /></a>
   <a href="https://www.npmjs.com/package/@eclipse-docks/core"><img src="https://img.shields.io/npm/v/@eclipse-docks/core" alt="npm @eclipse-docks/core" /></a>
+  <a href="https://library-skills.io"><img src="https://img.shields.io/badge/Library%20Skills-compatible-2ea44f?style=flat-square" alt="Library Skills compatible" /></a>
   <a href="https://github.com/eclipse-docks/core/blob/main/LICENSE"><img src="https://img.shields.io/github/license/eclipse-docks/core" alt="License EPL-2.0" /></a>
 </p>
 
@@ -19,6 +20,8 @@ Eclipse Docks is a runtime web platform for building modular, extensible desktop
 **Docs:** [https://docks.eclipse.dev/docs/](https://docks.eclipse.dev/docs/)
 
 **DeepWiki (interactive docs):** [talk to the code and architecture](https://deepwiki.com/eclipse-docks/core) — the recommended way to explore internals and ask questions about the codebase.
+
+**AI coding assistants ([Library Skills](https://library-skills.io)):** `@eclipse-docks/core` ships **two** [`.agents/skills/`](https://library-skills.io/create/) bundles in the npm package: **`eclipse-docks-core`** (downstream **app/extension authors**) and **`eclipse-docks-contributing`** (maintainers hacking **this** monorepo). Depend on **`@eclipse-docks/core`**, then **`npx library-skills`** ([Using Library Skills](https://library-skills.io/use/)). Sources live under **`packages/core/.agents/skills/`** in git.
 
 ## How to get started
 
@@ -41,6 +44,20 @@ Common places to start customizing:
 
 - Update app metadata, logo, and the extensions list in the app entry file under `packages/app/src/`.
 - Use `packages/example-extension` as a template for your own domain-specific extensions.
+
+### Install bundled Agent Skills (Library Skills)
+
+If your **`package.json`** depends on **`@eclipse-docks/core`**, you can symlink bundled skills into your project for Cursor, Codex, and other [.agents-compatible tools](https://library-skills.io/use/):
+
+```bash
+cd /path/to/your-app   # directory that has package.json with @eclipse-docks/core
+npm install             # ensures node_modules/@eclipse-docks/core is present where the CLI scans
+npx library-skills
+```
+
+When prompted, select **`eclipse-docks-core`** if you ship a Docks app, **`eclipse-docks-contributing`** if you are working on **`eclipse-docks/core`** itself—or install **both**. The CLI writes symlinks under **`.agents`**. Inspect discoveries with **`npx library-skills scan --json`**. Claude Code uses **`.claude`** instead — **`npx library-skills --claude`** ([Library Skills docs](https://library-skills.io/use/)).
+
+**Note:** Yarn/npm **workspaces** may hoist **`@eclipse-docks/core`** to the workspace root. If **`scan`** lists no skills, run **`library-skills`** from the workspace root whose **`node_modules`** contains **`@eclipse-docks/core`**, or temporarily add **`@eclipse-docks/core`** as a dependency of that root package while you install skills.
 
 ### Explore and learn the internals
 
@@ -94,7 +111,7 @@ For a deeper, more detailed tour of the architecture (including concepts like co
 
 | Path | Role |
 |------|------|
-| **`packages/core`** (`@eclipse-docks/core`) | Platform: registries, services, parts, widgets, dialogs, default UI contributions. No extension logic; extensions are separate packages. |
+| **`packages/core`** (`@eclipse-docks/core`) | Platform: registries, services, parts, widgets, dialogs, default UI contributions. Ships [Library Skills](https://library-skills.io)-compatible skills under **`.agents/skills/`**: **`eclipse-docks-core`** (app authors) and **`eclipse-docks-contributing`** (this repo)—both published in the npm package. No extension-specific product logic unless it genuinely belongs in core; other features live in **`extension-*`**. |
 | **`packages/extension-*`** | One package per extension (e.g. `extension-ai-system`, `extension-settings-tree`, `extension-monaco-editor`). Each depends on core and registers commands/contributions/editors. |
 | **`packages/app`** | Default app: imports core + extensions, defines `AppDefinition` and `extensions[]`, registers with app loader. Use as template for your own app. |
 | **`packages/app-e2e`** | Playwright harness only: minimal Vite app + specs under `packages/app-e2e/e2e/`. Not the product demo. Run `npm run test:e2e` from the repo root. |

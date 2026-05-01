@@ -66,7 +66,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    ".agents"
   ],
   "scripts": {
     "build": "vite build",
