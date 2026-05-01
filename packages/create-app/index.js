@@ -84,6 +84,12 @@ function main() {
     unlinkSync(gitignoreSrc);
   }
 
+  const npmrcSrc = join(targetDir, '_npmrc');
+  if (existsSync(npmrcSrc)) {
+    writeFileSync(join(targetDir, '.npmrc'), readFileSync(npmrcSrc, 'utf8'));
+    unlinkSync(npmrcSrc);
+  }
+
   console.log('Installing dependencies...');
   const install = spawnSync('npm', ['install'], { cwd: targetDir, stdio: 'inherit', shell: true });
   if (install.status !== 0) {
