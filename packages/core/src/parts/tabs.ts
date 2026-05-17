@@ -449,8 +449,24 @@ export class DocksTabs extends DocksContainer {
             display: none !important;
         }
 
+        /* Tab strip (wa-tab-group part tabs, inside shadow .nav); hiding only wa-tab leaves an empty nav row. */
+        :host([hide-tabs]) wa-tab-group::part(tabs) {
+            display: none;
+        }
+
         :host([hide-tabs]:not([with-toolbar])) wa-tab-group::part(nav) {
             display: none;
+        }
+
+        /* Single grid row so the body uses 1fr instead of the auto nav row when tabs are hidden. */
+        :host([hide-tabs]:is([placement="top"], [placement="bottom"])) wa-tab-group::part(base) {
+            grid-template-rows: minmax(0, 1fr);
+        }
+
+        :host([hide-tabs]) wa-tab-group::part(body) {
+            min-height: 0;
+            height: 100%;
+            overflow: hidden;
         }
 
         :host(:is([placement="top"], [placement="bottom"])) wa-tab-group::part(base) {
