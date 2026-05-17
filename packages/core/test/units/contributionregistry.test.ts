@@ -11,6 +11,8 @@ import {
   TOPIC_CONTRIBUTEIONS_CHANGED,
   type Contribution,
   type CommandContribution,
+  getContributionVisible,
+  getContributionDisabled,
 } from '../../src/core/contributionregistry';
 
 describe('ContributionRegistry', () => {
@@ -36,7 +38,7 @@ describe('ContributionRegistry', () => {
     expect(list[1].label).toBe('Second');
   });
 
-  it('converts disabled function to Signal.Computed for CommandContribution', () => {
+  it('converts disabled function to Signal.Computed', () => {
     const target = 'test-disabled-' + Math.random();
     const contribution: CommandContribution = {
       label: 'With disabled',
@@ -49,7 +51,7 @@ describe('ContributionRegistry', () => {
     expect((contribution.disabled as { get(): boolean }).get()).toBe(true);
   });
 
-  it('leaves existing Signal.Computed disabled unchanged for CommandContribution', () => {
+  it('leaves existing Signal.Computed disabled unchanged', () => {
     const target = 'test-computed-' + Math.random();
     const computed = new Signal.Computed(() => false);
     const contribution: CommandContribution = {
@@ -60,6 +62,80 @@ describe('ContributionRegistry', () => {
     contributionRegistry.registerContribution(target, contribution);
     expect(contribution.disabled).toBe(computed);
     expect((contribution.disabled as { get(): boolean }).get()).toBe(false);
+  });
+
+  it('getContributionVisible returns true when visible is omitted', () => {
+    const contribution: CommandContribution = {
+      label: 'Always visible',
+      command: 'test.cmd',
+    };
+    expect(getContributionVisible(contribution)).toBe(true);
+  });
+
+  it('getContributionVisible reflects Signal.Computed visible', () => {
+    const contribution: CommandContribution = {
+      label: 'Conditional',
+      command: 'test.cmd',
+      visible: new Signal.Computed(() => false),
+    };
+    expect(getContributionVisible(contribution)).toBe(false);
+  });
+
+  it('getContributionDisabled returns false when disabled is omitted', () => {
+    const contribution: CommandContribution = {
+      label: 'Enabled',
+      command: 'test.cmd',
+    };
+    expect(getContributionDisabled(contribution)).toBe(false);
+  });
+
+  it('getContributionDisabled reflects Signal.Computed disabled', () => {
+    const contribution: CommandContribution = {
+      label: 'Disabled',
+      command: 'test.cmd',
+      disabled: new Signal.Computed(() => true),
+    };
+    expect(getContributionDisabled(contribution)).toBe(true);
+  });
+
+  it('converts visible/disabled functions for any contribution', () => {
+    const target = 'test-non-command-' + Math.random();
+    const contribution: Contribution = {
+      label: 'Generic',
+      visible: () => false,
+      disabled: () => true,
+    };
+    contributionRegistry.registerContribution(target, contribution);
+    expect(contribution.visible).not.toBeInstanceOf(Function);
+    expect(contribution.disabled).not.toBeInstanceOf(Function);
+    expect((contribution.visible as { get(): boolean }).get()).toBe(false);
+    expect((contribution.disabled as { get(): boolean }).get()).toBe(true);
+  });
+
+  it('converts visible function to Signal.Computed', () => {
+    const target = 'test-visible-' + Math.random();
+    const contribution: CommandContribution = {
+      label: 'With visible',
+      command: 'test.cmd',
+      visible: () => false,
+    };
+    contributionRegistry.registerContribution(target, contribution);
+    expect(contribution.visible).toBeDefined();
+    expect(contribution.visible).not.toBeInstanceOf(Function);
+    expect((contribution.visible as { get(): boolean }).get()).toBe(false);
+  });
+
+  it('leaves existing Signal.Computed visible unchanged', () => {
+    const target = 'test-visible-computed-' + Math.random();
+    const computed = new Signal.Computed(() => true);
+    const contribution: CommandContribution = {
+      label: 'Already computed visible',
+      command: 'test.cmd',
+      visible: computed,
+    };
+    contributionRegistry.registerContribution(target, contribution);
+    expect(contribution.visible).toBe(computed);
+    expect((contribution.visible as { get(): boolean }).get()).toBe(true);
   });
 
   describe('contribution target remapping', () => {

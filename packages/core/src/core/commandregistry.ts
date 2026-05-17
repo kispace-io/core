@@ -225,7 +225,7 @@ rootContext.put("commandRegistry", commandRegistry);
 export interface RegisterOptions {
     command: Command,
     handler?: Handler,
-    contribution?: Contribution & Partial<Pick<CommandContribution, 'disabled'>>
+    contribution?: Contribution
 }
 
 export const registerAll = (options: RegisterOptions) => {

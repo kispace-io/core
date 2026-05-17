@@ -7,10 +7,11 @@ import {
     Contribution,
     ContributionChangeEvent,
     contributionRegistry,
+    getContributionDisabled,
     HTMLContribution,
+    getContributionVisible,
     TOPIC_CONTRIBUTEIONS_CHANGED
 } from "../core/contributionregistry";
-import {Signal} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {subscribe} from "../core/events";
 import { icon } from "../core/icon-utils";
@@ -28,7 +29,8 @@ function renderButtonGroup(
 ) {
     const slot = slotName ?? 'default';
     const label = `Toolbar ${slot}`;
-    const items = contributions.filter(c => c.slot === slotName && isToolbarItem(c));
+    const items = contributions.filter(c =>
+        c.slot === slotName && isToolbarItem(c) && getContributionVisible(c));
     const slotHtml = slotName === 'start'
         ? html`<slot name="start"></slot>`
         : slotName === 'end'
@@ -211,7 +213,7 @@ export class DocksToolbar extends DocksElement {
             return html`
                 <wa-button @click=${() => void this.executeCommand(commandContribution.command, commandContribution.params || {})}
                            title=${commandContribution.label}
-                           ?disabled="${(commandContribution.disabled as Signal.Computed<boolean>)?.get()}"
+                           ?disabled="${getContributionDisabled(commandContribution)}"
                            appearance="plain" size=${this.size}>
                     ${icon(commandContribution.icon, { label: commandContribution.label })}
                     ${showLabel ? commandContribution.label : ''}

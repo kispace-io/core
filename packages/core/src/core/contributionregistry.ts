@@ -16,15 +16,45 @@ export interface Contribution {
     name?: string;
     target?: string;
     label: string;
+    /** When true, UI may show `label` alongside the icon (e.g. toolbar). Honored where supported in UI. */
+    showLabel?: boolean;
     icon?: string;
     slot?: string;
+    disabled?: (() => boolean) | Signal.Computed<boolean>;
+    /** When false, the contribution is not rendered (default: shown). Honored where supported in UI. */
+    visible?: (() => boolean) | Signal.Computed<boolean>;
 }
 
 export interface CommandContribution extends Contribution {
     command: string;
     params?: Record<string, any>;
-    showLabel?: boolean;
-    disabled?: (() => boolean) | Signal.Computed<boolean>;
+}
+
+export function isCommandContribution(contribution: Contribution): contribution is CommandContribution {
+    return "command" in contribution;
+}
+
+/** Default true when `visible` is omitted. */
+export function getContributionVisible(contribution: Contribution): boolean {
+    const visible = contribution.visible as Signal.Computed<boolean> | undefined;
+    if (!visible) return true;
+    return visible.get() !== false;
+}
+
+/** Default false when `disabled` is omitted. */
+export function getContributionDisabled(contribution: Contribution): boolean {
+    const disabled = contribution.disabled as Signal.Computed<boolean> | undefined;
+    if (!disabled) return false;
+    return disabled.get() === true;
+}
+
+function wrapContributionReactiveFlags(contribution: Contribution): void {
+    if (contribution.disabled instanceof Function) {
+        contribution.disabled = new Signal.Computed<boolean>(contribution.disabled);
+    }
+    if (contribution.visible instanceof Function) {
+        contribution.visible = new Signal.Computed<boolean>(contribution.visible);
+    }
 }
 
 export interface HTMLContribution extends Contribution {
@@ -71,12 +101,7 @@ class ContributionRegistry {
 
     registerContribution<T extends Contribution>(target: string, contribution: T) {
         const targetSlot = this.getOrCreateSlot(target);
-        if ("command" in contribution) {
-            const cmd = contribution as unknown as CommandContribution
-            if (cmd.disabled instanceof Function) {
-                cmd.disabled = new Signal.Computed<boolean>(cmd.disabled)
-            }
-        }
+        wrapContributionReactiveFlags(contribution);
         targetSlot.push(contribution);
         publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target, contributions: targetSlot } as ContributionChangeEvent);
 

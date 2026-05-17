@@ -3,9 +3,17 @@ import { customElement, property, state } from 'lit/decorators.js'
 import { DocksWidget } from '../widgets/widget'
 import { icon } from '../core/icon-utils'
 import { keyBindingManager } from '../core/keybindings'
-import { contributionRegistry, Contribution, CommandContribution, HTMLContribution, ContributionChangeEvent, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry'
+import {
+    contributionRegistry,
+    Contribution,
+    CommandContribution,
+    HTMLContribution,
+    ContributionChangeEvent,
+    TOPIC_CONTRIBUTEIONS_CHANGED,
+    getContributionDisabled,
+    getContributionVisible,
+} from '../core/contributionregistry'
 import { subscribe } from '../core/events'
-import { Signal } from '@lit-labs/signals'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 
 @customElement('docks-command')
@@ -114,7 +122,10 @@ export class DocksCommand extends DocksWidget {
     private renderContribution(contribution: Contribution) {
         if ('command' in contribution) {
             const commandContribution = contribution as CommandContribution
-            const disabled = (commandContribution.disabled as Signal.Computed<boolean>)?.get()
+            if (!getContributionVisible(commandContribution)) {
+                return nothing
+            }
+            const disabled = getContributionDisabled(commandContribution)
             return html`
                 <docks-command 
                     cmd="${commandContribution.command}"

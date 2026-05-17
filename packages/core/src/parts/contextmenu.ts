@@ -6,10 +6,11 @@ import {
     Contribution,
     ContributionChangeEvent,
     contributionRegistry,
+    getContributionDisabled,
     HTMLContribution,
+    getContributionVisible,
     TOPIC_CONTRIBUTEIONS_CHANGED
 } from "../core/contributionregistry";
-import {Signal} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {subscribe} from "../core/events";
 import {createRef, ref} from "lit/directives/ref.js";
@@ -217,7 +218,10 @@ export class DocksContextMenu extends DocksElement {
     private renderContribution(contribution: Contribution) {
         if ("command" in contribution) {
             const commandContribution = contribution as CommandContribution;
-            const disabled = (commandContribution.disabled as Signal.Computed<boolean>)?.get();
+            if (!getContributionVisible(commandContribution)) {
+                return nothing;
+            }
+            const disabled = getContributionDisabled(commandContribution);
             return html`
                 <docks-command
                     cmd="${commandContribution.command}"
